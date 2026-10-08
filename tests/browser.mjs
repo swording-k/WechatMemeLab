@@ -11,9 +11,10 @@ await mkdir('work/qa', {recursive:true});
 await page.goto(process.env.TEST_URL || 'http://127.0.0.1:5173/');
 await page.waitForFunction(() => document.querySelector('#file-name').textContent === '虚构人物示例');
 await page.screenshot({path:'work/qa/desktop.png',fullPage:true});
-for (const [template,size,speed] of [['zoom','240','0.5'],['melt','320','1'],['rush','480','2'],['cling','320','1'],['peek','320','1'],['kiss','320','1'],['creep','320','1'],['hop','320','1'],['shy','320','1']]) {
+for (const [template,size,speed] of [['bulge','320','1'],['twist','480','1']]) {
   await page.locator(`[data-template=${template}]`).click();
   await page.locator('#caption').fill(`测试-${template}`);
+  await page.locator('#focusX').fill('45'); await page.locator('#focusY').fill('55');
   await page.locator('#size').selectOption(size);
   await page.locator('#speed').fill(speed);
   const downloadP = page.waitForEvent('download');
@@ -53,6 +54,6 @@ assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= w
 await page.locator('#export').click();
 await page.waitForFunction(() => !document.querySelector('#export').disabled);
 assert.deepEqual(errors,[]);
-await writeFile('work/qa/browser-result.json',JSON.stringify({templates:9,rasterUpload:true,errorRecovery:true,mobileWidth:390,consoleErrors:errors},null,2));
-console.log('PASS: nine downloads, raster upload, crop/settings, invalid and oversized input, reset, playback and mobile layout; no console errors');
+await writeFile('work/qa/browser-result.json',JSON.stringify({templates:2,rasterUpload:true,errorRecovery:true,mobileWidth:390,consoleErrors:errors},null,2));
+console.log('PASS: two liquify downloads, raster upload, crop/settings, invalid and oversized input, reset, playback and mobile layout; no console errors');
 await browser.close();

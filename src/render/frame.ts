@@ -1,11 +1,15 @@
 import type { Settings } from './types';
 import { getLayers } from './motion.mjs';
+import {drawLiquify} from './liquify';
 
 type Context = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 export function drawFrame(ctx: Context, image: CanvasImageSource, s: Settings, phase: number) {
   const size = ctx.canvas.width;
   ctx.save(); ctx.setTransform(size / 320, 0, 0, size / 320, 0, 0);
   ctx.clearRect(0, 0, 320, 320); ctx.fillStyle = s.background; ctx.fillRect(0, 0, 320, 320);
+  if(s.template==='bulge' || s.template==='twist') {
+    drawLiquify(ctx,image,s,phase);
+  } else {
   const layers = getLayers(s.template, phase, s.intensity);
   const source = image as { width?: number; height?: number; naturalWidth?: number; naturalHeight?: number };
   const iw = source.naturalWidth || source.width || 400;
@@ -36,6 +40,7 @@ export function drawFrame(ctx: Context, image: CanvasImageSource, s: Settings, p
     ctx.fillStyle='#ce3956';
     ctx.beginPath(); ctx.moveTo(-28,0); ctx.bezierCurveTo(-12,-5,-10,-19,0,-8); ctx.bezierCurveTo(10,-19,12,-5,28,0); ctx.bezierCurveTo(12,4,10,18,0,14); ctx.bezierCurveTo(-10,18,-12,4,-28,0); ctx.fill();
     ctx.strokeStyle='#72263b'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(-23,0); ctx.quadraticCurveTo(0,5,23,0); ctx.stroke(); ctx.restore();
+  }
   }
   const text = s.caption.trim();
   if (text) {

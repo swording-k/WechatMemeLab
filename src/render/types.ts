@@ -1,4 +1,4 @@
-export type Template = 'zoom' | 'melt' | 'rush' | 'cling' | 'peek' | 'kiss' | 'creep' | 'hop' | 'shy';
+export type Template = 'bulge' | 'twist' | 'zoom' | 'melt' | 'rush' | 'cling' | 'peek' | 'kiss' | 'creep' | 'hop' | 'shy';
 export interface Settings {
   template: Template;
   caption: string;
@@ -9,8 +9,12 @@ export interface Settings {
   speed: number;
   background: string;
   size: number;
+  focusX: number;
+  focusY: number;
 }
 export const templates: { id: Template; title: string; subtitle: string; caption: string; tag: string }[] = [
+  { id: 'bulge', title: '憋成大头', subtitle: '局部鼓起来，五官挤到一起', caption: '憋不住了', tag: '照片液化' },
+  { id: 'twist', title: '脸都气歪了', subtitle: '围着选中的位置扭成一团', caption: '嘴硬一下', tag: '局部扭曲' },
   { id: 'zoom', title: '你说啥？', subtitle: '突然怼脸，越看越离谱', caption: '啊？', tag: '一脸问号' },
   { id: 'melt', title: '精神状态良好', subtitle: '拉长、压扁、原地发疯', caption: '别催了！！', tag: '已经疯了' },
   { id: 'rush', title: '我来啦', subtitle: '冲进来，撞扁，再弹飞', caption: '我来了！！', tag: '闪亮登场' },
@@ -21,4 +25,4 @@ export const templates: { id: Template; title: string; subtitle: string; caption
   { id: 'hop', title: '左右横跳', subtitle: '这边蹦一下，那边又蹦一下', caption: '略略略', tag: '抓不到我' },
   { id: 'shy', title: '害羞到蒸发', subtitle: '抖两下，缩成一团，直接消失', caption: '啊啊不许看', tag: '当场消失' },
 ];
-export const defaults: Settings = { template: 'zoom', caption: '啊？', zoom: 1, x: 0, y: 0, intensity: 0.85, speed: 1, background: '#ffffff', size: 320 };
+export const defaults: Settings = { template: 'bulge', caption: '憋不住了', zoom: 1, x: 0, y: 0, intensity: 0.85, speed: 1, background: '#ffffff', size: 320, focusX: .5, focusY: .5 };

@@ -17,3 +17,8 @@
 /* Photo memes keep their raw rectangular framing. */
 .sticker{transform:none;border:0;border-radius:2px;box-shadow:none;background:#fff}.template-art{height:115px}.template-art canvas{height:115px;width:115px;margin-top:0}.template-tag{background:#ffffffe0}.template-copy span{font-size:12px}.stage-note{background:#ffffffd9;padding:2px 7px;border-radius:4px}.download-button{border-radius:7px}.art-melt{background:#f6e4e6}.art-rush{background:#e3ebf3}
 @media(max-width:620px){.template-art{height:90px}.template-art canvas{height:90px;width:90px}.sticker{width:290px;max-width:90%}}
+
+/* Nine templates stay browsable without pushing the editor below the fold. */
+@media(min-width:881px){.template-list{max-height:610px;overflow-y:auto;padding:3px 4px 3px 3px;scrollbar-width:thin}.preview-panel{max-height:780px}.settings-panel{align-self:start}}
+@media(max-width:880px){.template-list{display:grid;grid-auto-flow:column;grid-template-columns:none;grid-auto-columns:145px;overflow-x:auto;padding:4px 3px 10px;scroll-snap-type:x proximity}.template{scroll-snap-align:start}.template-art{height:95px}.template-art canvas{width:95px;height:95px}}
+@media(max-width:620px){.template-list{grid-auto-columns:110px}.template-copy strong{font-size:12px;white-space:normal}}

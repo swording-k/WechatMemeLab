@@ -39,3 +39,25 @@ test('merges consecutive held frames while retaining total playback duration', a
   for (let i=0;i<data.length-8;i++) if (data[i]===0x21 && data[i+1]===0xf9 && data[i+2]===4) delays.push(data[i+4] | data[i+5]<<8);
   assert.deepEqual(delays,[10,10]);
 });
+
+test('encodes a changed pixel as an offset patch and retains the previous canvas', async()=>{
+  const {encodeGif}=await import('../src/export/encode.mjs');
+  const a=new Uint8Array(16*16*4);
+  for(let i=3;i<a.length;i+=4)a[i]=255;
+  const b=a.slice();b.set([255,255,255,255],(5*16+8)*4);
+  const bytes=encodeGif([a,b],16,50);
+  const descriptors=[];
+  // Parse actual GIF blocks, skipping palette and LZW subblocks.
+  let p=13+3*(1<<((bytes[10]&7)+1));
+  while(p<bytes.length){
+    const type=bytes[p++];
+    if(type===0x3b)break;
+    if(type===0x21){p++;while(bytes[p])p+=bytes[p]+1;p++;continue;}
+    assert.equal(type,0x2c);
+    const n=i=>bytes[p+i]|bytes[p+i+1]<<8;
+    descriptors.push([n(0),n(2),n(4),n(6)]);
+    const flags=bytes[p+8];p+=9;if(flags&0x80)p+=3*(1<<((flags&7)+1));p++;
+    while(bytes[p])p+=bytes[p]+1;p++;
+  }
+  assert.deepEqual(descriptors,[[0,0,16,16],[8,5,1,1]]);
+});

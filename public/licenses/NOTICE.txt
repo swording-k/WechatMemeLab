@@ -1,0 +1,18 @@
+Third-party notices for WechatMemeLab / 怪相馆
+
+MediaPipe Tasks Vision 1.1.0: Copyright The MediaPipe Authors.
+Distributed JavaScript and WebAssembly files are unmodified package files.
+Licensed under Apache License 2.0 (mediapipe-Apache-2.0.txt).
+https://github.com/google-ai-edge/mediapipe
+
+BlazeFace Short Range float16 model, revision 1: Google / MediaPipe.
+Licensed under Apache License 2.0; official model card:
+https://storage.googleapis.com/mediapipe-assets/MediaPipe%20BlazeFace%20Model%20Card%20%28Short%20Range%29.pdf
+Source:
+https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite
+
+GIF encoder: gifenc 1.0.3, Copyright Matt DesLauriers, MIT (gifenc-MIT.txt).
+https://github.com/mattdesl/gifenc
+
+Sample people and hand PNG: original generated assets, fictional adult subjects.
+No third-party meme/photo assets copied from PetPet.

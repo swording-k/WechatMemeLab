@@ -8,9 +8,10 @@
     "build": "tsc --noEmit && vite build",
     "test": "node --test tests/*.test.mjs",
     "preview": "vite preview --host 127.0.0.1",
-    "test:browser": "node tests/browser.mjs"
+    "test:browser": "node tests/browser.mjs && node tests/fallback.mjs && node tests/portraits.mjs"
   },
   "dependencies": {
+    "@mediapipe/tasks-vision": "1.1.0",
     "gifenc": "1.0.3"
   },
   "devDependencies": {

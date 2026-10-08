@@ -1,28 +1,15 @@
-export type Template = 'bulge' | 'twist' | 'zoom' | 'melt' | 'rush' | 'cling' | 'peek' | 'kiss' | 'creep' | 'hop' | 'shy';
+export type Template = 'pinch' | 'pull' | 'knead' | 'bulge' | 'twist' | 'squish';
 export interface Settings {
-  template: Template;
-  caption: string;
-  zoom: number;
-  x: number;
-  y: number;
-  intensity: number;
-  speed: number;
-  background: string;
-  size: number;
-  focusX: number;
-  focusY: number;
+  template:Template;caption:string;zoom:number;x:number;y:number;intensity:number;speed:number;background:string;size:number;focusX:number;focusY:number;radius:number;
 }
-export const templates: { id: Template; title: string; subtitle: string; caption: string; tag: string }[] = [
-  { id: 'bulge', title: '憋成大头', subtitle: '局部鼓起来，五官挤到一起', caption: '憋不住了', tag: '照片液化' },
-  { id: 'twist', title: '脸都气歪了', subtitle: '围着选中的位置扭成一团', caption: '嘴硬一下', tag: '局部扭曲' },
-  { id: 'zoom', title: '你说啥？', subtitle: '突然怼脸，越看越离谱', caption: '啊？', tag: '一脸问号' },
-  { id: 'melt', title: '精神状态良好', subtitle: '拉长、压扁、原地发疯', caption: '别催了！！', tag: '已经疯了' },
-  { id: 'rush', title: '我来啦', subtitle: '冲进来，撞扁，再弹飞', caption: '我来了！！', tag: '闪亮登场' },
-  { id: 'cling', title: '贴一下怎么了', subtitle: '两个自己挤在一起，又弹开', caption: '贴一下怎么了', tag: '理直气壮' },
-  { id: 'peek', title: '偷偷靠近', subtitle: '探一下，挪过来，装作没事', caption: '你在干嘛', tag: '暗中观察' },
-  { id: 'kiss', title: '亲完就跑', subtitle: '冲过来啵一下，转身溜走', caption: '啵！溜了', tag: '偷袭成功' },
-  { id: 'creep', title: '阴暗爬行', subtitle: '压成一条，在底下蠕动', caption: '阴暗地爬过来', tag: '扭曲蠕动' },
-  { id: 'hop', title: '左右横跳', subtitle: '这边蹦一下，那边又蹦一下', caption: '略略略', tag: '抓不到我' },
-  { id: 'shy', title: '害羞到蒸发', subtitle: '抖两下，缩成一团，直接消失', caption: '啊啊不许看', tag: '当场消失' },
+export interface RenderAssets {hand?:CanvasImageSource}
+export const templates:{id:Template;title:string;subtitle:string;caption:string;tag:string;suggestions:string[]}[]=[
+  {id:'pinch',title:'就捏一下',subtitle:'两边捏住，脸挤成一团',caption:'就捏一下',tag:'别躲',suggestions:['就捏一下','不许躲','让我捏捏']},
+  {id:'pull',title:'脸借我拉一下',subtitle:'抓住脸颊，拉长又弹回来',caption:'脸借我拉一下',tag:'欠揍',suggestions:['脸借我拉一下','你怎么回事','略略略']},
+  {id:'knead',title:'揉到走形',subtitle:'左右揉两下，五官拧巴了',caption:'过来让我揉揉',tag:'贴脸',suggestions:['过来让我揉揉','别动','你先别说话']},
+  {id:'bulge',title:'憋成大头',subtitle:'越憋越鼓，原地破防',caption:'憋不住了',tag:'抽象',suggestions:['憋不住了','你看我像正常吗','就这样吧']},
+  {id:'twist',title:'脸都气歪了',subtitle:'嘴硬一下，脸真的歪了',caption:'我没事啊',tag:'嘴硬',suggestions:['我没事啊','你再说一遍','嘴硬一下']},
+  {id:'squish',title:'憋成一团',subtitle:'脸扁了，又悄悄弹回来',caption:'不许笑',tag:'绷不住',suggestions:['不许笑','我忍','已读乱回']},
 ];
-export const defaults: Settings = { template: 'bulge', caption: '憋不住了', zoom: 1, x: 0, y: 0, intensity: 0.85, speed: 1, background: '#ffffff', size: 320, focusX: .5, focusY: .5 };
+export const defaults:Settings={template:'pinch',caption:'就捏一下',zoom:1,x:0,y:0,intensity:.75,speed:1,background:'#fff8ed',size:240,focusX:.5,focusY:.5,radius:.35};
+export const DURATION=1600;

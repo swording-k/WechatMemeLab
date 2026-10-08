@@ -1,0 +1,12 @@
+import {chromium} from '@playwright/test';
+import assert from 'node:assert/strict';
+const b=await chromium.launch({headless:true,channel:'chrome'}),p=await b.newPage();
+await p.route('**/models/**',r=>r.abort());await p.goto(process.env.TEST_URL||'http://127.0.0.1:5173/');await p.waitForFunction(()=>document.querySelector('#face-status').textContent.includes('暂不可用'));
+assert.equal(await p.locator('#auto-face').isEnabled(),true);
+await p.locator('#advanced').evaluate(e=>e.open=true);await p.locator('#focusX').focus();const before=Number(await p.locator('#focusX').inputValue());await p.keyboard.press('ArrowRight');assert.equal(Number(await p.locator('#focusX').inputValue()),before+1);
+const d=p.waitForEvent('download');await p.locator('#export').click();await(await d).saveAs('work/qa/manual-fallback.gif');await p.waitForFunction(()=>!document.querySelector('#export').disabled);assert.match(await p.locator('#status').textContent(),/已生成/);
+await p.unroute('**/models/**');await p.locator('#auto-face').click();await p.waitForFunction(()=>document.querySelector('#face-status').textContent.includes('已定位'));
+await p.route('**/sample-portrait.png',r=>r.abort());await p.locator('#sample2').click();await p.waitForFunction(()=>document.querySelector('#status').textContent.includes('示例加载失败'));assert.equal(await p.locator('#auto-face').isEnabled(),true);assert.equal(await p.locator('#file-name').textContent(),'虚构人物示例');await p.unroute('**/sample-portrait.png');await p.locator('#sample2').click();await p.waitForFunction(()=>document.querySelector('#file-name').textContent==='虚构人物竖图示例');await p.waitForFunction(()=>document.querySelector('#face-status').textContent.includes('已定位'));
+const url=await p.evaluate(()=>{const c=document.createElement('canvas');c.width=640;c.height=960;c.getContext('2d').fillRect(0,0,640,960);return c.toDataURL();});await p.locator('#file').setInputFiles({name:'blank.png',mimeType:'image/png',buffer:Buffer.from(url.split(',')[1],'base64')});await p.waitForFunction(()=>document.querySelector('#face-status').textContent.includes('没找到'));assert.equal(await p.locator('#export').isEnabled(),true);
+const reduced=await b.newPage({reducedMotion:'reduce'});await reduced.goto(process.env.TEST_URL||'http://127.0.0.1:5173/');assert.equal(await reduced.locator('#pause').getAttribute('aria-label'),'播放预览');
+await b.close();console.log('PASS unavailable model manual export and retry, no-face fallback, keyboard position, reduced motion');

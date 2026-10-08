@@ -14,3 +14,9 @@ test('twist follows the user-selected target and keeps mapping finite',()=>{
   assert.notDeepEqual(mapPixel('twist',.4,.7,[.3,.7],1),[.4,.7]);
   for(const id of ['bulge','twist']) for(let x=0;x<=10;x++) for(let y=0;y<=10;y++) assert.ok(mapPixel(id,x/10,y/10,[.3,.7],1).every(Number.isFinite));
 });
+
+test('pinch compresses horizontally while pull expands the face',()=>{
+  assert.ok(mapPixel('pinch',.6,.5,[.5,.5],1)[0]>.6);
+  assert.ok(mapPixel('pull',.6,.5,[.5,.5],1)[0]<.6);
+  for(const id of ['pinch','pull','knead','squish']) assert.deepEqual(mapPixel(id,0,0,[.5,.5],1),[0,0]);
+});

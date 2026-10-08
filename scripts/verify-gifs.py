@@ -1,12 +1,10 @@
 """Independent Pillow decoding of exported GIFs; requires Pillow."""
 import json,sys
 from pathlib import Path
-from PIL import Image,ImageSequence
+from PIL import Image
 results=[]
 for path in map(Path,sys.argv[1:]):
  with Image.open(path) as gif:
-  frames=list(ImageSequence.Iterator(gif))
-  # Iterator frames are reused, so collect pixels immediately.
   gif.seek(0)
   pixels=[];duration=0
   for i in range(gif.n_frames):

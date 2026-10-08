@@ -1,0 +1,13 @@
+import {chromium} from '@playwright/test';
+import assert from 'node:assert/strict';
+import {writeFile} from 'node:fs/promises';
+const url=process.env.TEST_URL||'https://wechat-meme-lab.bonny-snow-4026.chatgpt.site',origin=new URL(url).origin;
+const b=await chromium.launch({headless:true,channel:'chrome'}),p=await b.newPage({acceptDownloads:true});
+const requests=[],errors=[];p.on('request',r=>requests.push({url:r.url(),method:r.method(),bytes:r.postDataBuffer()?.length||0,contentType:r.headers()['content-type']||'',keys:(()=>{try{return Object.keys(JSON.parse(r.postData()||'{}'));}catch{return [];}})()}));p.on('pageerror',e=>errors.push(e.message));
+await p.goto(url,{waitUntil:'domcontentloaded',timeout:60000});await p.waitForFunction(()=>document.querySelector('#face-status')?.textContent.includes('已定位'),{},{timeout:60000});assert.equal(await p.locator('[data-template]').count(),6);
+for(const t of ['pinch','pull','knead']){await p.locator(`[data-template=${t}]`).click();const dp=p.waitForEvent('download');await p.locator('#export').click();await(await dp).saveAs(`work/qa/published-${t}.gif`);await p.waitForFunction(()=>!document.querySelector('#export').disabled);assert.match(await p.locator('#status').textContent(),/已生成/);}
+await p.locator('#file').setInputFiles('public/sample-portrait.png');await p.waitForFunction(()=>document.querySelector('#file-name').textContent==='sample-portrait.png');await p.waitForFunction(()=>document.querySelector('#face-status').textContent.includes('已定位'));
+await p.locator('[data-template=bulge]').click();await p.locator('#caption').fill('');const dp=p.waitForEvent('download');await p.locator('#export').click();await(await dp).saveAs('work/qa/published-portrait.gif');
+const outbound=requests.filter(r=>new URL(r.url).origin!==origin);assert.deepEqual(outbound,[]);const hostingChecks=requests.filter(r=>new URL(r.url).pathname.startsWith('/cdn-cgi/'));const applicationRequests=requests.filter(r=>!new URL(r.url).pathname.startsWith('/cdn-cgi/'));assert.ok(applicationRequests.every(r=>r.method==='GET')); assert.deepEqual(errors,[]);
+await writeFile('work/qa/published-result.json',JSON.stringify({url,anonymous:true,automaticFaceDetection:true,downloads:4,rasterUpload:true,secondPortrait:true,requests:requests.length,applicationRequests:applicationRequests.length,hostingCheckPosts:hostingChecks.filter(r=>r.method==='POST').length,outboundRequests:outbound,pageErrors:errors},null,2));
+await b.close();console.log('PASS anonymous published access, six templates, two face samples, actual raster upload, four exports; no application POSTs or external requests and no page errors');

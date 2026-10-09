@@ -1,0 +1,29 @@
+name: 问题与玩法建议
+description: 反馈使用问题或玩法建议，可以上传截图和 GIF
+assignees:
+  - swording-k
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢帮怪相馆变得更好玩！截图或 GIF 可以在下面的「截图与成品」区域上传。反馈内容和附件公开，请先遮挡私人信息。
+  - type: textarea
+    id: detail
+    attributes:
+      label: 反馈内容
+      description: 描述问题、操作步骤，或希望加入的新玩法。
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: 设备与浏览器
+      placeholder: 例如：iPhone / Safari / 微信内打开
+  - type: upload
+    id: screenshots
+    attributes:
+      label: 截图与成品（选填）
+      description: 点击选择图片，或拖入截图、GIF。每张图片最大 10 MB。
+    validations:
+      required: false
+      accept: ".png,.jpg,.jpeg,.gif,.webp"

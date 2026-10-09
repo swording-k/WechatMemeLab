@@ -4,5 +4,5 @@ export function feedbackLinks({type='bug',title='',detail='',device=''}={}){
  const kind=type==='idea'?'玩法建议':type==='other'?'其他反馈':'使用问题';
  const subject=`[${kind}] ${title}`;
  const body=`### ${kind}\n${detail}\n\n### 设备与浏览器\n${device||'未填写'}\n\n---\n来自怪相馆网站反馈入口`;
- return {issue:`https://github.com/swording-k/WechatMemeLab/issues/new?${new URLSearchParams({template:'feedback.md',title:subject,body})}`,email:`mailto:swordingk@gmail.com?${new URLSearchParams({subject,body}).toString().replace(/\+/g,'%20')}`};
+ return {issue:`https://github.com/swording-k/WechatMemeLab/issues/new?${new URLSearchParams({template:'feedback.yml',title:subject,detail,device})}`,email:`mailto:swordingk@gmail.com?${new URLSearchParams({subject,body}).toString().replace(/\+/g,'%20')}`};
 }

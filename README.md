@@ -79,6 +79,7 @@ python3 scripts/verify-gifs.py work/qa/*-release.gif work/qa/portrait-*.gif
 
 - 源码：https://github.com/swording-k/WechatMemeLab
 - 站内反馈：`feedback.html`。填写后可前往 GitHub 提交 Issue，或使用邮件发送；两者是独立渠道。
+- 截图与 GIF：GitHub 反馈表单有独立附件上传区，支持 JPG/PNG/GIF/WebP，每张最大 10 MB。站内填写的文字会带入表单；截图在 GitHub 中上传。邮件反馈需在邮件应用内附图。
 - Issue 模板默认指派作者。邮件通知取决于 GitHub 账户的通知设置；当前未验证实际收信。
 - 验证反馈流程：`node tests/feedback-browser.mjs`。
 - 作者个人主页：https://swording-k.github.io/#contact

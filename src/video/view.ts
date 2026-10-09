@@ -1,7 +1,7 @@
 import {productFooter,projectLinks} from '../ui/product-footer';
 import {modeNav} from '../ui/mode-nav';
 export function mount(){document.querySelector('#app')!.innerHTML=`
-<header><a href="${import.meta.env.BASE_URL}">← 照片整活</a><strong>怪相馆 <small>视频实验室</small></strong><a class="header-feedback" href="${projectLinks.feedback}" target="_blank" rel="noopener noreferrer">反馈 ↗</a></header>
+<header><a href="${import.meta.env.BASE_URL}">← 照片整活</a><strong>怪相馆 <small>视频实验室</small></strong><a class="header-feedback" href="${projectLinks.feedback}">反馈 ↗</a></header>
 <main>${modeNav('video')}<h1>把这一秒，变成你的表情。</h1><p class="intro">视频在你的设备上处理。截一小段，加一句只有你们懂的话。</p>
 <div class="studio"><section class="controls"><label class="upload">① 选一段视频<input id="file" type="file" accept="video/*"><small>最大 100 MB · 优先 MP4 · GIF 没有声音</small></label><p id="name">还没选视频</p>
 <h2>② 选个起点</h2><div class="presets"><button data-mode="forward" aria-pressed="true">原片加字</button><button data-mode="bounce" aria-pressed="false">反复横跳</button><button data-mode="reverse" aria-pressed="false">倒带一下</button></div><p id="preset-note">保留原动作，配一句自己的话。</p>

@@ -78,5 +78,7 @@ python3 scripts/verify-gifs.py work/qa/*-release.gif work/qa/portrait-*.gif
 两个工作台的页脚提供 GitHub 源码、问题与建议、作者主页入口；页头也可直接进入反馈渠道。
 
 - 源码：https://github.com/swording-k/WechatMemeLab
-- 反馈：https://github.com/swording-k/WechatMemeLab/issues
+- 站内反馈：`feedback.html`。填写后可前往 GitHub 提交 Issue，或使用邮件发送；两者是独立渠道。
+- Issue 模板默认指派作者。邮件通知取决于 GitHub 账户的通知设置；当前未验证实际收信。
+- 验证反馈流程：`node tests/feedback-browser.mjs`。
 - 作者个人主页：https://swording-k.github.io/#contact

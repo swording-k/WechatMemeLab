@@ -1,4 +1,4 @@
-const ids=new Set(['pinch','pull','knead','bulge','twist','squish','glass','suction','melt','leak']);
+const ids=new Set(['pinch','pull','knead','bulge','twist','squish','glass','suction','melt','leak','notify','crack','screen','soul']);
 const bound=(value,min,max,fallback)=>Number.isFinite(Number(value))?Math.max(min,Math.min(max,Number(value))):fallback;
 export function encodeRecipe(s) {
   return new URLSearchParams({t:s.template,c:s.caption.slice(0,20),i:String(s.intensity),s:String(s.speed)}).toString();

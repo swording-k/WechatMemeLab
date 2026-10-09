@@ -6,6 +6,10 @@ export function mapPixel(mode,x,y,center,amount,radius=.43) {
   const r2=(dx*dx+dy*dy)/(radius*radius);
   if(r2>=1 || amount===0) return [x,y];
   const weight=(1-r2)**2;
+  if(mode==='notify') return [x-amount*radius*.23*weight,y+amount*radius*.13*weight];
+  if(mode==='crack') return [x+amount*radius*.22*Math.sin(dy/radius*4)*weight,y-amount*radius*.12*weight*(dx>0?1:-1)];
+  if(mode==='screen') {const scale=1-.86*amount*weight;return [center[0]+dx*scale,center[1]+dy*scale];}
+  if(mode==='soul') return [x,y-amount*radius*.3*weight*Math.max(0,dy/radius+.3)];
   if(mode==='glass') return [center[0]+dx*(1-.6*amount*weight),center[1]+dy*(1+.55*amount*weight)];
   if(mode==='suction') return [x-amount*radius*.52*weight,y+amount*radius*.42*weight];
   if(mode==='melt') {

@@ -134,7 +134,7 @@ function animate(time:number){
   const elapsed=lastTime?Math.min(time-lastTime,100):0;lastTime=time;if((!paused||sculpt.playing())&&!document.hidden)phase=(phase+elapsed*settings.speed/DURATION)%1;
   if(ready&&!document.hidden&&time-lastPaint>50){lastPaint=time;drawFrame(ctx,image,settings,sculpt.phase(phase),assets);sculpt.guides(ctx);}
   const nextKey=[photoVersion,settings.zoom,settings.x,settings.y,settings.radius,settings.focusX,settings.focusY,settings.intensity,settings.background,JSON.stringify(settings.custom)].join(':');
-  if(ready&&!document.hidden&&thumbKey!==nextKey){thumbKey=nextKey;thumbnails.forEach((c,i)=>{drawFrame(c.getContext('2d')!,image,{...settings,template:templates[i].id,caption:''},templates[i].id==='twist'?.25:templates[i].id==='knead'?.42:.5,assets);});}
+  if(ready&&!document.hidden&&thumbKey!==nextKey){thumbKey=nextKey;thumbnails.forEach((c,i)=>{drawFrame(c.getContext('2d')!,image,{...settings,template:templates[i].id,caption:''},templates[i].id==='notify'?.47:templates[i].id==='twist'?.25:templates[i].id==='knead'?.42:.5,assets);});}
   requestAnimationFrame(animate);
 }
 window.addEventListener('pagehide',()=>{bitmap?.close();if(resultUrl)URL.revokeObjectURL(resultUrl);});

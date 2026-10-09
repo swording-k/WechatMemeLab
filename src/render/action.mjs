@@ -3,6 +3,11 @@ const ease=x=>{const t=clamp(x);return t*t*(3-2*t);};
 /** @param {string} template @param {number} phase @param {number} intensity */
 export function getAction(template,phase,intensity) {
   const p=(phase%1+1)%1;
+  if(['notify','crack','screen','soul'].includes(template)) {
+    const envelope=p<.12?0:p<.4?ease((p-.12)/.28):p<.68?1:p<.92?1-ease((p-.68)/.24):0;
+    const amount=template==='notify'?Math.sin(p*Math.PI*18)*envelope:envelope;
+    return {amount:amount*intensity||0,pressure:envelope*intensity,contact:envelope};
+  }
   if(['glass','suction','melt','leak'].includes(template)) {
     const envelope=(rise,hold,end)=>p<.12?0:p<rise?ease((p-.12)/(rise-.12)):p<hold?1:p<end?1-ease((p-hold)/(end-hold)):0;
     const contact=envelope(.26,.75,.94);

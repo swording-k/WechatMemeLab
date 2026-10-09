@@ -11,7 +11,8 @@
     "test:browser": "node tests/browser.mjs && node tests/fallback.mjs && node tests/portraits.mjs",
     "test:video": "node tests/video-browser.mjs",
     "test:effects": "node tests/new-effects-browser.mjs",
-    "test:sculpt": "node tests/sculpt-browser.mjs"
+    "test:sculpt": "node tests/sculpt-browser.mjs",
+    "test:chat-effects": "node tests/chat-effects-browser.mjs"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "1.1.0",

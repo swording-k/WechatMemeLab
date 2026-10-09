@@ -1,5 +1,6 @@
 import './style.css';
 import './ui/mode-nav.css';
+import {installSculpt} from './ui/sculpt';
 import {mountView} from './ui/view';
 import {defaults,templates,DURATION,type Settings,type RenderAssets} from './render/types';
 import {drawFrame} from './render/frame';
@@ -21,6 +22,7 @@ const preview=$<HTMLCanvasElement>('#preview');
 const ctx=preview.getContext('2d')!;
 const exportButton=$<HTMLButtonElement>('#export');
 exportButton.disabled=true;
+const sculpt=installSculpt(preview,settings,()=>{revision++;},()=>ready&&!busy);
 function status(text:string,error=false){$('#status').textContent=text;$('#status').classList.toggle('error',error);}
 function updateCaption(){settings.caption=$<HTMLInputElement>('#caption').value;$('#char-count').textContent=`${settings.caption.length} / 20`;}
 function suggestions(){
@@ -34,7 +36,7 @@ function sync(){
   $('#zoom-value').textContent=`${settings.zoom.toFixed(2)}×`;
 }
 function selectTemplate(id:Settings['template']){
-  settings.template=id;const t=templates.find(t=>t.id===id)!;
+  settings.template=id;sculpt.active();const t=templates.find(t=>t.id===id)!;
   document.querySelectorAll<HTMLButtonElement>('[data-template]').forEach(b=>{const active=b.dataset.template===id;b.classList.toggle('selected',active);b.setAttribute('aria-pressed',String(active));});
   $('#active-name').textContent=`${t.title} · 循环播放`;$<HTMLInputElement>('#caption').value=t.caption;updateCaption();suggestions();phase=0;
 }
@@ -55,7 +57,7 @@ $('#background').oninput=()=>background($<HTMLInputElement>('#background').value
 function playButton(){const b=$('#pause');b.textContent=paused?'▶':'Ⅱ';b.setAttribute('aria-label',paused?'播放预览':'暂停预览');}
 $('#pause').onclick=()=>{paused=!paused;playButton();};playButton();
 preview.onpointerdown=e=>{
-  if(!ready)return;
+  if(!ready||settings.template==='custom')return;
   revision++;const r=preview.getBoundingClientRect();
   settings.focusX=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width));settings.focusY=Math.max(0,Math.min(1,(e.clientY-r.top)/r.height));sync();
   if(paused)phase=settings.template==='twist'?.25:.5;
@@ -80,7 +82,7 @@ async function commitPhoto(next:CanvasImageSource,label:string,seq:number,nextBi
   const nextAssets=await loadAssets();
   if(seq!==loadId){nextBitmap?.close();return;}
   bitmap?.close();bitmap=nextBitmap;image=next;photoVersion++;assets=nextAssets;ready=true;exportButton.disabled=busy;
-  faces=[];$('#faces').replaceChildren();$('#file-name').textContent=label;resetPosition();phase=0;status('照片已准备好 · 免费，无水印');void locate(seq);
+  faces=[];$('#faces').replaceChildren();$('#file-name').textContent=label;sculpt.reset();resetPosition();phase=0;status('照片已准备好 · 免费，无水印');void locate(seq);
 }
 async function sample(src=`${import.meta.env.BASE_URL}sample-person.png`,label='虚构人物示例'){const seq=++loadId;try{
   if(!samplePromises.has(src))samplePromises.set(src,(async()=>{const img=new Image();img.src=src;await img.decode();return img;})());
@@ -105,7 +107,8 @@ for(const name of ['dragleave','drop'])zone.addEventListener(name,e=>{e.preventD
 zone.addEventListener('drop',e=>{const file=(e as DragEvent).dataTransfer?.files[0];if(file)void loadFile(file);});
 window.addEventListener('dragover',e=>e.preventDefault());window.addEventListener('drop',e=>e.preventDefault());
 exportButton.onclick=async()=>{
-  if(busy||!ready)return;busy=true;exportButton.disabled=true;const snapshot={...settings};
+  if(busy||!ready)return;if(settings.template==='custom'&&!settings.custom?.length){status('先在照片上拉一下，或点击鼓起／缩小，再导出你的动作');return;}busy=true;exportButton.disabled=true;
+const snapshot=structuredClone(settings);
   const label=exportButton.querySelector('span')!;label.textContent='正在生成…';const progress=$<HTMLProgressElement>('#progress');progress.hidden=false;progress.value=0;status('正在把动作打包成 GIF…');
   try{
     const blob=await exportGif(image,snapshot,p=>{progress.value=p;label.textContent=`正在生成 ${Math.round(p*100)}%`;},assets);
@@ -128,9 +131,9 @@ $('#share-file').onclick=async()=>{
 const thumbnails=[...document.querySelectorAll<HTMLCanvasElement>('.template canvas')];
 let thumbKey='';
 function animate(time:number){
-  const elapsed=lastTime?Math.min(time-lastTime,100):0;lastTime=time;if(!paused&&!document.hidden)phase=(phase+elapsed*settings.speed/DURATION)%1;
-  if(ready&&!document.hidden&&time-lastPaint>50){lastPaint=time;drawFrame(ctx,image,settings,phase,assets);}
-  const nextKey=[photoVersion,settings.zoom,settings.x,settings.y,settings.radius,settings.focusX,settings.focusY,settings.intensity,settings.background].join(':');
+  const elapsed=lastTime?Math.min(time-lastTime,100):0;lastTime=time;if((!paused||sculpt.playing())&&!document.hidden)phase=(phase+elapsed*settings.speed/DURATION)%1;
+  if(ready&&!document.hidden&&time-lastPaint>50){lastPaint=time;drawFrame(ctx,image,settings,sculpt.phase(phase),assets);sculpt.guides(ctx);}
+  const nextKey=[photoVersion,settings.zoom,settings.x,settings.y,settings.radius,settings.focusX,settings.focusY,settings.intensity,settings.background,JSON.stringify(settings.custom)].join(':');
   if(ready&&!document.hidden&&thumbKey!==nextKey){thumbKey=nextKey;thumbnails.forEach((c,i)=>{drawFrame(c.getContext('2d')!,image,{...settings,template:templates[i].id,caption:''},templates[i].id==='twist'?.25:templates[i].id==='knead'?.42:.5,assets);});}
   requestAnimationFrame(animate);
 }

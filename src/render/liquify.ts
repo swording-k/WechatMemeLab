@@ -1,5 +1,6 @@
 import type {Settings} from './types';
 import {getAction} from './action.mjs';
+import {mapSculpt} from './sculpt-map.mjs';
 import {mapPixel} from './liquify-map.mjs';
 
 type Context=CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
@@ -24,7 +25,7 @@ export function drawLiquify(ctx:Context,image:CanvasImageSource,s:Settings,phase
   const src=entry.source.data,out=entry.output.data;
   const center=[s.focusX,s.focusY];
   for(let y=0;y<size;y++) for(let x=0;x<size;x++) {
-    const [u,v]=mapPixel(s.template,x/(size-1),y/(size-1),center,amount,s.radius);
+    const [u,v]=s.template==='custom'?mapSculpt(x/(size-1),y/(size-1),s.custom||[],amount):mapPixel(s.template,x/(size-1),y/(size-1),center,amount,s.radius);
     const fx=Math.max(0,Math.min(size-1,u*(size-1))),fy=Math.max(0,Math.min(size-1,v*(size-1)));
     const x0=Math.floor(fx),y0=Math.floor(fy),x1=Math.min(size-1,x0+1),y1=Math.min(size-1,y0+1);
     const ax=fx-x0,ay=fy-y0;

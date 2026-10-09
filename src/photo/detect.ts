@@ -3,7 +3,7 @@ let worker:Worker|undefined,id=0;
 const pending=new Map<number,{resolve:(faces:Face[])=>void;reject:(error:Error)=>void;timer:number}>();
 export async function detectFaces(image:CanvasImageSource):Promise<Face[]> {
   if(!worker) {
-    worker=new Worker('/face-worker.js');
+    worker=new Worker(`${import.meta.env.BASE_URL}face-worker.js`);
     worker.onmessage=e=>{
       const request=pending.get(e.data.id);if(!request)return;
       clearTimeout(request.timer);pending.delete(e.data.id);

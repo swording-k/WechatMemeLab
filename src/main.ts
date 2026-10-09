@@ -81,11 +81,11 @@ async function commitPhoto(next:CanvasImageSource,label:string,seq:number,nextBi
   bitmap?.close();bitmap=nextBitmap;image=next;photoVersion++;assets=nextAssets;ready=true;exportButton.disabled=busy;
   faces=[];$('#faces').replaceChildren();$('#file-name').textContent=label;resetPosition();phase=0;status('照片已准备好 · 免费，无水印');void locate(seq);
 }
-async function sample(src='/sample-person.png',label='虚构人物示例'){const seq=++loadId;try{
+async function sample(src=`${import.meta.env.BASE_URL}sample-person.png`,label='虚构人物示例'){const seq=++loadId;try{
   if(!samplePromises.has(src))samplePromises.set(src,(async()=>{const img=new Image();img.src=src;await img.decode();return img;})());
   const next=await samplePromises.get(src)!;await commitPhoto(next,label,seq);
 }catch{if(seq===loadId){status('示例加载失败，请重试或上传照片',true);$<HTMLButtonElement>('#auto-face').disabled=false;$('#face-status').textContent='保留了上一张照片 · 可重新定位或手动调整';}samplePromises.delete(src);}}
-$('#sample').onclick=()=>void sample();$('#sample2').onclick=()=>void sample('/sample-portrait.png','虚构人物竖图示例');
+$('#sample').onclick=()=>void sample();$('#sample2').onclick=()=>void sample(`${import.meta.env.BASE_URL}sample-portrait.png`,'虚构人物竖图示例');
 async function loadFile(file:File){
   if(!['image/png','image/jpeg','image/webp'].includes(file.type)){status('请选择 PNG、JPG 或 WebP 图片',true);return;}
   if(file.size>10*1024*1024){status('图片超过 10 MB，请换一张较小的图片',true);return;}

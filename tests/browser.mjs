@@ -19,7 +19,7 @@ for(const template of ['pinch','pull','knead','bulge','twist','squish']){
 }
 // Portrait, landscape and group input: real detector against raster fixtures.
 for(const [name,width,height,positions] of [['portrait',900,1600,[[100,40,700,700]]],['landscape',1600,900,[[850,100,700,700]]],['group',1800,900,[[0,50,800,800],[950,50,800,800]]]]){
- const url=await page.evaluate(async({width,height,positions})=>{const img=new Image();img.src='/sample-person.png';await img.decode();const c=document.createElement('canvas');c.width=width;c.height=height;const ctx=c.getContext('2d');ctx.fillStyle='#dcdcdc';ctx.fillRect(0,0,width,height);positions.forEach(rect=>ctx.drawImage(img,...rect));return c.toDataURL();},{width,height,positions});
+ const url=await page.evaluate(async({width,height,positions})=>{const img=new Image();img.src=new URL('sample-person.png',location.href).href;await img.decode();const c=document.createElement('canvas');c.width=width;c.height=height;const ctx=c.getContext('2d');ctx.fillStyle='#dcdcdc';ctx.fillRect(0,0,width,height);positions.forEach(rect=>ctx.drawImage(img,...rect));return c.toDataURL();},{width,height,positions});
  await page.locator('#file').setInputFiles({name:name+'.png',mimeType:'image/png',buffer:Buffer.from(url.split(',')[1],'base64')});
  await page.waitForFunction(name=>document.querySelector('#file-name').textContent===name+'.png',name);
  await page.waitForFunction(()=>document.querySelector('#face-status').textContent.includes('已定位'));

@@ -1,8 +1,9 @@
 /* MediaPipe runs entirely in this same-origin worker. No photo leaves the browser. */
-importScripts('/vision/vision_bundle.js');
+const asset=path=>new URL(path,self.location.href).href;
+importScripts(asset('vision/vision_bundle.js'));
 let task;
 async function detector() {
-  if(!task) task=Vision.FilesetResolver.forVisionTasks('/vision').then(files=>Vision.FaceDetector.createFromOptions(files,{baseOptions:{modelAssetPath:'/models/face-detector.tflite',delegate:'CPU'},runningMode:'IMAGE',minDetectionConfidence:.55}));
+  if(!task) task=Vision.FilesetResolver.forVisionTasks(asset('vision')).then(files=>Vision.FaceDetector.createFromOptions(files,{baseOptions:{modelAssetPath:asset('models/face-detector.tflite'),delegate:'CPU'},runningMode:'IMAGE',minDetectionConfidence:.55}));
   return task;
 }
 self.onmessage=async event=>{

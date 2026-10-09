@@ -108,7 +108,7 @@ exportButton.onclick=async()=>{
   try{
     const blob=await exportGif(image,snapshot,p=>{progress.value=p;label.textContent=`正在生成 ${Math.round(p*100)}%`;},assets);
     if(resultUrl)URL.revokeObjectURL(resultUrl);resultUrl=URL.createObjectURL(blob);
-    const again=$<HTMLAnchorElement>('#again');again.href=resultUrl;again.download=`表情包-${templates.find(t=>t.id===snapshot.template)!.title}-${snapshot.size}.gif`;again.hidden=false;resultBlob=blob;resultName=again.download;let canShare=false;try{canShare=Boolean(navigator.canShare?.({files:[new File([blob],resultName,{type:'image/gif'})]}));}catch{}$<HTMLButtonElement>('#share-file').hidden=!canShare;again.click();
+    const again=$<HTMLAnchorElement>('#again');again.href=resultUrl;again.download=`表情包-${templates.find(t=>t.id===snapshot.template)!.title}-${snapshot.size}.gif`;again.hidden=false;resultBlob=blob;resultName=again.download;let canShare=false;try{canShare=Boolean(navigator.canShare?.({files:[new File([blob],resultName,{type:'image/gif'})]}));}catch{}$<HTMLButtonElement>('#share-file').hidden=!canShare;again.click();$('#save-guide').hidden=false;
     status(`已生成 ${snapshot.size} × ${snapshot.size} · ${(blob.size/1024).toFixed(0)} KB`);
   }catch(error){status(error instanceof Error?error.message:'生成失败，请重试',true);}
   finally{busy=false;exportButton.disabled=!ready;label.textContent='下载 GIF 表情';progress.hidden=true;}

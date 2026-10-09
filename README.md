@@ -79,4 +79,4 @@ python3 scripts/verify-gifs.py work/qa/*-release.gif work/qa/portrait-*.gif
 
 - 源码：https://github.com/swording-k/WechatMemeLab
 - 反馈：https://github.com/swording-k/WechatMemeLab/issues
-- 作者：https://github.com/swording-k
+- 作者个人主页：https://swording-k.github.io/#contact

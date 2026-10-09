@@ -3,6 +3,13 @@ const ease=x=>{const t=clamp(x);return t*t*(3-2*t);};
 /** @param {string} template @param {number} phase @param {number} intensity */
 export function getAction(template,phase,intensity) {
   const p=(phase%1+1)%1;
+  if(['glass','suction','melt','leak'].includes(template)) {
+    const envelope=(rise,hold,end)=>p<.12?0:p<rise?ease((p-.12)/(rise-.12)):p<hold?1:p<end?1-ease((p-hold)/(end-hold)):0;
+    const contact=envelope(.26,.75,.94);
+    let amount=envelope(template==='melt'?.68:.43,template==='melt'?.76:.57,.92);
+    if(template==='leak') amount=p<.12?0:p<.35?ease((p-.12)/.23):p<.44?1:p<.55?1-1.85*ease((p-.44)/.11):p<.72?-.85:p<.92?-.85*(1-ease((p-.72)/.2)):0;
+    return {amount:amount*intensity,pressure:Math.max(0,amount)*intensity,contact};
+  }
   const contact=p<.18 ? ease(p/.18) : p<.84 ? 1 : 1-ease((p-.84)/.16);
   const pressure=p<.18 ? 0 : p<.43 ? ease((p-.18)/.25) : p<.62 ? 1 : 1-ease((p-.62)/.22);
   const amount=template==='twist' ? Math.sin(p*Math.PI*2)*intensity : template==='knead' ? pressure*Math.sin(p*Math.PI*6)*intensity : pressure*intensity;

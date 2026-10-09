@@ -1,4 +1,5 @@
 import './style.css';
+import '../ui/mode-nav.css';
 import {mount} from './view';
 import {render,dimensions,type VideoStyle} from './render';
 import {timeline} from './timeline.mjs';

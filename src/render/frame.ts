@@ -1,5 +1,6 @@
 import type {Settings,RenderAssets} from './types';
 import {drawLiquify} from './liquify';
+import {drawProps} from './props';
 import {getAction} from './action.mjs';
 type Context=CanvasRenderingContext2D|OffscreenCanvasRenderingContext2D;
 export function drawFrame(ctx:Context,image:CanvasImageSource,s:Settings,phase:number,assets:RenderAssets={}) {
@@ -24,6 +25,7 @@ export function drawFrame(ctx:Context,image:CanvasImageSource,s:Settings,phase:n
       ctx.restore();
     }
   }
+  drawProps(ctx,s,phase);
   const text=s.caption.trim();
   if(text) {
     ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineJoin='round';

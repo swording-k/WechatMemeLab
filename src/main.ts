@@ -1,4 +1,5 @@
 import './style.css';
+import './ui/mode-nav.css';
 import {mountView} from './ui/view';
 import {defaults,templates,DURATION,type Settings,type RenderAssets} from './render/types';
 import {drawFrame} from './render/frame';

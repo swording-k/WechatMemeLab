@@ -6,14 +6,7 @@ export function drawProps(ctx:Context,s:Settings,phase:number){
  const {amount,contact}=getAction(s.template,phase,s.intensity);
  const x=s.focusX*320,y=s.focusY*320,r=s.radius*320;
  ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
- if(s.template==='glass'&&contact>0){
-  ctx.globalAlpha=contact;
-  const glow=ctx.createRadialGradient(x,y,2,x,y,r);glow.addColorStop(0,'rgba(255,255,255,0)');glow.addColorStop(.6,'rgba(226,242,249,.05)');glow.addColorStop(1,'rgba(226,242,249,.08)');
-  ctx.fillStyle=glow;ctx.fillRect(0,0,320,320);
-  ctx.strokeStyle='rgba(255,255,255,.7)';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x-r*.95,y-r*.3);ctx.lineTo(x-r*.8,y-r*.65);ctx.moveTo(x+r*.8,y+r*.15);ctx.lineTo(x+r*.95,y-r*.2);ctx.stroke();
-  // Breath fog sits below the nose while pressure rises, not over the eyes.
-  ctx.globalAlpha=Math.abs(amount)*.65;const fog=ctx.createRadialGradient(x,y+r*.5,1,x,y+r*.5,r*.42);fog.addColorStop(0,'rgba(242,249,251,.8)');fog.addColorStop(1,'rgba(242,249,251,0)');ctx.fillStyle=fog;ctx.fillRect(x-r*.45,y+r*.05,r*.9,r*.9);
- }else if(s.template==='suction'){
+ if(s.template==='suction'){
   const tipX=x+r*.35+(1-contact)*110,tipY=y-r*.34-(1-contact)*80;
   ctx.globalAlpha=contact;ctx.strokeStyle='#273126';ctx.lineWidth=17;ctx.beginPath();ctx.moveTo(tipX,tipY);ctx.lineTo(tipX+28,tipY-38);ctx.lineTo(tipX+95,tipY-38);ctx.stroke();
   ctx.strokeStyle='#bddd67';ctx.lineWidth=11;ctx.stroke();ctx.strokeStyle='#f0f8be';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(tipX+1,tipY-2);ctx.lineTo(tipX+29,tipY-40);ctx.lineTo(tipX+92,tipY-40);ctx.stroke();

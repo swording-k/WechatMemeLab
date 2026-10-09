@@ -4,7 +4,7 @@ const b=await chromium.launch({headless:true,channel:'chrome'});
 try{
  const p=await b.newPage({acceptDownloads:true}),errors=[];p.on('pageerror',e=>errors.push(e.message));await p.goto(url);await p.waitForFunction(()=>document.querySelector('#face-status')?.textContent.includes('已定位'),null,{timeout:60000});
  assert.equal(await p.locator('[data-template]').count(),15);assert.equal(await p.locator('[data-template]').first().getAttribute('data-template'),'custom');
- for(const id of ['notify','crack','screen','soul']){
+ for(const id of ['notify','crack','screen','dog']){
  await p.locator(`[data-template=${id}]`).click();await p.locator('#caption').fill('');const d=p.waitForEvent('download');await p.locator('#export').click();await(await d).saveAs(`${dir}/${id}.gif`);await p.waitForFunction(()=>!document.querySelector('#export').disabled);
  assert.ok((await p.locator('#status').innerText()).includes('已生成 240 × 240'));
  }

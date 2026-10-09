@@ -2,6 +2,7 @@ import {drawCaption} from './caption';
 import type {Settings,RenderAssets} from './types';
 import {drawLiquify} from './liquify';
 import {drawChatProps} from './chat-props';
+import {drawPetProps} from './pet-props';
 import {drawProps} from './props';
 import {getAction} from './action.mjs';
 type Context=CanvasRenderingContext2D|OffscreenCanvasRenderingContext2D;
@@ -29,6 +30,7 @@ export function drawFrame(ctx:Context,image:CanvasImageSource,s:Settings,phase:n
   }
   drawChatProps(ctx,s,phase);
   drawProps(ctx,s,phase);
+  drawPetProps(ctx,s,phase,assets);
   drawCaption(ctx,s,phase);
   ctx.restore();
 }

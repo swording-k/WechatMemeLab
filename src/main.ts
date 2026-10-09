@@ -60,7 +60,7 @@ for(const key of ['intensity','speed','zoom','x','y','size','radius'] as const)$
   if(key==='zoom'||key==='speed')$(`#${key}-value`).textContent=`${settings[key].toFixed(2)}×`;
   if(key==='intensity')$('#intensity-value').textContent=settings.intensity<.5?'轻一点':settings.intensity>.8?'使劲整':'刚刚好';
 };
-function resetPosition(){Object.assign(settings,{zoom:1,x:0,y:0,focusX:.5,focusY:.5,radius:.35});revision++;sync();}
+function resetPosition(){delete settings.petFace;Object.assign(settings,{zoom:1,x:0,y:0,focusX:.5,focusY:.5,radius:.35});revision++;sync();}
 $('#reset').onclick=resetPosition;
 function background(color:string){settings.background=color;$<HTMLInputElement>('#background').value=color;for(const b of document.querySelectorAll<HTMLButtonElement>('[data-color]')){const active=b.dataset.color===color;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active));}}
 for(const b of document.querySelectorAll<HTMLButtonElement>('[data-color]'))b.onclick=()=>background(b.dataset.color!);

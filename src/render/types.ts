@@ -1,18 +1,19 @@
-export type Template = 'pinch' | 'pull' | 'knead' | 'bulge' | 'twist' | 'squish' | 'glass' | 'suction' | 'melt' | 'leak' | 'custom' | 'notify' | 'crack' | 'screen' | 'soul';
+export type Template = 'pinch' | 'pull' | 'knead' | 'bulge' | 'twist' | 'squish' | 'cat' | 'dog' | 'suction' | 'melt' | 'leak' | 'custom' | 'notify' | 'crack' | 'screen';
 export interface Warp {kind:'drag'|'expand'|'shrink';x:number;y:number;dx:number;dy:number;radius:number}
 export interface Settings {
   custom?:Warp[];
+  petFace?:{dx:number;dy:number;angle:number};
   captionX?:number;captionY?:number;captionSize?:number;captionColor?:string;captionStyle?:'meme'|'plain'|'band'|'shake';
   template:Template;caption:string;zoom:number;x:number;y:number;intensity:number;speed:number;background:string;size:number;focusX:number;focusY:number;radius:number;
 }
 export interface RenderAssets {hand?:CanvasImageSource}
 export const templates:{id:Template;title:string;subtitle:string;caption:string;tag:string;suggestions:string[]}[]=[
   {id:'custom',title:'自由捏图',subtitle:'自己拉拽、鼓起、缩小，捏出你的动作',caption:'',tag:'自己来',suggestions:['你看我像正常吗','我先疯为敬','已读乱捏']},
+  {id:'cat',title:'摸两下就上头',subtitle:'变成怪猫，挠下巴挠到脸扁耳朵折',caption:'再摸一下',tag:'人变猫',suggestions:['再摸一下','你的小猫突然发疯','现在知道哄我了？']},
+  {id:'dog',title:'见你就变狗',subtitle:'狗耳乱甩，伸舌头，兴奋到扑脸',caption:'你终于回我了',tag:'人变狗',suggestions:['你终于回我了','让我闻闻','我就蹭一下']},
   {id:'notify',title:'被消息震飞',subtitle:'催命消息连着来，脸都震歪了',caption:'来了来了',tag:'催回复',suggestions:['来了来了','别催了在回了','消息把我震醒了']},
   {id:'crack',title:'脸先破防',subtitle:'嘴还在硬撑，脸已经裂开',caption:'我没急',tag:'互损',suggestions:['我没急','兄弟我真没破防','说好的不许笑']},
   {id:'screen',title:'挤进你的屏幕',subtitle:'脸顶着屏幕挤过来，求你理一下',caption:'理我一下',tag:'贴贴',suggestions:['理我一下','让我挤进去','就要黏着你']},
-  {id:'soul',title:'灵魂出窍',subtitle:'脸垮下来，半透明的自己飘走',caption:'人还在魂没了',tag:'累瘫',suggestions:['人还在魂没了','你继续说','我先下线一会儿']},
-  {id:'glass',title:'贴到玻璃上',subtitle:'鼻尖压扁，脸颊贴开，再松开',caption:'让我贴贴',tag:'黏人',suggestions:['让我贴贴','想你想到变形','别隔着屏幕']},
   {id:'suction',title:'吸走理智',subtitle:'吸管一靠近，五官被吸过去',caption:'脑子被你吸走了',tag:'上头',suggestions:['脑子被你吸走了','理智已下线','你把我CPU吸走了']},
   {id:'melt',title:'被夸到融化',subtitle:'越夸越软，下巴都挂不住',caption:'你再夸一句',tag:'拿捏',suggestions:['你再夸一句','被你拿捏了','别夸了要化了']},
   {id:'leak',title:'嘴硬漏气',subtitle:'先憋鼓，突然漏气，再装没事',caption:'我真的没事',tag:'嘴硬',suggestions:['我真的没事','才没有想你','兄弟我没破防']},

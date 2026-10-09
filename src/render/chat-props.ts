@@ -2,19 +2,10 @@ import type {Settings} from './types';import {getAction} from './action.mjs';
 type Context=CanvasRenderingContext2D|OffscreenCanvasRenderingContext2D;
 // Original deterministic vector props, shared by preview and export.
 export function drawChatProps(ctx:Context,s:Settings,phase:number){
- if(!['notify','crack','screen','soul'].includes(s.template))return;
+ if(!['notify','crack','screen'].includes(s.template))return;
  const {contact,pressure}=getAction(s.template,phase,s.intensity);if(contact<=0)return;
  const x=s.focusX*320,y=s.focusY*320,r=s.radius*320;ctx.save();
- if(s.template==='soul'){
-  // Copy the already-cropped frame before adding the ghost: no recrop or separate photo upload.
-  const source=new OffscreenCanvas(ctx.canvas.width,ctx.canvas.height);source.getContext('2d')!.drawImage(ctx.canvas,0,0);
-  const rise=pressure*r*.9,drift=Math.sin(phase*Math.PI*2)*r*.12;
-  ctx.save();ctx.translate(drift,-rise);ctx.beginPath();
-  ctx.moveTo(x-r*.65,y+r*.52);ctx.bezierCurveTo(x-r*.9,y-r*.8,x+r*.9,y-r*.8,x+r*.65,y+r*.52);
-  for(let i=4;i>=0;i--)ctx.lineTo(x-r*.65+i*r*.325,y+r*(i%2?.35:.55));ctx.closePath();ctx.clip();
-  ctx.globalAlpha=contact*.46;ctx.filter='grayscale(1) brightness(1.5)';ctx.drawImage(source,0,0,source.width,source.height,0,0,320,320);ctx.filter='none';ctx.fillStyle='rgba(225,242,253,.15)';ctx.fillRect(x-r,y-r,2*r,2*r);ctx.restore();
-  ctx.globalAlpha=contact*.6;ctx.strokeStyle='#e9f7ff';ctx.lineWidth=2;for(const side of [-1,1]){ctx.beginPath();ctx.moveTo(x+side*r*.72,y+r*.1);ctx.lineTo(x+side*r*.72,y-rise-r*.1);ctx.stroke();}
- }else if(s.template==='notify'){
+ if(s.template==='notify'){
   const labels=['在吗','回我','人呢？'];ctx.globalAlpha=contact;ctx.font='800 15px system-ui,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
   for(let i=0;i<3;i++){
    const stagger=Math.max(0,Math.min(1,(phase-.12-i*.06)/.12));if(!stagger)continue;

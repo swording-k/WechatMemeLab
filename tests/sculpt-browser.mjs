@@ -10,7 +10,7 @@ try{
  await p.locator('[data-brush=expand]').click();await p.locator('#preview').click({position:{x:box.width*.4,y:box.height*.6}});assert.ok((await p.locator('#sculpt-count').innerText()).startsWith('2 /'));
  await p.locator('#sculpt-undo').click();assert.ok((await p.locator('#sculpt-count').innerText()).startsWith('1 /'));
  await p.locator('#sculpt-tools details').evaluate(e=>e.open=true);await p.locator('[data-nudge="0,0.12"]').focus();await p.keyboard.press('Enter');assert.ok((await p.locator('#sculpt-count').innerText()).startsWith('2 /'));
- await p.locator('[data-template=glass]').click();assert.ok(await p.locator('#sculpt-tools').isHidden());await p.locator('[data-template=custom]').click();assert.ok((await p.locator('#sculpt-count').innerText()).startsWith('2 /'));
+ await p.locator('[data-template=cat]').click();assert.ok(await p.locator('#sculpt-tools').isHidden());await p.locator('[data-template=custom]').click();assert.ok((await p.locator('#sculpt-count').innerText()).startsWith('2 /'));
  await p.locator('#caption').fill('已读乱捏');await p.locator('#sculpt-play').click();await p.waitForTimeout(250);const a=await p.locator('#preview').evaluate(c=>c.toDataURL());await p.waitForTimeout(350);assert.ok(await p.locator('#preview').evaluate(c=>c.toDataURL())!==a,'playback must animate');
  const download=p.waitForEvent('download');await p.locator('#export').click();await(await download).saveAs('work/sculpt/custom.gif');await p.waitForFunction(()=>!document.querySelector('#export').disabled);
  await p.locator('#sculpt-play').click();assert.equal(await p.locator('#sculpt-play').innerText(),'播放我的动作');await p.screenshot({path:'work/sculpt/desktop.png',fullPage:true});

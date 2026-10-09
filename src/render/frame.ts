@@ -1,3 +1,4 @@
+import {drawCaption} from './caption';
 import type {Settings,RenderAssets} from './types';
 import {drawLiquify} from './liquify';
 import {drawChatProps} from './chat-props';
@@ -28,12 +29,6 @@ export function drawFrame(ctx:Context,image:CanvasImageSource,s:Settings,phase:n
   }
   drawChatProps(ctx,s,phase);
   drawProps(ctx,s,phase);
-  const text=s.caption.trim();
-  if(text) {
-    ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineJoin='round';
-    let fontSize=35;ctx.font=`900 ${fontSize}px "Arial Black","PingFang SC",system-ui,sans-serif`;
-    while(ctx.measureText(text).width>288 && fontSize>16) {fontSize--;ctx.font=`900 ${fontSize}px "Arial Black","PingFang SC",system-ui,sans-serif`;}
-    ctx.strokeStyle='#151515';ctx.lineWidth=Math.max(4,fontSize*.17);ctx.strokeText(text,160,282,288);ctx.fillStyle='#fff';ctx.fillText(text,160,282,288);
-  }
+  drawCaption(ctx,s,phase);
   ctx.restore();
 }

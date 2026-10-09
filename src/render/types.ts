@@ -2,6 +2,7 @@ export type Template = 'pinch' | 'pull' | 'knead' | 'bulge' | 'twist' | 'squish'
 export interface Warp {kind:'drag'|'expand'|'shrink';x:number;y:number;dx:number;dy:number;radius:number}
 export interface Settings {
   custom?:Warp[];
+  captionX?:number;captionY?:number;captionSize?:number;captionColor?:string;captionStyle?:'meme'|'plain'|'band'|'shake';
   template:Template;caption:string;zoom:number;x:number;y:number;intensity:number;speed:number;background:string;size:number;focusX:number;focusY:number;radius:number;
 }
 export interface RenderAssets {hand?:CanvasImageSource}
@@ -22,5 +23,5 @@ export const templates:{id:Template;title:string;subtitle:string;caption:string;
   {id:'twist',title:'脸都气歪了',subtitle:'嘴硬一下，脸真的歪了',caption:'我没事啊',tag:'嘴硬',suggestions:['我没事啊','你再说一遍','嘴硬一下']},
   {id:'squish',title:'憋成一团',subtitle:'脸扁了，又悄悄弹回来',caption:'不许笑',tag:'绷不住',suggestions:['不许笑','我忍','已读乱回']},
 ];
-export const defaults:Settings={template:'pinch',caption:'就捏一下',zoom:1,x:0,y:0,intensity:.75,speed:1,background:'#fff8ed',size:240,focusX:.5,focusY:.5,radius:.35};
+export const defaults:Settings={template:'pinch',caption:'就捏一下',captionX:50,captionY:96,captionSize:35,captionColor:'#ffffff',captionStyle:'meme',zoom:1,x:0,y:0,intensity:.75,speed:1,background:'#fff8ed',size:240,focusX:.5,focusY:.5,radius:.35};
 export const DURATION=1600;

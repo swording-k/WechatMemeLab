@@ -1,5 +1,6 @@
 import './style.css';
 import './ui/mode-nav.css';
+import './ui/product-footer.css';
 import {installSculpt} from './ui/sculpt';
 import {mountView} from './ui/view';
 import {defaults,templates,DURATION,type Settings,type RenderAssets} from './render/types';
@@ -42,6 +43,16 @@ function selectTemplate(id:Settings['template']){
 }
 for(const b of document.querySelectorAll<HTMLButtonElement>('[data-template]'))b.onclick=()=>selectTemplate(b.dataset.template as Settings['template']);
 $('#caption').oninput=updateCaption;
+function syncCaptionStyle(){
+ for(const key of ['captionX','captionY','captionSize','captionColor','captionStyle'] as const)$<HTMLInputElement>(`#${key}`).value=String(settings[key]??defaults[key]);
+ $('#captionSize-value').textContent=String(settings.captionSize??35);
+}
+for(const key of ['captionX','captionY','captionSize'] as const)$(`#${key}`).oninput=()=>{settings[key]=Number($<HTMLInputElement>(`#${key}`).value);syncCaptionStyle();};
+$('#captionColor').oninput=()=>{settings.captionColor=$<HTMLInputElement>('#captionColor').value;};
+$('#captionStyle').onchange=()=>{settings.captionStyle=$<HTMLSelectElement>('#captionStyle').value as Settings['captionStyle'];};
+for(const b of document.querySelectorAll<HTMLButtonElement>('[data-caption-pos]'))b.onclick=()=>{settings.captionX=50;settings.captionY=Number(b.dataset.captionPos);syncCaptionStyle();};
+$('#caption-reset').onclick=()=>{Object.assign(settings,{captionX:50,captionY:96,captionSize:35,captionColor:'#ffffff',captionStyle:'meme'});syncCaptionStyle();};
+
 for(const key of ['focusX','focusY'] as const)$(`#${key}`).oninput=()=>{revision++;settings[key]=Number($<HTMLInputElement>(`#${key}`).value)/100;};
 for(const key of ['intensity','speed','zoom','x','y','size','radius'] as const)$(`#${key}`).oninput=()=>{
   settings[key]=Number($<HTMLInputElement>(`#${key}`).value);
@@ -139,4 +150,4 @@ function animate(time:number){
 }
 window.addEventListener('pagehide',()=>{bitmap?.close();if(resultUrl)URL.revokeObjectURL(resultUrl);});
 const recipe=decodeRecipe(location.hash);if(recipe){Object.assign(settings,recipe);selectTemplate(settings.template);settings.caption=recipe.caption;$<HTMLInputElement>('#caption').value=recipe.caption;for(const key of ['speed','intensity'])$<HTMLInputElement>(`#${key}`).value=String(settings[key as 'speed'|'intensity']);}
-updateCaption();suggestions();sync();background(settings.background);void sample();requestAnimationFrame(animate);
+syncCaptionStyle();updateCaption();suggestions();sync();background(settings.background);void sample();requestAnimationFrame(animate);

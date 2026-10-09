@@ -14,7 +14,7 @@
 
 1. 上传 PNG/JPG/WebP（≤10 MB），或选择两个虚构人物示例。
 2. 本地自动定位人脸并调整取景；合照可以选择目标。识别失败仍可点照片或用滑条手动修正。
-3. 选玩法，按需调整短句、力度、速度和取景；短句可留空。
+3. 选玩法，按需调整短句、文字位置／字号／颜色／样式、力度、速度和取景；短句可留空。
 4. 下载 240/320/480px GIF。支持文件分享的设备会额外显示分享按钮。
 5. 预设可复制玩法链接让朋友用自己的照片做同样动作。链接只带玩法、文字、力度和速度，不含照片或人脸坐标。自由捏图不复制草稿链接，可直接分享导出的 GIF。
 
@@ -39,6 +39,7 @@ npm run test:effects
 npm run test:chat-effects
 npm run test:sculpt
 npm run test:video
+npm run test:caption
 ```
 
 `npm run preview` 检查生产构建，`TEST_URL=http://127.0.0.1:4173/ npm run test:browser` 可在生产预览上运行相同流程。浏览器测试涵盖六种下载、竖图/横图/合照定位、第二脸型无字版本、错误恢复、手动定位降级、键盘、减少动态偏好、参数链接和手机布局。临时文件位于忽略的 `work/qa/`。
@@ -70,3 +71,12 @@ python3 scripts/verify-gifs.py work/qa/*-release.gif work/qa/portrait-*.gif
 ## GitHub Pages 发布
 
 `.github/workflows/pages.yml` 在 main 代码推送后自动测试、构建并部署 dist。静态资源及本地识别人脸的 Worker 支持项目子路径；无需运行开发者电脑。2026-10-09 首次构建与部署成功，发布代码提交 `2ef787d`。
+
+
+## 源码、作者和反馈
+
+两个工作台的页脚提供 GitHub 源码、问题与建议、作者主页入口；页头也可直接进入反馈渠道。
+
+- 源码：https://github.com/swording-k/WechatMemeLab
+- 反馈：https://github.com/swording-k/WechatMemeLab/issues
+- 作者：https://github.com/swording-k

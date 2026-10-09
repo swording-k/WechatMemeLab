@@ -1,6 +1,7 @@
+import {productFooter,projectLinks} from '../ui/product-footer';
 import {modeNav} from '../ui/mode-nav';
 export function mount(){document.querySelector('#app')!.innerHTML=`
-<header><a href="${import.meta.env.BASE_URL}">← 照片整活</a><strong>怪相馆 <small>视频实验室</small></strong></header>
+<header><a href="${import.meta.env.BASE_URL}">← 照片整活</a><strong>怪相馆 <small>视频实验室</small></strong><a class="header-feedback" href="${projectLinks.feedback}" target="_blank" rel="noopener noreferrer">反馈 ↗</a></header>
 <main>${modeNav('video')}<h1>把这一秒，变成你的表情。</h1><p class="intro">视频在你的设备上处理。截一小段，加一句只有你们懂的话。</p>
 <div class="studio"><section class="controls"><label class="upload">① 选一段视频<input id="file" type="file" accept="video/*"><small>最大 100 MB · 优先 MP4 · GIF 没有声音</small></label><p id="name">还没选视频</p>
 <h2>② 选个起点</h2><div class="presets"><button data-mode="forward" aria-pressed="true">原片加字</button><button data-mode="bounce" aria-pressed="false">反复横跳</button><button data-mode="reverse" aria-pressed="false">倒带一下</button></div><p id="preset-note">保留原动作，配一句自己的话。</p>
@@ -12,4 +13,4 @@ export function mount(){document.querySelector('#app')!.innerHTML=`
 <section class="result"><div class="stage"><canvas id="preview" width="320" height="320" aria-label="视频表情预览，可拖动文字"></canvas><div id="empty">先选视频，看看哪一秒最有戏。</div></div><div class="pair"><button id="play" disabled>播放预览</button><span id="time">—</span></div>
 <div class="pair"><label>画面比例<select id="ratio"><option value="original">保持原比例</option><option value="square">方形取景</option></select></label><label>导出长边<select id="size"><option value="240">240 px · 聊天推荐</option><option value="320">320 px · 更清晰</option></select></label></div>
 <button id="export" class="primary" disabled>生成并下载 GIF →</button><button id="cancel" hidden>取消生成</button><progress id="progress" max="1" value="0" hidden></progress><p id="status" role="status" aria-live="polite">10 帧/秒 · 本地处理 · 无水印</p><img id="result" hidden alt="刚生成的 GIF，可长按查看保存选项"><a id="download" hidden download>再次下载 GIF</a><button id="share" hidden>打开分享菜单</button>
-<p class="tip">手机：打开下载的 GIF → 分享 → 保存图像到相册 → 从社交平台的相册入口发送。动图播放以客户端实际支持为准。<a href="${import.meta.env.BASE_URL}#usage">查看截图教程</a></p></section></div></main>`;}
+<p class="tip">手机：打开下载的 GIF → 分享 → 保存图像到相册 → 从社交平台的相册入口发送。动图播放以客户端实际支持为准。<a href="${import.meta.env.BASE_URL}#usage">查看截图教程</a></p></section></div></main>${productFooter()}`;}

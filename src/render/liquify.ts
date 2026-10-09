@@ -1,4 +1,5 @@
 import type {Settings} from './types';
+import {photoPlacement} from '../photo/geometry.mjs';
 import {getAction} from './action.mjs';
 import {mapSculpt} from './sculpt-map.mjs';
 import {mapPixel} from './liquify-map.mjs';
@@ -13,11 +14,9 @@ export function drawLiquify(ctx:Context,image:CanvasImageSource,s:Settings,phase
     const canvas=new OffscreenCanvas(size,size);const c=canvas.getContext('2d',{willReadFrequently:true})!;
     const source=image as {width?:number;height?:number;naturalWidth?:number;naturalHeight?:number};
     const iw=source.naturalWidth||source.width||400,ih=source.naturalHeight||source.height||400;
-    const fit=Math.max(size/iw,size/ih)*s.zoom;
-    const w=iw*fit,h=ih*fit;
-    // Fill the frame. Long photos are cropped around the user's chosen position.
+    const p=photoPlacement(iw,ih,s);
     c.fillStyle=s.background;c.fillRect(0,0,size,size);
-    c.drawImage(image,(size-w)/2+s.x/100*(w-size)/2,(size-h)/2+s.y/100*(h-size)/2,w,h);
+    c.drawImage(image,p.left*size,p.top*size,p.width*size,p.height*size);
     entry={key,image,source:c.getImageData(0,0,size,size),output:c.createImageData(size,size)};
     cache.set(ctx.canvas,entry);
   }

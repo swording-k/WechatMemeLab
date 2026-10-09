@@ -13,7 +13,7 @@
 ## 使用
 
 1. 上传 PNG/JPG/WebP（≤10 MB），或选择两个虚构人物示例。
-2. 本地自动定位人脸并调整取景；合照可以选择目标。识别失败仍可点照片或用滑条手动修正。
+2. 上传后先保留完整照片。可在原图上框选区域，或缩放、拖动取景；人脸检测只定位效果，勾选“自动对准人脸取景”才自动调整照片。合照可以选择目标。
 3. 选玩法，按需调整短句、文字位置／字号／颜色／样式、力度、速度和取景；短句可留空。
 4. 下载 240/320/480px GIF。支持文件分享的设备会额外显示分享按钮。
 5. 预设可复制玩法链接让朋友用自己的照片做同样动作。链接只带玩法、文字、力度和速度，不含照片或人脸坐标。自由捏图不复制草稿链接，可直接分享导出的 GIF。
@@ -35,6 +35,8 @@ npm run dev
 npm test
 npm run build
 npm run test:browser
+npm run test:editor
+npm run test:caption
 npm run test:effects
 npm run test:chat-effects
 npm run test:sculpt

@@ -1,6 +1,7 @@
 import './style.css';
 import './ui/mode-nav.css';
 import './ui/product-footer.css';
+import {installFraming} from './ui/framing';
 import {installSculpt} from './ui/sculpt';
 import {mountView} from './ui/view';
 import {defaults,templates,DURATION,type Settings,type RenderAssets} from './render/types';
@@ -9,7 +10,7 @@ import {loadAssets} from './render/assets';
 import {exportGif} from './export/client';
 import {detectFaces,type Face} from './photo/detect';
 import {encodeRecipe,decodeRecipe} from './share/recipe.mjs';
-import {faceToSettings} from './photo/geometry.mjs';
+import {faceToSettings,fitPhoto} from './photo/geometry.mjs';
 
 mountView();
 for(const link of document.querySelectorAll<HTMLAnchorElement>('a[href="#phone-tutorial"]'))link.onclick=()=>{document.querySelector<HTMLDetailsElement>('#phone-tutorial')!.open=true;};
@@ -23,7 +24,8 @@ const preview=$<HTMLCanvasElement>('#preview');
 const ctx=preview.getContext('2d')!;
 const exportButton=$<HTMLButtonElement>('#export');
 exportButton.disabled=true;
-const sculpt=installSculpt(preview,settings,()=>{revision++;},()=>ready&&!busy);
+const framing=installFraming(preview,settings,()=>({image,...dimensions()}),()=>{revision++;sync();},()=>ready&&!busy);
+const sculpt=installSculpt(preview,settings,()=>{revision++;},()=>ready&&!busy&&framing.mode()==='effect');
 function status(text:string,error=false){$('#status').textContent=text;$('#status').classList.toggle('error',error);}
 function updateCaption(){settings.caption=$<HTMLInputElement>('#caption').value;$('#char-count').textContent=`${settings.caption.length} / 20`;}
 function suggestions(){
@@ -32,12 +34,13 @@ function suggestions(){
   }));
 }
 function sync(){
+  const radius=$<HTMLInputElement>('#radius');radius.min=String(Math.min(.03,settings.radius));radius.max=String(Math.max(.48,settings.radius));
   for(const key of ['zoom','x','y','radius'] as const)$<HTMLInputElement>(`#${key}`).value=String(settings[key]);
   for(const key of ['focusX','focusY'] as const)$<HTMLInputElement>(`#${key}`).value=String(settings[key]*100);
-  $('#zoom-value').textContent=`${settings.zoom.toFixed(2)}×`;
+  $('#zoom-value').textContent=`${settings.zoom.toFixed(2)}×`;framing.sync();
 }
 function selectTemplate(id:Settings['template']){
-  settings.template=id;sculpt.active();const t=templates.find(t=>t.id===id)!;
+  settings.template=id;sculpt.active();framing.sync();const t=templates.find(t=>t.id===id)!;
   document.querySelectorAll<HTMLButtonElement>('[data-template]').forEach(b=>{const active=b.dataset.template===id;b.classList.toggle('selected',active);b.setAttribute('aria-pressed',String(active));});
   $('#active-name').textContent=`${t.title} · 循环播放`;$<HTMLInputElement>('#caption').value=t.caption;updateCaption();suggestions();phase=0;
 }
@@ -54,13 +57,12 @@ for(const b of document.querySelectorAll<HTMLButtonElement>('[data-caption-pos]'
 $('#caption-reset').onclick=()=>{Object.assign(settings,{captionX:50,captionY:96,captionSize:35,captionColor:'#ffffff',captionStyle:'meme'});syncCaptionStyle();};
 
 for(const key of ['focusX','focusY'] as const)$(`#${key}`).oninput=()=>{revision++;settings[key]=Number($<HTMLInputElement>(`#${key}`).value)/100;};
-for(const key of ['intensity','speed','zoom','x','y','size','radius'] as const)$(`#${key}`).oninput=()=>{
-  settings[key]=Number($<HTMLInputElement>(`#${key}`).value);
-  if(['zoom','x','y'].includes(key))revision++;
-  if(key==='zoom'||key==='speed')$(`#${key}-value`).textContent=`${settings[key].toFixed(2)}×`;
+for(const key of ['intensity','speed','size','radius'] as const)$(`#${key}`).oninput=()=>{
+  settings[key]=Number($<HTMLInputElement>(`#${key}`).value);if(key==='radius')revision++;
+  if(key==='speed')$(`#${key}-value`).textContent=`${settings[key].toFixed(2)}×`;
   if(key==='intensity')$('#intensity-value').textContent=settings.intensity<.5?'轻一点':settings.intensity>.8?'使劲整':'刚刚好';
 };
-function resetPosition(){delete settings.petFace;Object.assign(settings,{zoom:1,x:0,y:0,focusX:.5,focusY:.5,radius:.35});revision++;sync();}
+function resetPosition(){delete settings.petFace;delete settings.petRotation;const view=image?fitPhoto(dimensions().w,dimensions().h):{zoom:1,x:0,y:0};Object.assign(settings,{...view,focusX:.5,focusY:.5,radius:.35,petX:0,petY:0,petScale:1});framing.reset();revision++;sync();}
 $('#reset').onclick=resetPosition;
 function background(color:string){settings.background=color;$<HTMLInputElement>('#background').value=color;for(const b of document.querySelectorAll<HTMLButtonElement>('[data-color]')){const active=b.dataset.color===color;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active));}}
 for(const b of document.querySelectorAll<HTMLButtonElement>('[data-color]'))b.onclick=()=>background(b.dataset.color!);
@@ -68,13 +70,13 @@ $('#background').oninput=()=>background($<HTMLInputElement>('#background').value
 function playButton(){const b=$('#pause');b.textContent=paused?'▶':'Ⅱ';b.setAttribute('aria-label',paused?'播放预览':'暂停预览');}
 $('#pause').onclick=()=>{paused=!paused;playButton();};playButton();
 preview.onpointerdown=e=>{
-  if(!ready||settings.template==='custom')return;
+  if(!ready||busy||settings.template==='custom'||framing.mode()!=='effect')return;
   revision++;const r=preview.getBoundingClientRect();
   settings.focusX=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width));settings.focusY=Math.max(0,Math.min(1,(e.clientY-r.top)/r.height));sync();
   if(paused)phase=settings.template==='twist'?.25:.5;
 };
 function dimensions(){const src=image as {width?:number;height?:number;naturalWidth?:number;naturalHeight?:number};return {w:src.naturalWidth||src.width||1,h:src.naturalHeight||src.height||1};}
-function chooseFace(index:number){const face=faces[index];if(!face)return;const {w,h}=dimensions();Object.assign(settings,faceToSettings(w,h,face));revision++;sync();$('#face-status').textContent=`已定位第 ${index+1} 张脸 · 点击照片仍可修正`;for(const b of document.querySelectorAll<HTMLButtonElement>('[data-face]'))b.setAttribute('aria-pressed',String(Number(b.dataset.face)===index));}
+function chooseFace(index:number,reframe=$<HTMLInputElement>('#auto-frame').checked){const face=faces[index];if(!face)return;const {w,h}=dimensions();Object.assign(settings,faceToSettings(w,h,face,reframe?undefined:settings));revision++;sync();$('#face-status').textContent=`已定位第 ${index+1} 张脸 · 取景可手动调整`;for(const b of document.querySelectorAll<HTMLButtonElement>('[data-face]'))b.setAttribute('aria-pressed',String(Number(b.dataset.face)===index));}
 async function locate(seq:number){
   const currentRevision=revision;$<HTMLButtonElement>('#auto-face').disabled=true;$('#face-status').textContent='正在本地定位人脸…';
   try{
@@ -88,7 +90,8 @@ async function locate(seq:number){
   }catch{if(seq===loadId)$('#face-status').textContent='自动定位暂不可用 · 点照片手动选位置';}
   finally{if(seq===loadId)$<HTMLButtonElement>('#auto-face').disabled=false;}
 }
-$('#auto-face').onclick=()=>{if(ready)void locate(loadId);};
+$('#auto-face').onclick=()=>{if(ready&&!busy)void locate(loadId);};
+$('#auto-frame').onchange=()=>{revision++;if($<HTMLInputElement>('#auto-frame').checked)chooseFace(0,true);};
 async function commitPhoto(next:CanvasImageSource,label:string,seq:number,nextBitmap?:ImageBitmap){
   const nextAssets=await loadAssets();
   if(seq!==loadId){nextBitmap?.close();return;}
@@ -143,8 +146,8 @@ const thumbnails=[...document.querySelectorAll<HTMLCanvasElement>('.template can
 let thumbKey='';
 function animate(time:number){
   const elapsed=lastTime?Math.min(time-lastTime,100):0;lastTime=time;if((!paused||sculpt.playing())&&!document.hidden)phase=(phase+elapsed*settings.speed/DURATION)%1;
-  if(ready&&!document.hidden&&time-lastPaint>50){lastPaint=time;drawFrame(ctx,image,settings,sculpt.phase(phase),assets);sculpt.guides(ctx);}
-  const nextKey=[photoVersion,settings.zoom,settings.x,settings.y,settings.radius,settings.focusX,settings.focusY,settings.intensity,settings.background,JSON.stringify(settings.custom)].join(':');
+  if(ready&&!document.hidden&&time-lastPaint>50){lastPaint=time;drawFrame(ctx,image,settings,framing.editing()?0:sculpt.phase(phase),assets);if(!framing.editing())sculpt.guides(ctx);}
+  const nextKey=[photoVersion,settings.zoom,settings.x,settings.y,settings.radius,settings.focusX,settings.focusY,settings.intensity,settings.background,settings.petX,settings.petY,settings.petScale,settings.petRotation,JSON.stringify(settings.petFace),JSON.stringify(settings.custom)].join(':');
   if(ready&&!document.hidden&&thumbKey!==nextKey){thumbKey=nextKey;thumbnails.forEach((c,i)=>{drawFrame(c.getContext('2d')!,image,{...settings,template:templates[i].id,caption:''},templates[i].id==='notify'?.47:templates[i].id==='twist'?.25:templates[i].id==='knead'?.42:.5,assets);});}
   requestAnimationFrame(animate);
 }

@@ -2,6 +2,7 @@ export type Template = 'pinch' | 'pull' | 'knead' | 'bulge' | 'twist' | 'squish'
 export interface Warp {kind:'drag'|'expand'|'shrink';x:number;y:number;dx:number;dy:number;radius:number}
 export interface Settings {
   custom?:Warp[];
+  petX?:number;petY?:number;petScale?:number;petRotation?:number;
   petFace?:{dx:number;dy:number;angle:number};
   captionX?:number;captionY?:number;captionSize?:number;captionColor?:string;captionStyle?:'meme'|'plain'|'band'|'shake';
   template:Template;caption:string;zoom:number;x:number;y:number;intensity:number;speed:number;background:string;size:number;focusX:number;focusY:number;radius:number;

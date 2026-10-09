@@ -1,14 +1,15 @@
 import type {Settings,RenderAssets} from './types';
+import {petPlacement} from './pet-placement.mjs';
 import {getAction} from './action.mjs';
 type Context=CanvasRenderingContext2D|OffscreenCanvasRenderingContext2D;
 // Original hand-drawn animal props. All motion is driven by the same pressure as the pixels.
 export function drawPetProps(ctx:Context,s:Settings,phase:number,assets:RenderAssets){
  if(s.template!=='cat'&&s.template!=='dog')return;
  const {amount:a,contact}=getAction(s.template,phase,s.intensity);
- const x=s.focusX*320,y=s.focusY*320,r=s.radius*320;
+ const {x,y,radius:r,angle}=petPlacement(s);
  ctx.save();ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#242321';ctx.lineWidth=Math.max(2,r*.025);
  const noseDX=(s.petFace?.dx??0)*r,noseDY=(s.petFace?.dy??.12)*r;
- ctx.translate(x,y);ctx.rotate(s.petFace?.angle??0);ctx.translate(-x,-y);
+ ctx.translate(x,y);ctx.rotate(angle);ctx.translate(-x,-y);
  if(s.template==='cat'){
   const headY=y-a*r*.05;
   for(const side of [-1,1]){

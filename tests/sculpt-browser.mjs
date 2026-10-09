@@ -2,7 +2,7 @@ import {chromium} from '@playwright/test';import {mkdir} from 'node:fs/promises'
 const browser=await chromium.launch({headless:true,channel:'chrome'});
 try{
  const p=await browser.newPage({acceptDownloads:true,hasTouch:true,viewport:{width:1365,height:1100}}),errors=[];p.on('pageerror',e=>errors.push(e.message));await mkdir('work/sculpt',{recursive:true});
- await p.goto('http://127.0.0.1:5173/');await p.waitForFunction(()=>document.querySelector('#face-status').textContent.includes('已定位'));
+ await p.goto(process.env.TEST_URL||'http://127.0.0.1:5173/');await p.waitForFunction(()=>document.querySelector('#face-status').textContent.includes('已定位'));
  assert.equal(await p.locator('[data-template]').first().getAttribute('data-template'),'custom');await p.locator('[data-template=custom]').click();await p.locator('#export').click();assert.ok((await p.locator('#status').innerText()).includes('先在照片'));
  await p.locator('#preview').scrollIntoViewIfNeeded();let box=await p.locator('#preview').boundingBox();
  await p.mouse.move(box.x+box.width*.55,box.y+box.height*.55);await p.mouse.down();await p.mouse.move(box.x+box.width*.7,box.y+box.height*.45,{steps:8});await p.mouse.up();

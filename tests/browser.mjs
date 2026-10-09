@@ -24,7 +24,7 @@ for(const [name,width,height,positions] of [['portrait',900,1600,[[100,40,700,70
  await page.waitForFunction(name=>document.querySelector('#file-name').textContent===name+'.png',name);
  await page.waitForFunction(()=>document.querySelector('#face-status').textContent.includes('已定位'));
  assert.equal(await page.locator('[data-face]').count(),positions.length);
- if(name==='group'){const old=await page.locator('#x').inputValue();await page.locator('[data-face="1"]').click();assert.notEqual(await page.locator('#x').inputValue(),old);}
+ if(name==='group'){const old=await page.locator('#focusX').inputValue(),crop=await page.locator('#x').inputValue();await page.locator('[data-face="1"]').click();assert.notEqual(await page.locator('#focusX').inputValue(),old);assert.equal(await page.locator('#x').inputValue(),crop);}
 }
 await page.locator('#file').setInputFiles({name:'invalid.png',mimeType:'image/png',buffer:Buffer.from('not an image')});
 await page.waitForFunction(()=>document.querySelector('#status').textContent.includes('无法读取'));
@@ -33,9 +33,8 @@ assert.equal(await page.locator('#file-name').textContent(),'group.png');
 await page.locator('#file').setInputFiles({name:'huge.jpg',mimeType:'image/jpeg',buffer:Buffer.alloc(10*1024*1024+1)});
 await page.waitForFunction(()=>document.querySelector('#status').textContent.includes('超过'));
 await page.locator('#advanced').evaluate(el=>el.open=true);
-await page.locator('.crop-details').evaluate(el=>el.open=true);
 await page.locator('#zoom').fill('1.5');await page.locator('#x').fill('45');await page.locator('#reset').click();
-assert.equal(await page.locator('#zoom').inputValue(),'1');
+assert.equal(await page.locator('#zoom').inputValue(),'0.5');
 await page.locator('#sample').click();await page.waitForFunction(()=>document.querySelector('#file-name').textContent==='虚构人物示例');
 await page.waitForFunction(()=>document.querySelector('#face-status').textContent.includes('已定位'));
 await page.locator('#pause').click();assert.equal(await page.locator('#pause').getAttribute('aria-label'),'播放预览');await page.locator('#pause').click();

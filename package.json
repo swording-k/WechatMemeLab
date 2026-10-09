@@ -13,6 +13,7 @@
     "test:effects": "node tests/new-effects-browser.mjs",
     "test:sculpt": "node tests/sculpt-browser.mjs",
     "test:chat-effects": "node tests/chat-effects-browser.mjs",
+    "test:editor": "node tests/editor-browser.mjs",
     "test:caption": "node tests/caption-browser.mjs"
   },
   "dependencies": {

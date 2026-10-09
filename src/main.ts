@@ -9,6 +9,7 @@ import {encodeRecipe,decodeRecipe} from './share/recipe.mjs';
 import {faceToSettings} from './photo/geometry.mjs';
 
 mountView();
+for(const link of document.querySelectorAll<HTMLAnchorElement>('a[href="#phone-tutorial"]'))link.onclick=()=>{document.querySelector<HTMLDetailsElement>('#phone-tutorial')!.open=true;};
 const $=<T extends HTMLElement=HTMLElement>(selector:string):T=>document.querySelector(selector)!;
 let settings:Settings={...defaults};
 let image:CanvasImageSource,bitmap:ImageBitmap|undefined,samplePromises=new Map<string,Promise<HTMLImageElement>>();

@@ -1,6 +1,8 @@
 # 怪相馆 · WechatMemeLab
 
-公开试玩：[怪相馆](https://wechat-meme-lab.bonny-snow-4026.chatgpt.site)。
+公开试玩：[怪相馆 · GitHub Pages](https://swording-k.github.io/WechatMemeLab/)。
+
+源代码：[swording-k/WechatMemeLab](https://github.com/swording-k/WechatMemeLab)。原 ChatGPT Sites 入口保留为备用；网络可达性需在用户实际网络上确认。
 
 上传自己或朋友的照片，捏、拉、揉出聊天里的怪相，下载循环 GIF。人物照片铺满画面，动作改变局部像素，背景外缘保持固定。
 
@@ -57,3 +59,7 @@ python3 scripts/verify-gifs.py work/qa/*-release.gif work/qa/portrait-*.gif
 微信/抖音的发送和收藏需要在真实客户端确认；不宣称直接拖拽、自动加入收藏或收藏同步。浏览器视口检查不等于真实手机兼容性验收。技术验证和发布不证明用户喜欢或会广泛传播。
 
 详情：[开发计划](docs/开发计划.md)、[效果标准](docs/效果设计标准.md)、[验证记录](docs/验证记录.md)、[项目约定](AGENTS.md)。
+
+## GitHub Pages 发布
+
+`.github/workflows/pages.yml` 在 main 代码推送后自动测试、构建并部署 dist。静态资源及本地识别人脸的 Worker 支持项目子路径；无需运行开发者电脑。2026-10-09 首次构建与部署成功，发布代码提交 `2ef787d`。

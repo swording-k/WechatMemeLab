@@ -10,6 +10,7 @@ function go(channel:'issue'|'email'){
  if(!form.reportValidity())return;
  try{const url=links()[channel];if(channel==='issue'&&url.length>7500)throw new Error('反馈较长，请缩短描述，或选择邮件发送。');try{sessionStorage.setItem('meme-feedback-draft',JSON.stringify(Object.fromEntries(new FormData(form))));}catch{}location.assign(url);}catch(error){document.querySelector('#status')!.textContent=error instanceof Error?error.message:'请检查反馈内容';}
 }
+form.oninput=()=>{document.querySelector('#status')!.textContent='';};
 form.onsubmit=e=>{e.preventDefault();go('issue');};
 document.querySelector<HTMLButtonElement>('#email')!.onclick=()=>go('email');
 try{const draft=JSON.parse(sessionStorage.getItem('meme-feedback-draft')||'null');if(draft)for(const key of ['type','title','detail','device']){const field=form.elements.namedItem(key) as HTMLInputElement;if(typeof draft[key]==='string')field.value=draft[key];}}catch{}

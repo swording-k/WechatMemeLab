@@ -13,7 +13,7 @@ const icon = (name: string) => {
 };
 
 export function mountView() { const base=import.meta.env.BASE_URL; document.querySelector('#app')!.innerHTML = `
-  <header class="site-header"><a class="brand" href="${base}" aria-label="怪相馆首页"><img src="${base}favicon.svg" alt=""/><strong>怪相馆</strong><span class="beta">BETA</span></a><a href="#usage" class="help-link">怎么使用 ${icon('arrow')}</a></header>
+  <header class="site-header"><a class="brand" href="${base}" aria-label="怪相馆首页"><img src="${base}favicon.svg" alt=""/><strong>怪相馆</strong><span class="beta">BETA</span></a><a href="${base}video.html" class="help-link">视频转 GIF →</a><a href="#usage" class="help-link">怎么使用 ${icon('arrow')}</a></header>
   <main>
     <div class="page-heading"><div><div class="eyebrow"><span></span> 今天的精神状态：</div><h1>一张照片，<em>整点怪相。</em></h1><p>上传自己或朋友的照片。揉两下、捏一下。把熟人的照片变成聊天里的小动作。</p></div><div class="local-note">${icon('lock')}<span>照片只在你的设备上处理<br/><b>本地识别人脸，无水印</b></span></div></div>
     <div class="workspace">

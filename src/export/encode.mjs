@@ -3,15 +3,15 @@ import * as gifencModule from 'gifenc';
 const gifenc = typeof gifencModule.default === 'object' ? gifencModule.default : gifencModule;
 const { GIFEncoder, quantize, applyPalette } = gifenc;
 
-/** @param {Uint8Array[]} frames @param {number} size @param {number} delay @param {(progress: number) => void} onProgress */
-export function encodeGif(frames, size, delay, onProgress = () => {}) {
-  if (!frames.length || !Number.isInteger(size) || size < 1 || !Number.isFinite(delay) || delay < 10) throw new Error('Invalid GIF settings');
-  for (const rgba of frames) if (rgba.length !== size * size * 4) throw new Error('Frame size mismatch');
-  const samplesPerFrame = Math.min(4096, size * size);
+/** @param {Uint8Array[]} frames @param {number} size @param {number} delay @param {(progress: number) => void} onProgress @param {number} height */
+export function encodeGif(frames, size, delay, onProgress = () => {}, height = size) {
+  if (!frames.length || !Number.isInteger(size) || size < 1 || !Number.isInteger(height) || height < 1 || !Number.isFinite(delay) || delay < 10) throw new Error('Invalid GIF settings');
+  for (const rgba of frames) if (rgba.length !== size * height * 4) throw new Error('Frame size mismatch');
+  const samplesPerFrame = Math.min(4096, size * height);
   const samples = new Uint8Array(frames.length * samplesPerFrame * 4);
   frames.forEach((rgba, n) => {
     for (let j=0;j<samplesPerFrame;j++) {
-      const offset=Math.floor(j * size * size / samplesPerFrame)*4;
+      const offset=Math.floor(j * size * height / samplesPerFrame)*4;
       samples.set(rgba.subarray(offset,offset+4),(n*samplesPerFrame+j)*4);
     }
   });
@@ -23,7 +23,7 @@ export function encodeGif(frames, size, delay, onProgress = () => {}) {
   while(i<indexed.length) {
     let end=i+1;
     while(end<indexed.length && equalFrames(indexed[i],indexed[end]))end++;
-    const bounds=previous ? diffBounds(previous,indexed[i],size) : {x:0,y:0,w:size,h:size};
+    const bounds=previous ? diffBounds(previous,indexed[i],size,height) : {x:0,y:0,w:size,h:height};
     const patch=new Uint8Array(bounds.w*bounds.h);
     for(let row=0;row<bounds.h;row++)patch.set(indexed[i].subarray((bounds.y+row)*size+bounds.x,(bounds.y+row)*size+bounds.x+bounds.w),row*bounds.w);
     const offset=gif.bytesView().length;
@@ -46,8 +46,8 @@ function equalFrames(a,b) {
   return true;
 }
 
-function diffBounds(previous,current,size) {
-  let x0=size,y0=size,x1=0,y1=0;
-  for(let y=0;y<size;y++)for(let x=0;x<size;x++)if(previous[y*size+x]!==current[y*size+x]){x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y);}
+function diffBounds(previous,current,size,height) {
+  let x0=size,y0=height,x1=0,y1=0;
+  for(let y=0;y<height;y++)for(let x=0;x<size;x++)if(previous[y*size+x]!==current[y*size+x]){x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y);}
   return x0===size ? {x:0,y:0,w:1,h:1} : {x:x0,y:y0,w:x1-x0+1,h:y1-y0+1};
 }

@@ -15,7 +15,9 @@
     "test:chat-effects": "node tests/chat-effects-browser.mjs",
     "test:editor": "node tests/editor-browser.mjs",
     "test:caption": "node tests/caption-browser.mjs",
-    "test:layers": "node tests/layers-browser.mjs"
+    "test:layers": "node tests/layers-browser.mjs",
+    "test:ai": "node tests/ai-browser.mjs",
+    "dev:ai": "node --env-file=.env.local server/main.mjs"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "1.1.0",

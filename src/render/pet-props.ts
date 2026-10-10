@@ -13,7 +13,7 @@ export function drawPetProps(ctx:Context,s:Settings,phase:number,assets:RenderAs
  if(s.template==='cat'){
   const headY=y-a*r*.05;
   for(const side of [-1,1]){
-   const baseY=Math.max(12+r*.43,headY-r*(.79-.23*a));
+   const baseY=headY-r*(.79-.23*a);
    ctx.save();ctx.translate(x+side*r*.57,baseY);ctx.rotate(side*(-.1-a*.45));
    ctx.fillStyle='#666361';ctx.beginPath();ctx.moveTo(-side*r*.23,r*.10);ctx.lineTo(-side*r*.19,-r*.14);ctx.lineTo(side*r*.06,-r*.43*(1-.48*a));ctx.lineTo(side*r*.29,r*.12);ctx.closePath();ctx.fill();ctx.stroke();
    ctx.fillStyle='#cf9b9b';ctx.beginPath();ctx.moveTo(-side*r*.09,0);ctx.lineTo(side*r*.06,-r*.30*(1-.48*a));ctx.lineTo(side*r*.18,r*.02);ctx.closePath();ctx.fill();
@@ -34,7 +34,7 @@ export function drawPetProps(ctx:Context,s:Settings,phase:number,assets:RenderAs
  }else{
   const grow=1+a*.45,noseY=y+noseDY*grow,noseX=x+noseDX*grow;
   for(const side of [-1,1]){
-   ctx.save();ctx.translate(x+side*r*.7*grow,Math.max(16,y-r*.64*grow));ctx.rotate(side*(.12+Math.sin(phase*Math.PI*12)*a*.55));
+   ctx.save();ctx.translate(x+side*r*.7*grow,y-r*.64*grow);ctx.rotate(side*(.12+Math.sin(phase*Math.PI*12)*a*.55));
    ctx.fillStyle=side<0?'#775343':'#9d7051';ctx.beginPath();ctx.moveTo(-side*r*.15,0);ctx.bezierCurveTo(-side*r*.25,r*.3,-side*r*.13,r*.88,side*r*.10,r*.9);ctx.bezierCurveTo(side*r*.45,r*.92,side*r*.39,r*.37,side*r*.16,-r*.06);ctx.closePath();ctx.fill();ctx.stroke();
    ctx.strokeStyle='rgba(41,29,22,.4)';ctx.beginPath();ctx.moveTo(side*r*.10,r*.17);ctx.quadraticCurveTo(side*r*.18,r*.52,side*r*.12,r*.7);ctx.stroke();ctx.restore();
   }

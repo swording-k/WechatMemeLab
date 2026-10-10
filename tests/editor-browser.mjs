@@ -12,7 +12,7 @@ try {
  await p.waitForFunction(()=>document.querySelector('#file-name').textContent==='sample-portrait.png');
  await p.waitForFunction(()=>document.querySelector('#face-status').textContent.includes('已定位'));
  assert.ok(Number(await p.locator('#zoom').inputValue())<1,'upload must preserve the whole portrait');
- await p.locator('#caption').fill('自由摆放');await p.locator('#captionX').fill('25');await p.locator('#captionY').fill('15');
+ await p.locator('.caption-controls .layer-fine summary').click();await p.locator('#caption').fill('自由摆放');await p.locator('#captionX').fill('25');await p.locator('#captionY').fill('15');
  await p.locator('#zoom').fill('0.4');
  await p.locator('[data-edit-mode=photo]').click();await p.locator('#preview').scrollIntoViewIfNeeded();const box=await p.locator('#preview').boundingBox();
  await p.mouse.move(box.x+box.width*.4,box.y+box.height*.4);await p.mouse.down();await p.mouse.move(box.x+box.width*.65,box.y+box.height*.65,{steps:8});await p.mouse.up();
@@ -30,9 +30,9 @@ try {
  await p.locator('#auto-face').click();await p.locator('#zoom').fill('0.4');await p.waitForFunction(()=>!document.querySelector('#auto-face').disabled);assert.equal(await p.locator('#zoom').inputValue(),'0.4');
  for(const id of ['cat','dog']){
   await p.locator(`[data-template=${id}]`).click();assert.ok(await p.locator('#pet-controls').isVisible());
-  await p.locator('#petRotation').fill('-45');await p.locator('#petX').fill('18');await p.locator('#petY').fill('12');await p.locator('#petScale').fill('1.4');
-  await p.locator('[data-edit-mode=pet]').click();await p.locator('#preview').scrollIntoViewIfNeeded();const b=await p.locator('#preview').boundingBox();
-  await p.mouse.move(b.x+b.width*.5,b.y+b.height*.5);await p.mouse.down();await p.mouse.move(b.x+b.width*.55,b.y+b.height*.45,{steps:5});await p.mouse.up();assert.ok(Number(await p.locator('#petX').inputValue())>18);
+  if(!(await p.locator('#pet-controls details').getAttribute('open')!==null))await p.locator('#pet-controls summary').click();await p.locator('#petRotation').fill('-45');await p.locator('#petX').fill('18');await p.locator('#petY').fill('12');await p.locator('#petScale').fill('1.4');
+  await p.locator('#layer-pet').click();await p.locator('#preview').scrollIntoViewIfNeeded();const b=await p.locator('#preview').boundingBox();
+  const pet=await p.locator('.layer-selection').boundingBox();const px=Math.max(b.x+10,Math.min(b.x+b.width-10,pet.x+pet.width/2)),py=Math.max(b.y+10,Math.min(b.y+b.height-10,pet.y+pet.height/2));await p.mouse.move(px,py);await p.mouse.down();await p.mouse.move(px+15,py-15,{steps:5});await p.mouse.up();assert.ok(Number(await p.locator('#petX').inputValue())>18);
   for(const [angle,name] of [[-45,'left'],[45,'right'],[0,'upright']]){
    await p.locator('#petRotation').fill(String(angle));await p.locator('[data-edit-mode=effect]').click();
    const download=p.waitForEvent('download');await p.locator('#export').click();await (await download).saveAs(`${dir}/${id}-${name}.gif`);await p.waitForFunction(()=>!document.querySelector('#export').disabled);

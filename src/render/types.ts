@@ -5,6 +5,7 @@ export interface Settings {
   petX?:number;petY?:number;petScale?:number;petRotation?:number;
   petFace?:{dx:number;dy:number;angle:number};
   captionX?:number;captionY?:number;captionSize?:number;captionColor?:string;captionStyle?:'meme'|'plain'|'band'|'shake';
+  captionCenterX?:number;captionCenterY?:number;captionRotation?:number;captionScale?:number;
   template:Template;caption:string;zoom:number;x:number;y:number;intensity:number;speed:number;background:string;size:number;focusX:number;focusY:number;radius:number;
 }
 export interface RenderAssets {hand?:CanvasImageSource}

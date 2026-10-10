@@ -2,6 +2,7 @@ import './style.css';
 import './ui/mode-nav.css';
 import './ui/product-footer.css';
 import {installFraming} from './ui/framing';
+import {installLayers} from './ui/layers';
 import {installSculpt} from './ui/sculpt';
 import {mountView} from './ui/view';
 import {defaults,templates,DURATION,type Settings,type RenderAssets} from './render/types';
@@ -26,35 +27,39 @@ const exportButton=$<HTMLButtonElement>('#export');
 exportButton.disabled=true;
 const framing=installFraming(preview,settings,()=>({image,...dimensions()}),()=>{revision++;sync();},()=>ready&&!busy);
 const sculpt=installSculpt(preview,settings,()=>{revision++;},()=>ready&&!busy&&framing.mode()==='effect');
+const layers=installLayers(preview,settings,()=>{revision++;sync();syncCaptionStyle();$<HTMLInputElement>('#caption').value=settings.caption;$('#char-count').textContent=`${settings.caption.length} / 20`;},()=>ready&&!busy,()=>framing.mode()==='effect',()=>framing.setMode('effect'));
+for(const b of document.querySelectorAll<HTMLButtonElement>('[data-edit-mode]'))b.addEventListener('click',()=>layers.deselect());
+for(const b of document.querySelectorAll<HTMLButtonElement>('[data-brush]'))b.addEventListener('click',()=>layers.deselect());
+for(const id of ['pet-reset','pet-auto']){const button=$<HTMLButtonElement>(`#${id}`),handler=button.onclick;button.onclick=e=>layers.change(()=>handler?.call(button,e));}
 function status(text:string,error=false){$('#status').textContent=text;$('#status').classList.toggle('error',error);}
-function updateCaption(){settings.caption=$<HTMLInputElement>('#caption').value;$('#char-count').textContent=`${settings.caption.length} / 20`;}
+function updateCaption(){settings.caption=$<HTMLInputElement>('#caption').value;$('#char-count').textContent=`${settings.caption.length} / 20`;layers.sync();}
 function suggestions(){
   $('.suggestions').replaceChildren(...templates.find(t=>t.id===settings.template)!.suggestions.map(text=>{
-    const b=document.createElement('button');b.type='button';b.textContent=text;b.onclick=()=>{$<HTMLInputElement>('#caption').value=text;updateCaption();};return b;
+    const b=document.createElement('button');b.type='button';b.textContent=text;b.onclick=()=>layers.change(()=>{$<HTMLInputElement>('#caption').value=text;updateCaption();});return b;
   }));
 }
 function sync(){
   const radius=$<HTMLInputElement>('#radius');radius.min=String(Math.min(.03,settings.radius));radius.max=String(Math.max(.48,settings.radius));
   for(const key of ['zoom','x','y','radius'] as const)$<HTMLInputElement>(`#${key}`).value=String(settings[key]);
   for(const key of ['focusX','focusY'] as const)$<HTMLInputElement>(`#${key}`).value=String(settings[key]*100);
-  $('#zoom-value').textContent=`${settings.zoom.toFixed(2)}×`;framing.sync();
+  $('#zoom-value').textContent=`${settings.zoom.toFixed(2)}×`;framing.sync();layers.sync();
 }
 function selectTemplate(id:Settings['template']){
-  settings.template=id;sculpt.active();framing.sync();const t=templates.find(t=>t.id===id)!;
+  layers.clear();settings.template=id;sculpt.active();framing.sync();const t=templates.find(t=>t.id===id)!;
   document.querySelectorAll<HTMLButtonElement>('[data-template]').forEach(b=>{const active=b.dataset.template===id;b.classList.toggle('selected',active);b.setAttribute('aria-pressed',String(active));});
   $('#active-name').textContent=`${t.title} · 循环播放`;$<HTMLInputElement>('#caption').value=t.caption;updateCaption();suggestions();phase=0;
 }
 for(const b of document.querySelectorAll<HTMLButtonElement>('[data-template]'))b.onclick=()=>selectTemplate(b.dataset.template as Settings['template']);
 $('#caption').oninput=updateCaption;
 function syncCaptionStyle(){
- for(const key of ['captionX','captionY','captionSize','captionColor','captionStyle'] as const)$<HTMLInputElement>(`#${key}`).value=String(settings[key]??defaults[key]);
+ for(const key of ['captionX','captionY','captionSize','captionColor','captionStyle','captionRotation','captionScale'] as const)$<HTMLInputElement>(`#${key}`).value=String(settings[key]??defaults[key]??(key==='captionScale'?1:0));
  $('#captionSize-value').textContent=String(settings.captionSize??35);
 }
-for(const key of ['captionX','captionY','captionSize'] as const)$(`#${key}`).oninput=()=>{settings[key]=Number($<HTMLInputElement>(`#${key}`).value);syncCaptionStyle();};
+for(const key of ['captionX','captionY','captionSize','captionRotation','captionScale'] as const)$(`#${key}`).oninput=()=>{settings[key]=Number($<HTMLInputElement>(`#${key}`).value);if(key==='captionX')delete settings.captionCenterX;if(key==='captionY')delete settings.captionCenterY;syncCaptionStyle();layers.sync();};
 $('#captionColor').oninput=()=>{settings.captionColor=$<HTMLInputElement>('#captionColor').value;};
 $('#captionStyle').onchange=()=>{settings.captionStyle=$<HTMLSelectElement>('#captionStyle').value as Settings['captionStyle'];};
-for(const b of document.querySelectorAll<HTMLButtonElement>('[data-caption-pos]'))b.onclick=()=>{settings.captionX=50;settings.captionY=Number(b.dataset.captionPos);syncCaptionStyle();};
-$('#caption-reset').onclick=()=>{Object.assign(settings,{captionX:50,captionY:96,captionSize:35,captionColor:'#ffffff',captionStyle:'meme'});syncCaptionStyle();};
+for(const b of document.querySelectorAll<HTMLButtonElement>('[data-caption-pos]'))b.onclick=()=>layers.change(()=>{delete settings.captionCenterX;delete settings.captionCenterY;settings.captionX=50;settings.captionY=Number(b.dataset.captionPos);syncCaptionStyle();});
+$('#caption-reset').onclick=()=>layers.change(()=>{delete settings.captionCenterX;delete settings.captionCenterY;Object.assign(settings,{captionX:50,captionY:96,captionSize:35,captionColor:'#ffffff',captionStyle:'meme',captionRotation:0,captionScale:1});syncCaptionStyle();});
 
 for(const key of ['focusX','focusY'] as const)$(`#${key}`).oninput=()=>{revision++;settings[key]=Number($<HTMLInputElement>(`#${key}`).value)/100;};
 for(const key of ['intensity','speed','size','radius'] as const)$(`#${key}`).oninput=()=>{
@@ -62,13 +67,13 @@ for(const key of ['intensity','speed','size','radius'] as const)$(`#${key}`).oni
   if(key==='speed')$(`#${key}-value`).textContent=`${settings[key].toFixed(2)}×`;
   if(key==='intensity')$('#intensity-value').textContent=settings.intensity<.5?'轻一点':settings.intensity>.8?'使劲整':'刚刚好';
 };
-function resetPosition(){delete settings.petFace;delete settings.petRotation;const view=image?fitPhoto(dimensions().w,dimensions().h):{zoom:1,x:0,y:0};Object.assign(settings,{...view,focusX:.5,focusY:.5,radius:.35,petX:0,petY:0,petScale:1});framing.reset();revision++;sync();}
+function resetPosition(){layers.clear();delete settings.petFace;delete settings.petRotation;const view=image?fitPhoto(dimensions().w,dimensions().h):{zoom:1,x:0,y:0};Object.assign(settings,{...view,focusX:.5,focusY:.5,radius:.35,petX:0,petY:0,petScale:1});framing.reset();revision++;sync();}
 $('#reset').onclick=resetPosition;
 function background(color:string){settings.background=color;$<HTMLInputElement>('#background').value=color;for(const b of document.querySelectorAll<HTMLButtonElement>('[data-color]')){const active=b.dataset.color===color;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active));}}
 for(const b of document.querySelectorAll<HTMLButtonElement>('[data-color]'))b.onclick=()=>background(b.dataset.color!);
 $('#background').oninput=()=>background($<HTMLInputElement>('#background').value);
 function playButton(){const b=$('#pause');b.textContent=paused?'▶':'Ⅱ';b.setAttribute('aria-label',paused?'播放预览':'暂停预览');}
-$('#pause').onclick=()=>{paused=!paused;playButton();};playButton();
+$('#pause').onclick=()=>{if(layers.editing()){layers.deselect();framing.setMode('effect');paused=false;}else paused=!paused;playButton();};playButton();
 preview.onpointerdown=e=>{
   if(!ready||busy||settings.template==='custom'||framing.mode()!=='effect')return;
   revision++;const r=preview.getBoundingClientRect();
@@ -145,8 +150,8 @@ $('#share-file').onclick=async()=>{
 const thumbnails=[...document.querySelectorAll<HTMLCanvasElement>('.template canvas')];
 let thumbKey='';
 function animate(time:number){
-  const elapsed=lastTime?Math.min(time-lastTime,100):0;lastTime=time;if((!paused||sculpt.playing())&&!document.hidden)phase=(phase+elapsed*settings.speed/DURATION)%1;
-  if(ready&&!document.hidden&&time-lastPaint>50){lastPaint=time;drawFrame(ctx,image,settings,framing.editing()?0:sculpt.phase(phase),assets);if(!framing.editing())sculpt.guides(ctx);}
+  const elapsed=lastTime?Math.min(time-lastTime,100):0;lastTime=time;if((!paused||sculpt.playing()||layers.previewing())&&!layers.editing()&&!document.hidden)phase=(phase+elapsed*settings.speed/DURATION)%1;
+  if(ready&&!document.hidden&&time-lastPaint>50){lastPaint=time;drawFrame(ctx,image,settings,framing.editing()||layers.editing()?0:layers.previewing()?phase:sculpt.phase(phase),assets);if(!framing.editing()&&!layers.editing()&&!layers.previewing())sculpt.guides(ctx);layers.paint();}
   const nextKey=[photoVersion,settings.zoom,settings.x,settings.y,settings.radius,settings.focusX,settings.focusY,settings.intensity,settings.background,settings.petX,settings.petY,settings.petScale,settings.petRotation,JSON.stringify(settings.petFace),JSON.stringify(settings.custom)].join(':');
   if(ready&&!document.hidden&&thumbKey!==nextKey){thumbKey=nextKey;thumbnails.forEach((c,i)=>{drawFrame(c.getContext('2d')!,image,{...settings,template:templates[i].id,caption:''},templates[i].id==='notify'?.47:templates[i].id==='twist'?.25:templates[i].id==='knead'?.42:.5,assets);});}
   requestAnimationFrame(animate);

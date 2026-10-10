@@ -74,5 +74,5 @@ export function installFraming(canvas:HTMLCanvasElement,s:Settings,getPhoto:()=>
  };
  $('crop-cancel').onclick=()=>dialog.close();
  $('crop-apply').onclick=()=>{if(canEdit()){applyView(cropToSettings(photo.w,photo.h,crop));mode='photo';sync();}dialog.close();};
- return {sync,mode:()=>mode,editing:()=>mode!=='effect',reset(){drag=undefined;mode='effect';dialog.close();sync();}};
+ return {sync,setMode(next:Mode){drag=undefined;mode=next;sync();},mode:()=>mode,editing:()=>mode!=='effect',reset(){drag=undefined;mode='effect';dialog.close();sync();}};
 }

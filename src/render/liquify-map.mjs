@@ -6,6 +6,7 @@ export function mapPixel(mode,x,y,center,amount,radius=.43) {
   const r2=(dx*dx+dy*dy)/(radius*radius);
   if(r2>=1 || amount===0) return [x,y];
   const weight=(1-r2)**2;
+  if(mode==='clockout') return [x+dx*.2*amount*weight,y-amount*radius*.32*weight];
   if(mode==='cat') return [center[0]+dx*(1-.34*amount*weight),center[1]+dy*(1+.75*amount*weight)+amount*radius*.05*weight];
   if(mode==='dog') return [center[0]+dx*(1-.76*amount*weight),center[1]+dy*(1-.70*amount*weight)];
   if(mode==='notify') return [x-amount*radius*.23*weight,y+amount*radius*.13*weight];

@@ -1,8 +1,10 @@
+import {soulMotion} from './soul-motion.mjs';
 const clamp=x=>Math.max(0,Math.min(1,x));
 const ease=x=>{const t=clamp(x);return t*t*(3-2*t);};
 /** @param {string} template @param {number} phase @param {number} intensity */
 export function getAction(template,phase,intensity) {
   const p=(phase%1+1)%1;
+  if(template==='clockout'){const {sag,opacity}=soulMotion(p,intensity);return {amount:sag,pressure:sag,contact:opacity};}
   if(template==='cat'||template==='dog') {
     const contact=p<.18?ease(p/.18):p<.82?1:1-ease((p-.82)/.18);
     const envelope=p<.18?0:p<.38?ease((p-.18)/.2):p<.68?1:p<.94?1-ease((p-.68)/.26):0;

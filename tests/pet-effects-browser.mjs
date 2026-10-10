@@ -3,7 +3,7 @@ const url=process.env.TEST_URL||'http://127.0.0.1:5173/',dir=process.env.QA_DIR|
 const b=await chromium.launch({channel:'chrome',headless:true,...(process.env.BROWSER_PROXY?{proxy:{server:process.env.BROWSER_PROXY}}:{})});
 try{
  const p=await b.newPage({acceptDownloads:true,viewport:{width:1280,height:1000}}),errors=[];p.on('pageerror',e=>errors.push(e.message));await p.goto(url);await p.waitForFunction(()=>document.querySelector('#face-status')?.textContent.includes('已定位'),null,{timeout:60000});
- assert.equal(await p.locator('[data-template]').count(),15);assert.equal(await p.locator('[data-template]').first().getAttribute('data-template'),'custom');assert.equal(await p.locator('[data-template=glass],[data-template=soul]').count(),0);
+ assert.equal(await p.locator('[data-template]').count(),16);assert.equal(await p.locator('[data-template]').first().getAttribute('data-template'),'custom');assert.equal(await p.locator('[data-template=glass],[data-template=soul]').count(),0);
  for(const [name,file] of [['square','public/sample-person.png'],['portrait','public/sample-portrait.png']]){
   await p.locator('#file').setInputFiles(file);await p.waitForFunction(()=>document.querySelector('#file-name').textContent.includes('sample-'));await p.waitForFunction(()=>document.querySelector('#face-status').textContent.includes('已定位'));
   for(const id of ['cat','dog']){

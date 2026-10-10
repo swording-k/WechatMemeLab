@@ -1,3 +1,4 @@
+import {drawSoul} from './soul';
 import {drawCaption} from './caption';
 import type {Settings,RenderAssets} from './types';
 import {drawLiquify} from './liquify';
@@ -28,6 +29,7 @@ export function drawFrame(ctx:Context,image:CanvasImageSource,s:Settings,phase:n
       ctx.restore();
     }
   }
+  drawSoul(ctx,image,s,phase);
   drawChatProps(ctx,s,phase);
   drawProps(ctx,s,phase);
   drawPetProps(ctx,s,phase,assets);

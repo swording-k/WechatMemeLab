@@ -9,7 +9,7 @@ page.on('request',r=>{if(!new URL(r.url()).hostname.match(/^(127\.0\.0\.1|localh
 await mkdir('work/qa',{recursive:true});
 await page.goto(process.env.TEST_URL||'http://127.0.0.1:5173/');
 await page.waitForFunction(()=>document.querySelector('#face-status').textContent.includes('已定位'));
-assert.equal(await page.locator('[data-template]').count(),15);
+assert.equal(await page.locator('[data-template]').count(),16);
 await page.screenshot({path:'work/qa/desktop.png',fullPage:true});
 for(const template of ['pinch','pull','knead','bulge','twist','squish']){
  await page.locator(`[data-template=${template}]`).click();

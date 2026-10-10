@@ -15,6 +15,7 @@
     "test:chat-effects": "node tests/chat-effects-browser.mjs",
     "test:editor": "node tests/editor-browser.mjs",
     "test:caption": "node tests/caption-browser.mjs",
+    "test:clockout": "node tests/clockout-browser.mjs",
     "test:layers": "node tests/layers-browser.mjs"
   },
   "dependencies": {

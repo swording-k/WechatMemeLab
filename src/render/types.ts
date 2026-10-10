@@ -1,4 +1,4 @@
-export type Template = 'pinch' | 'pull' | 'knead' | 'bulge' | 'twist' | 'squish' | 'cat' | 'dog' | 'suction' | 'melt' | 'leak' | 'custom' | 'notify' | 'crack' | 'screen';
+export type Template = 'pinch' | 'pull' | 'knead' | 'bulge' | 'twist' | 'squish' | 'cat' | 'dog' | 'suction' | 'melt' | 'leak' | 'custom' | 'clockout' | 'notify' | 'crack' | 'screen';
 export interface Warp {kind:'drag'|'expand'|'shrink';x:number;y:number;dx:number;dy:number;radius:number}
 export interface Settings {
   custom?:Warp[];
@@ -11,6 +11,7 @@ export interface Settings {
 export interface RenderAssets {hand?:CanvasImageSource}
 export const templates:{id:Template;title:string;subtitle:string;caption:string;tag:string;suggestions:string[]}[]=[
   {id:'custom',title:'自由捏图',subtitle:'自己拉拽、鼓起、缩小，捏出你的动作',caption:'',tag:'自己来',suggestions:['你看我像正常吗','我先疯为敬','已读乱捏']},
+  {id:'clockout',title:'灵魂先下班',subtitle:'人还在这儿，小分身已经飘走了',caption:'人还在，魂走了',tag:'精神离场',suggestions:['人还在，魂走了','又开会？我先走了','身体在上班，灵魂已下班']},
   {id:'cat',title:'摸两下就上头',subtitle:'变成怪猫，挠下巴挠到脸扁耳朵折',caption:'再摸一下',tag:'人变猫',suggestions:['再摸一下','你的小猫突然发疯','现在知道哄我了？']},
   {id:'dog',title:'见你就变狗',subtitle:'狗耳乱甩，伸舌头，兴奋到扑脸',caption:'你终于回我了',tag:'人变狗',suggestions:['你终于回我了','让我闻闻','我就蹭一下']},
   {id:'notify',title:'被消息震飞',subtitle:'催命消息连着来，脸都震歪了',caption:'来了来了',tag:'催回复',suggestions:['来了来了','别催了在回了','消息把我震醒了']},

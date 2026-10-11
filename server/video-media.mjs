@@ -1,5 +1,5 @@
 const size=1024*1024,max=50*1024*1024;
-function remoteURL(value){const url=new URL(value),allowed=['minimax.chat','minimax.cn','minimax.io','hailuoai.com','myqcloud.com','mmcdn.cn','tcb.qcloud.la'];if(url.protocol!=='https:'||!allowed.some(d=>url.hostname===d||url.hostname.endsWith('.'+d)))throw new Error('生成视频地址未通过校验');return url.href;}
+function remoteURL(value){const url=new URL(value),allowed=['minimax.chat','minimax.cn','minimax.io','hailuoai.com','myqcloud.com','mmcdn.cn','tcb.qcloud.la','public-cdn-video-data-algeng.oss-cn-wulanchabu.aliyuncs.com'];if(url.protocol!=='https:'||!allowed.some(d=>url.hostname===d||url.hostname.endsWith('.'+d)))throw new Error('生成视频地址未通过校验');return url.href;}
 export function createMedia({store,fetchImpl=fetch}){return{
  async info(id,url){remoteURL(url);const cached=await store.get(id);if(cached)return {bytes:cached.bytes,type:cached.type,chunks:Math.ceil(cached.bytes/size)};
   const response=await fetchImpl(remoteURL(url),{signal:AbortSignal.timeout(45000),redirect:'error'});if(!response.ok||Number(response.headers.get('content-length'))>max)throw new Error('生成视频暂时无法读取或文件过大');

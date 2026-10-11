@@ -21,7 +21,7 @@ const server=createServer(async(req,res)=>{
   }
   const match=path.match(/^\/jobs\/([0-9a-f-]{36})(\/video)?$/i);if(!match||req.method!=='GET')return send(res,404,{error:'找不到此请求'});
   if(!match[2])return send(res,200,await jobs.query(match[1]));
-  const remote=new URL(await jobs.video(match[1]));const allowed=['minimax.chat','minimax.cn','minimax.io','hailuoai.com','myqcloud.com','mmcdn.cn'];
+  const remote=new URL(await jobs.video(match[1]));const allowed=['minimax.chat','minimax.cn','minimax.io','hailuoai.com','myqcloud.com','mmcdn.cn','public-cdn-video-data-algeng.oss-cn-wulanchabu.aliyuncs.com'];
   if(remote.protocol!=='https:'||!allowed.some(domain=>remote.hostname===domain||remote.hostname.endsWith('.'+domain)))throw new Error('生成的视频下载域名未通过校验');
   const video=await fetch(remote,{signal:AbortSignal.timeout(90000),redirect:'error'});if(!video.ok||!video.headers.get('content-type')?.startsWith('video/'))throw new Error('生成视频暂时无法下载，请稍后重试');
   const chunks=[];let bytes=0;for await(const chunk of video.body){bytes+=chunk.length;if(bytes>100*1024*1024)throw new Error('生成视频过大，无法导入编辑器');chunks.push(chunk);}

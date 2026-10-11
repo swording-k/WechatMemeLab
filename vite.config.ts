@@ -1,3 +1,3 @@
-import {defineConfig} from 'vite';
+import {defineConfig,loadEnv} from 'vite';
 import {resolve} from 'node:path';
-export default defineConfig({base:'./',server:{proxy:{'/api/ai':'http://127.0.0.1:8787'}},build:{rollupOptions:{input:{main:resolve('index.html'),video:resolve('video.html'),ai:resolve('ai.html'),feedback:resolve('feedback.html')}}}});
+export default defineConfig(({mode})=>{const env=loadEnv(mode,process.cwd(),'');const cloud=env.AI_CLOUD_ENDPOINT;return {base:'./',server:{proxy:{'/api/ai':cloud?{target:new URL(cloud).origin,changeOrigin:true,headers:{Authorization:'Bearer '+env.AI_ACCESS_TOKEN},rewrite:path=>new URL(cloud).pathname+'?op='+encodeURIComponent(path.replace(/^\/api\/ai/,''))}:'http://127.0.0.1:8787'}},build:{rollupOptions:{input:{main:resolve('index.html'),video:resolve('video.html'),ai:resolve('ai.html'),feedback:resolve('feedback.html')}}}};});

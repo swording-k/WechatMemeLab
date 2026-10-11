@@ -34,3 +34,11 @@
 - 怪相馆必须有自己的函数、集合、存储前缀和 CI 同步凭据，不修改 FitGenius 原有函数或数据。
 - 不得自行购买或升级 CloudBase 套餐。
 - 后端和站内截图反馈已完成实际上传、保存、CI Issue 同步及状态回写验收，并发布 GitHub Pages。验证证据见 `docs/2026-10-11-反馈后端验证.md`。
+
+## AI 创作内测分支
+
+- 新功能在 `codex/minimax-ai-creation`，经用户检查前不合入 main 或发布 AI 前端。
+- 腾讯云过渡期使用独立 `meme-ai-api`、`meme_ai_jobs` / `meme_ai_budget` / `meme_ai_media`、`meme-ai/` 前缀；不改动 FitGenius 原有服务。
+- 普通照片/视频编辑仍本地处理。AI 创作需明确确认照片经本站后端发送 MiniMax；输入照片不写入本站存储，结果视频保存在后端供取回。
+- 当前 `AI_BUDGET_CNY=0`。真实收费生成需用户确认验收预算。模拟生成/合成测试视频不能称为 AI 样片。
+- 云端任务和额度使用事务，收费调用在事务之外；不重试提交结果不确定的任务。

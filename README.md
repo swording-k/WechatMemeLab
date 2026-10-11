@@ -107,3 +107,15 @@ python3 scripts/verify-gifs.py work/qa/*-release.gif work/qa/portrait-*.gif
 GitHub Repository Variable `FEEDBACK_API_URL` 与 Secret `FEEDBACK_SYNC_SECRET` 配好后，由 `.github/workflows/feedback-sync.yml` 定时或手动同步。CI 使用内置 GITHUB_TOKEN，腾讯云不保存 GitHub 个人令牌。附件用固定代理地址引用，服务获取短期存储链接再跳转。
 
 上传请求以二进制内容类型传送 JSON，适配 CloudBase 文本请求 100 KB 限制；服务仍验证 JSON、图片魔数、尺寸和来源，最大读取 3 MB。配置迁移时更新前端 `VITE_FEEDBACK_API`、云函数公开地址及 GitHub Variable。公开反馈附件随 Issue 可访问，请先遮挡私人信息。
+
+## AI 创作内测（功能分支）
+
+`codex/minimax-ai-creation` 中提供 `ai.html`：照片/文字生成、完全自定义动作、三条可修改玩法、画风与夸张程度、生成后进入视频工作台剪片段/加字/导出 GIF。正式网站尚未发布这个入口。
+
+CloudBase 源代码 `cloudfunctions/meme-ai` 与共享任务/接口/媒体模块 `server/` 分开。部署前运行 `node scripts/prepare-ai-cloud.mjs`，安装函数依赖，依据 `cloudbaserc.ai.example.json` 准备不入库的私有配置，再部署 `meme-ai-api` 及 HTTP 路由。MiniMax 密钥和内测口令仅在服务端；默认预算为零。
+
+本地 `.env.local` 配置公开的云端地址 `AI_CLOUD_ENDPOINT` 与私有 `AI_ACCESS_TOKEN` 后，`npm run dev` 的本地代理直接连接云端。口令不会进入前端产物。远程内测前端使用 `VITE_AI_API_BASE=https://实际区域网关/meme-ai-api?op=`，并在页面手动输入内测口令；不把口令放入 URL。
+
+云端使用独立事务集合保存任务与额度，避免多实例重复收费。输入照片不持久保存；生成视频存到云端后按 1 MB 分段取回，避开函数网关响应体积限制。图片提交使用二进制内容类型。相同任务编号只提交一次；传输结果不确定时保留记录和预留额度，需查询或人工核对供应商任务，不能自动清零再提交。
+
+已通过模拟接口和 GIF 编码验证；真实收费样片及审美验收待预算确认。部署迁移和内测记录见 `docs/2026-10-11-AI云端内测验证.md`。

@@ -1,0 +1,18 @@
+{
+  "envId": "YOUR_CLOUDBASE_ENV_ID",
+  "functionRoot": "cloudfunctions",
+  "functions": [{
+    "name": "meme-ai-api",
+    "runtime": "Nodejs20.19",
+    "handler": "index.main",
+    "timeout": 60,
+    "memorySize": 512,
+    "envVariables": {
+      "MINIMAX_API_KEY": "SET_IN_PRIVATE_CONFIG_ONLY",
+      "MINIMAX_API_BASE": "https://api.minimax.cn",
+      "AI_ACCESS_TOKEN": "SET_A_RANDOM_PRIVATE_TOKEN_AT_LEAST_24_CHARACTERS",
+      "AI_BUDGET_CNY": "0",
+      "AI_ALLOWED_ORIGINS": "http://127.0.0.1:5173,https://swording-k.github.io"
+    }
+  }]
+}

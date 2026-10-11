@@ -16,7 +16,7 @@ export function createMiniMax({key,base='https://api.minimax.cn',fetchImpl=fetch
  async function request(path,body){
   let response;try{response=await fetchImpl(base+'/v1/'+path,{method:body?'POST':'GET',headers:{Authorization:`Bearer ${key}`,'Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{}),signal:AbortSignal.timeout(45000),redirect:'error'});}catch{throw new Error('MiniMax 连接超时；请查询已有任务，不要重复创建');}
   let data;try{data=await response.json();}catch{throw new Error('MiniMax 返回格式异常，请稍后查询');}
-  const code=data.base_resp?.status_code;if(!response.ok||code!==0)throw new Error(messages[code]||`MiniMax 暂时无法完成请求（${code??response.status}）`);
+  const code=data.base_resp?.status_code;if(!response.ok||code!==0)throw Object.assign(new Error(messages[code]||`MiniMax 暂时无法完成请求（${code??response.status}）`),{rejected:Number.isInteger(code)&&code!==0});
   return data;
  }
  return {

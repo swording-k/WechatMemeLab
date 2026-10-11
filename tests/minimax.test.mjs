@@ -14,3 +14,4 @@ test('normalizes async states and never exposes provider credentials in errors',
  assert.ok(calls.every(c=>c.options.headers.Authorization==='Bearer private-test-token'));assert.ok(calls[1].url.endsWith('task_id=123'));assert.ok(calls[2].url.endsWith('file_id=456'));
  const bad=api.createMiniMax({key:'private-test-token',fetchImpl:async()=>new Response(JSON.stringify({base_resp:{status_code:1004,status_msg:'echo private-test-token'}}))});await assert.rejects(()=>bad.create({mode:'text',prompt:'猫'}),e=>!e.message.includes('private-test-token')&&e.message.includes('密钥'));
 });
+test('definitive API rejection is distinguishable from an uncertain transport error',async()=>{const client=api.createMiniMax({key:'test',fetchImpl:async()=>new Response(JSON.stringify({base_resp:{status_code:1008}}))});await assert.rejects(()=>client.create({mode:'text',prompt:'猫'}),e=>e.rejected===true);});

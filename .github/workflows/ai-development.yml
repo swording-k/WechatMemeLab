@@ -1,0 +1,29 @@
+name: AI development checks
+on:
+  push:
+    branches: ['codex/minimax-ai-creation']
+  pull_request:
+    paths:
+      - 'server/**'
+      - 'src/ai/**'
+      - 'cloudfunctions/meme-ai/**'
+      - 'tests/ai-*.mjs'
+      - 'tests/minimax.test.mjs'
+      - 'vite.config.ts'
+      - '.github/workflows/ai-development.yml'
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - run: node scripts/prepare-ai-cloud.mjs
+      - run: node --check cloudfunctions/meme-ai/index.js

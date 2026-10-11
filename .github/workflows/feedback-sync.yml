@@ -1,0 +1,25 @@
+name: Sync feedback to Issues
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+  issues: write
+concurrency:
+  group: feedback-sync
+  cancel-in-progress: false
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/sync-feedback.mjs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          FEEDBACK_API_URL: ${{ vars.FEEDBACK_API_URL }}
+          FEEDBACK_SYNC_SECRET: ${{ secrets.FEEDBACK_SYNC_SECRET }}

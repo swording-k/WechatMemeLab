@@ -81,8 +81,9 @@ python3 scripts/verify-gifs.py work/qa/*-release.gif work/qa/portrait-*.gif
 两个工作台的页脚提供 GitHub 源码、问题与建议、作者主页入口；页头也可直接进入反馈渠道。
 
 - 源码：https://github.com/swording-k/WechatMemeLab
-- 站内反馈：`feedback.html`。填写后可前往 GitHub 提交 Issue，或使用邮件发送；两者是独立渠道。
-- 截图与 GIF：GitHub 反馈表单有独立附件上传区，支持 JPG/PNG/GIF/WebP，每张最大 10 MB。站内填写的文字会带入表单；截图在 GitHub 中上传。邮件反馈需在邮件应用内附图。
+- 站内反馈：`feedback.html`。无需 GitHub 账号，支持最多三张截图或 GIF 的选择、预览、移除、拖入和粘贴。静态截图自动缩小，每张 GIF 最大 1 MB，附件合计最大 2 MB。
+- 提交后由腾讯云持久保存，GitHub Actions 每 15 分钟尝试同步为公开 Issue，并回写链接。调度可能延迟；页面可查询进度。邮件与 GitHub 入口保留作备用，附件需在对应应用中另行添加。
+- 编辑照片和视频仍在设备本地处理，只有反馈表单中明确选择的附件在提交时上传。
 - Issue 模板默认指派作者。邮件通知取决于 GitHub 账户的通知设置；当前未验证实际收信。
 - 验证反馈流程：`node tests/feedback-browser.mjs`。
 - 作者个人主页：https://swording-k.github.io/#contact
@@ -96,3 +97,13 @@ python3 scripts/verify-gifs.py work/qa/*-release.gif work/qa/portrait-*.gif
 点选文字或猫狗贴图后直接拖动。选框上方旋转、右下角缩放；手机可双指移动、缩放和旋转。支持撤销、重做和摆正，位置滑杆默认收在“精细调整”中。双击文字可编辑内容，方向键可微调选中对象。编辑时定格，点击“预览成品”播放且隐藏编辑辅助控件。GIF 导出与预览使用同一变换。
 
 验证：[画布直接编辑验证](docs/2026-10-10-画布直接编辑验证.md)。
+
+## 反馈后端部署
+
+过渡期经用户授权共用 FitGenius 免费 CloudBase 环境，独立函数 `meme-feedback-api`、集合 `meme_feedback` / `meme_feedback_limits`、存储前缀 `meme-feedback/`。后续迁往自有服务器；不升级套餐。
+
+函数源代码位于 `cloudfunctions/meme-feedback`，入口 `index.main`，Event 函数 Nodejs20.19、256 MB、20 秒。以 `cloudbaserc.example.json` 准备不纳入版本控制的部署配置，并设置 `FEEDBACK_PUBLIC_URL`、`FEEDBACK_ORIGINS`、随机 `FEEDBACK_SYNC_SECRET`。真实配置不入库。部署时指定函数目录并创建 HTTP 路由 `/meme-feedback-api`，使用控制台提供的实际区域网关地址。
+
+GitHub Repository Variable `FEEDBACK_API_URL` 与 Secret `FEEDBACK_SYNC_SECRET` 配好后，由 `.github/workflows/feedback-sync.yml` 定时或手动同步。CI 使用内置 GITHUB_TOKEN，腾讯云不保存 GitHub 个人令牌。附件用固定代理地址引用，服务获取短期存储链接再跳转。
+
+上传请求以二进制内容类型传送 JSON，适配 CloudBase 文本请求 100 KB 限制；服务仍验证 JSON、图片魔数、尺寸和来源，最大读取 3 MB。配置迁移时更新前端 `VITE_FEEDBACK_API`、云函数公开地址及 GitHub Variable。公开反馈附件随 Issue 可访问，请先遮挡私人信息。

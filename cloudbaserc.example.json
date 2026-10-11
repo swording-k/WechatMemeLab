@@ -1,0 +1,11 @@
+{
+  "envId": "YOUR_CLOUDBASE_ENV_ID",
+  "functionRoot": "cloudfunctions",
+  "functions": [{
+    "name": "meme-feedback-api",
+    "runtime": "Nodejs20.19",
+    "handler": "index.main",
+    "timeout": 20,
+    "memorySize": 256
+  }]
+}

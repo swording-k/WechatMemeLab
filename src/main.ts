@@ -1,6 +1,7 @@
 import './style.css';
 import './ui/mode-nav.css';
 import './ui/product-footer.css';
+import {installMobileStudio} from './ui/mobile-studio';
 import {installFraming} from './ui/framing';
 import {installLayers} from './ui/layers';
 import {installSculpt} from './ui/sculpt';
@@ -30,6 +31,8 @@ const sculpt=installSculpt(preview,settings,()=>{revision++;},()=>ready&&!busy&&
 const layers=installLayers(preview,settings,()=>{revision++;sync();syncCaptionStyle();$<HTMLInputElement>('#caption').value=settings.caption;$('#char-count').textContent=`${settings.caption.length} / 20`;},()=>ready&&!busy,()=>framing.mode()==='effect',()=>framing.setMode('effect'));
 for(const b of document.querySelectorAll<HTMLButtonElement>('[data-edit-mode]'))b.addEventListener('click',()=>layers.deselect());
 for(const b of document.querySelectorAll<HTMLButtonElement>('[data-brush]'))b.addEventListener('click',()=>layers.deselect());
+const mobileStudio=installMobileStudio(tool=>{layers.deselect();framing.setMode(tool==='photo'?'photo':'effect');if(tool==='text')layers.select('text');});
+$('#layer-preview').addEventListener('click',()=>{if(layers.previewing())framing.setMode('effect');else mobileStudio.refresh();});
 for(const id of ['pet-reset','pet-auto']){const button=$<HTMLButtonElement>(`#${id}`),handler=button.onclick;button.onclick=e=>layers.change(()=>handler?.call(button,e));}
 function status(text:string,error=false){$('#status').textContent=text;$('#status').classList.toggle('error',error);}
 function updateCaption(){settings.caption=$<HTMLInputElement>('#caption').value;$('#char-count').textContent=`${settings.caption.length} / 20`;layers.sync();}
@@ -67,7 +70,7 @@ for(const key of ['intensity','speed','size','radius'] as const)$(`#${key}`).oni
   if(key==='speed')$(`#${key}-value`).textContent=`${settings[key].toFixed(2)}×`;
   if(key==='intensity')$('#intensity-value').textContent=settings.intensity<.5?'轻一点':settings.intensity>.8?'使劲整':'刚刚好';
 };
-function resetPosition(){layers.clear();delete settings.petFace;delete settings.petRotation;const view=image?fitPhoto(dimensions().w,dimensions().h):{zoom:1,x:0,y:0};Object.assign(settings,{...view,focusX:.5,focusY:.5,radius:.35,petX:0,petY:0,petScale:1});framing.reset();revision++;sync();}
+function resetPosition(){layers.clear();delete settings.petFace;delete settings.petRotation;const view=image?fitPhoto(dimensions().w,dimensions().h):{zoom:1,x:0,y:0};Object.assign(settings,{...view,focusX:.5,focusY:.5,radius:.35,petX:0,petY:0,petScale:1});framing.reset();revision++;sync();mobileStudio.refresh();}
 $('#reset').onclick=resetPosition;
 function background(color:string){settings.background=color;$<HTMLInputElement>('#background').value=color;for(const b of document.querySelectorAll<HTMLButtonElement>('[data-color]')){const active=b.dataset.color===color;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active));}}
 for(const b of document.querySelectorAll<HTMLButtonElement>('[data-color]'))b.onclick=()=>background(b.dataset.color!);

@@ -9,7 +9,7 @@ type Context=CanvasRenderingContext2D|OffscreenCanvasRenderingContext2D;
 export function drawFrame(ctx:Context,image:CanvasImageSource,s:Settings,phase:number,assets:RenderAssets={}) {
   const size=ctx.canvas.width;
   ctx.save();ctx.setTransform(size/320,0,0,size/320,0,0);
-  drawLiquify(ctx,image,s,phase);
+  drawLiquify(ctx,image,s,phase,assets.createCanvas);
   if(assets.hand && ['pinch','pull','knead'].includes(s.template)) {
     const {pressure,contact}=getAction(s.template,phase,s.intensity);
     const cx=s.focusX*320,cy=s.focusY*320;

@@ -6,12 +6,12 @@ import {mapPixel} from './liquify-map.mjs';
 
 type Context=CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 const cache=new WeakMap<object,{key:string;image:CanvasImageSource;source:ImageData;output:ImageData}>();
-export function drawLiquify(ctx:Context,image:CanvasImageSource,s:Settings,phase:number) {
+export function drawLiquify(ctx:Context,image:CanvasImageSource,s:Settings,phase:number,createCanvas=(width:number,height:number)=>new OffscreenCanvas(width,height)) {
   const size=ctx.canvas.width;
   const key=[size,s.zoom,s.x,s.y,s.background].join(':');
   let entry=cache.get(ctx.canvas);
   if(!entry || entry.key!==key || entry.image!==image) {
-    const canvas=new OffscreenCanvas(size,size);const c=canvas.getContext('2d',{willReadFrequently:true})!;
+    const canvas=createCanvas(size,size);const c=canvas.getContext('2d',{willReadFrequently:true})!;
     const source=image as {width?:number;height?:number;naturalWidth?:number;naturalHeight?:number};
     const iw=source.naturalWidth||source.width||400,ih=source.naturalHeight||source.height||400;
     const p=photoPlacement(iw,ih,s);

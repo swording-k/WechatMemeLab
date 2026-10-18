@@ -15,7 +15,8 @@
     "test:chat-effects": "node tests/chat-effects-browser.mjs",
     "test:editor": "node tests/editor-browser.mjs",
     "test:caption": "node tests/caption-browser.mjs",
-    "test:layers": "node tests/layers-browser.mjs"
+    "test:layers": "node tests/layers-browser.mjs",
+    "build:miniprogram": "node scripts/build-miniprogram.mjs"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "1.1.0",
@@ -23,6 +24,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.64.0",
+    "esbuild": "^0.28.2",
     "typescript": "~5.9.3",
     "vite": "^7.1.0"
   }

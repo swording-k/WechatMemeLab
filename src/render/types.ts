@@ -8,7 +8,7 @@ export interface Settings {
   captionCenterX?:number;captionCenterY?:number;captionRotation?:number;captionScale?:number;
   template:Template;caption:string;zoom:number;x:number;y:number;intensity:number;speed:number;background:string;size:number;focusX:number;focusY:number;radius:number;
 }
-export interface RenderAssets {hand?:CanvasImageSource}
+export interface RenderAssets {hand?:CanvasImageSource;createCanvas?:(width:number,height:number)=>OffscreenCanvas}
 export const templates:{id:Template;title:string;subtitle:string;caption:string;tag:string;suggestions:string[]}[]=[
   {id:'custom',title:'自由捏图',subtitle:'自己拉拽、鼓起、缩小，捏出你的动作',caption:'',tag:'自己来',suggestions:['你看我像正常吗','我先疯为敬','已读乱捏']},
   {id:'cat',title:'摸两下就上头',subtitle:'变成怪猫，挠下巴挠到脸扁耳朵折',caption:'再摸一下',tag:'人变猫',suggestions:['再摸一下','你的小猫突然发疯','现在知道哄我了？']},

@@ -1,0 +1,1 @@
+page{height:100%;background:#f7f7ef;color:#293122;font-family:system-ui,-apple-system,sans-serif}button{font-size:14px;border-radius:12px;margin:0;padding:0 14px;line-height:40px;background:#fff;color:#293122}button::after{border:1px solid #dfe2d3}button[disabled]{opacity:.5} .primary{background:#d5ed73;font-weight:700} .muted{color:#7b826e;font-size:12px} 

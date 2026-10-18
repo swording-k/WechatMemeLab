@@ -1,1 +1,16 @@
-{"pages":["pages/editor/index"],"window":{"navigationBarTitleText":"怪相馆","navigationBarBackgroundColor":"#f7f7ef","navigationBarTextStyle":"black","backgroundColor":"#f7f7ef"},"style":"v2","lazyCodeLoading":"requiredComponents","sitemapLocation":"sitemap.json"}
+{
+  "pages": [
+    "pages/editor/index",
+    "pages/video/index",
+    "pages/feedback/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "怪相馆",
+    "navigationBarBackgroundColor": "#f7f7ef",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f7f7ef"
+  },
+  "style": "v2",
+  "lazyCodeLoading": "requiredComponents",
+  "sitemapLocation": "sitemap.json"
+}

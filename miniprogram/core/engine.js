@@ -20,20 +20,26 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 var stdin_exports = {};
 __export(stdin_exports, {
   DURATION: () => DURATION,
+  cropToSettings: () => cropToSettings,
   defaults: () => defaults,
   drawFrame: () => drawFrame,
   encodeGif: () => encodeGif,
+  faceToSettings: () => faceToSettings,
   fitPhoto: () => fitPhoto,
+  gestureDelta: () => gestureDelta,
+  moveCrop: () => moveCrop,
   photoPlacement: () => photoPlacement,
-  templates: () => templates
+  resizeCrop: () => resizeCrop,
+  templates: () => templates,
+  transformPhoto: () => transformPhoto
 });
 module.exports = __toCommonJS(stdin_exports);
 
 // src/render/caption-layout.mjs
 function captionBox(textWidth, fontSize, x, y) {
   const width = Math.max(0, Math.min(296, textWidth)), height = Math.max(12, Math.min(56, fontSize));
-  const clamp2 = (v) => Math.max(0, Math.min(100, v));
-  return { width, height, x: 12 + width / 2 + (296 - width) * clamp2(x) / 100, y: 12 + height / 2 + (296 - height) * clamp2(y) / 100 };
+  const clamp4 = (v) => Math.max(0, Math.min(100, v));
+  return { width, height, x: 12 + width / 2 + (296 - width) * clamp4(x) / 100, y: 12 + height / 2 + (296 - height) * clamp4(y) / 100 };
 }
 
 // src/render/caption.ts
@@ -83,19 +89,47 @@ function drawCaption(ctx, s, phase) {
 }
 
 // src/photo/geometry.mjs
+var clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 function photoPlacement(iw, ih, s) {
   const scale = Math.max(1 / iw, 1 / ih) * s.zoom, width = iw * scale, height = ih * scale;
   const travelX = Math.max(0.5, (width - 1) / 2), travelY = Math.max(0.5, (height - 1) / 2);
   return { width, height, left: (1 - width) / 2 + s.x / 100 * travelX, top: (1 - height) / 2 + s.y / 100 * travelY, travelX, travelY };
 }
+function sourceToFrame(iw, ih, point, s) {
+  const p = photoPlacement(iw, ih, s);
+  return { x: p.left + point.x * p.width, y: p.top + point.y * p.height };
+}
 function fitPhoto(iw, ih) {
   return { zoom: Math.min(iw, ih) / Math.max(iw, ih), x: 0, y: 0 };
 }
+function cropToSettings(iw, ih, rect) {
+  const zoom = 1 / (rect.size * Math.max(1 / iw, 1 / ih)), p = photoPlacement(iw, ih, { zoom, x: 0, y: 0 });
+  return { zoom, x: (-rect.x / iw * p.width - p.left) / p.travelX * 100, y: (-rect.y / ih * p.height - p.top) / p.travelY * 100 };
+}
+function faceToSettings(iw, ih, face, placement) {
+  const base = Math.max(1 / iw, 1 / ih);
+  const zoom = placement?.zoom ?? clamp(0.58 / Math.max(face.width * iw * base, face.height * ih * base), 1, 4);
+  const w = iw * base * zoom, h = ih * base * zoom;
+  const point = { x: face.x + face.width / 2, y: face.y + face.height / 2 };
+  const x = placement?.x ?? clamp((0.5 - ((1 - w) / 2 + point.x * w)) / Math.max(0.5, (w - 1) / 2) * 100, -200, 200);
+  const y = placement?.y ?? clamp((0.48 - ((1 - h) / 2 + point.y * h)) / Math.max(0.5, (h - 1) / 2) * 100, -200, 200);
+  const focus = sourceToFrame(iw, ih, point, { zoom, x, y });
+  const radius = clamp(Math.max(face.width * w, face.height * h) * 0.64, 0.03, 0.45);
+  let petFace;
+  if (face.keypoints?.length >= 3) {
+    const [left, right] = face.keypoints.slice(0, 2).sort((a, b) => a.x - b.x).map((p) => sourceToFrame(iw, ih, p, { zoom, x, y }));
+    const nose = sourceToFrame(iw, ih, face.keypoints[2], { zoom, x, y });
+    const angle = clamp(Math.atan2(right.y - left.y, right.x - left.x), -0.55, 0.55), dx = (nose.x - focus.x) / radius, dy = (nose.y - focus.y) / radius;
+    petFace = { dx: dx * Math.cos(angle) + dy * Math.sin(angle), dy: -dx * Math.sin(angle) + dy * Math.cos(angle), angle };
+    if (!Object.values(petFace).every(Number.isFinite)) petFace = void 0;
+  }
+  return { zoom, x, y, focusX: clamp(focus.x, 0.03, 0.97), focusY: clamp(focus.y, 0.03, 0.97), radius, petFace };
+}
 
 // src/render/action.mjs
-var clamp = (x) => Math.max(0, Math.min(1, x));
+var clamp2 = (x) => Math.max(0, Math.min(1, x));
 var ease = (x) => {
-  const t = clamp(x);
+  const t = clamp2(x);
   return t * t * (3 - 2 * t);
 };
 function getAction(template, phase, intensity) {
@@ -967,4 +1001,28 @@ function diffBounds(previous, current, size, height) {
     y1 = Math.max(y1, y);
   }
   return x0 === size ? { x: 0, y: 0, w: 1, h: 1 } : { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 };
+}
+
+// src/ui/framing-geometry.mjs
+var clamp3 = (v, a, b) => Math.max(a, Math.min(b, v));
+function transformPhoto(w, h, before, anchor, scale, dx = 0, dy = 0) {
+  const zoom = clamp3(before.zoom * scale, 0.05, 16), p = photoPlacement(w, h, before), q2 = photoPlacement(w, h, { zoom, x: 0, y: 0 });
+  return { zoom, x: clamp3((anchor.x + dx - (anchor.x - p.left) / p.width * q2.width - q2.left) / q2.travelX * 100, -200, 200), y: clamp3((anchor.y + dy - (anchor.y - p.top) / p.height * q2.height - q2.top) / q2.travelY * 100, -200, 200) };
+}
+function moveCrop(w, h, before, dx, dy) {
+  return { ...before, x: clamp3(before.x + dx, 0, w - before.size), y: clamp3(before.y + dy, 0, h - before.size) };
+}
+function resizeCrop(w, h, before, corner, point) {
+  const west = corner.includes("w"), north = corner.includes("n"), ax = before.x + (west ? before.size : 0), ay = before.y + (north ? before.size : 0);
+  const maximum = Math.min(west ? ax : w - ax, north ? ay : h - ay), minimum = Math.min(Math.min(w, h) / 16, maximum);
+  const size = clamp3(Math.max((point.x - ax) * (west ? -1 : 1), (point.y - ay) * (north ? -1 : 1)), minimum, maximum);
+  return { x: west ? ax - size : ax, y: north ? ay - size : ay, size };
+}
+
+// src/ui/layer-geometry.mjs
+function gestureDelta(before, after) {
+  const center = (p) => ({ x: (p[0].x + p[1].x) / 2, y: (p[0].y + p[1].y) / 2 });
+  const angle = (p) => Math.atan2(p[1].y - p[0].y, p[1].x - p[0].x), distance = (p) => Math.hypot(p[1].x - p[0].x, p[1].y - p[0].y);
+  const b = center(before), a = center(after), r = angle(after) - angle(before);
+  return { dx: a.x - b.x, dy: a.y - b.y, scale: distance(after) / Math.max(1, distance(before)), angle: Math.atan2(Math.sin(r), Math.cos(r)) * 180 / Math.PI };
 }

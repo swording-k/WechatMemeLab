@@ -4,3 +4,7 @@ work/
 .sites-runtime/
 test-results/
 .DS_Store
+
+.env*
+!.env.example
+cloudfunctions/meme-ai/lib/

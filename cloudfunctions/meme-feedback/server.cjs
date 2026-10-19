@@ -1,5 +1,6 @@
+const {receiptMatches}=require('./security-core.cjs');
 const {createHmac}=require('node:crypto');const {validateFeedback,authorized,uuid}=require('./core.cjs');
-function createHandler(store,env=process.env){
+function createHandler(store,env=process.env,security){
  const secret=env.FEEDBACK_SYNC_SECRET,base=env.FEEDBACK_PUBLIC_URL;
  const origins=new Set((env.FEEDBACK_ORIGINS||'').split(',').filter(Boolean));
  return async(req,res)=>{
@@ -9,7 +10,8 @@ function createHandler(store,env=process.env){
   if(req.method==='OPTIONS'){if(!origin||!origins.has(origin))return reply(403,{error:'来源不允许'});return reply(204,'',{'Access-Control-Allow-Methods':'GET,POST,OPTIONS','Access-Control-Allow-Headers':'Content-Type,Authorization'});}
   const url=new URL(req.url,'http://localhost'),op=url.searchParams.get('op')||'submit',id=url.searchParams.get('id');
   try{
-   if(op==='health')return reply(200,{ok:true,service:'meme-feedback',version:'1.0.0'});
+   if(security&&await security(req,res,url,()=>readBody(req)))return;
+   if(op==='health')return reply(200,{ok:true,service:'meme-feedback',version:'1.1.0',contentSecurity:'wechat-v2'});
    if(op==='pending'||op==='ack'){
     if(!authorized(req.headers.authorization,secret))return reply(401,{error:'Unauthorized'});
     if(op==='pending'&&req.method==='GET'){const rows=await store.pending();return reply(200,{items:rows.map(r=>({id:r.id,type:r.type,title:r.title,detail:r.detail,device:r.device,images:r.files.map((f,i)=>({url:`${base}?op=image&id=${r.id}&slot=${i}`,name:f.name}))}))});}
@@ -24,7 +26,9 @@ function createHandler(store,env=process.env){
    if(op!=='submit'||req.method!=='POST')return reply(405,{error:'Method not allowed'});
    if(origin&&!origins.has(origin))return reply(403,{error:'来源不允许'});
    if(!secret||!base)return reply(503,{error:'反馈服务尚未配置'});
-   const data=validateFeedback(await readBody(req));const existing=await store.get(data.id);if(existing)return reply(200,{id:data.id,state:existing.state,issueUrl:existing.issueUrl||null});
+   const raw=await readBody(req);const data=validateFeedback(raw);
+   receiptMatches(raw.securityReceipt,data.title+'\n'+data.detail+'\n'+data.device,data.images,env);
+   const existing=await store.get(data.id);if(existing)return reply(200,{id:data.id,state:existing.state,issueUrl:existing.issueUrl||null});
    const ip=String(req.headers['x-forwarded-for']||req.socket.remoteAddress||'unknown').split(',')[0].trim();
    const key=createHmac('sha256',secret).update(ip+':'+Math.floor(Date.now()/600000)).digest('hex');
    if(!await store.claimRate(key))return reply(429,{error:'提交较频繁，请稍后再试'});

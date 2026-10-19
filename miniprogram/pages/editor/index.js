@@ -1,3 +1,4 @@
+const {checkFrames,checkPhoto}=require('../../lib/security');
 const {paintPhoto,frameQueue}=require('../../lib/preview');
 const {writeBytes}=require('../../lib/files');
 const {drawFrame,defaults,templates,encodeGif,fitPhoto,photoPlacement,DURATION}=require('../../core/engine');
@@ -8,7 +9,7 @@ const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 const wait=()=>new Promise(resolve=>setTimeout(resolve,0));
 Page({
  ...editorTools,...cropTools,...faceTools,
- data:{tabs:[{id:'photo',title:'照片'},{id:'effects',title:'效果'},{id:'text',title:'文字'},{id:'motion',title:'动作'}],tool:'photo',templates,selected:defaults.template,caption:defaults.caption,suggestions:templates.find(t=>t.id===defaults.template).suggestions,intensity:75,speedLabel:'正常速度',sculpt:'drag',sculptModes:[{id:'drag',title:'拉拽'},{id:'expand',title:'鼓起'},{id:'shrink',title:'缩小'}],ready:false,hasPhoto:false,busy:false,status:'照片仅在本机处理',hint:'拖动取景 · 双指缩放',canUndo:false,canRedo:false,gifPath:'',plain:false,playing:false,layer:'text',cropping:false,styles:[{id:'meme',name:'表情包描边'},{id:'plain',name:'纯色文字'},{id:'band',name:'字幕底条'},{id:'shake',name:'抖动文字'}],styleNames:['表情包描边','纯色文字','字幕底条','抖动文字'],colors:['#ffffff','#293122','#f5dfe4','#d5ed73','#ff4747'],backgrounds:['#ffffff','#fff8ed','#e7efdb','#f5dfe4','#dfe9f5'],sizes:[240,320,480],exportSize:240,brushRadius:.2,scope:35,textColor:'#ffffff',background:'#fff8ed',captionStyleName:'表情包描边',faces:[],faceStatus:'自动定位不改变照片取景，也可点选动作位置。',captionRotation:0,petRotation:0,petScale:1},
+ data:{tabs:[{id:'photo',title:'照片'},{id:'effects',title:'效果'},{id:'text',title:'文字'},{id:'motion',title:'动作'}],tool:'photo',templates,selected:defaults.template,caption:defaults.caption,suggestions:templates.find(t=>t.id===defaults.template).suggestions,intensity:75,speedLabel:'正常速度',sculpt:'drag',sculptModes:[{id:'drag',title:'拉拽'},{id:'expand',title:'鼓起'},{id:'shrink',title:'缩小'}],ready:false,hasPhoto:false,busy:false,status:'本机编辑；生成前联网检测文字与画面',hint:'拖动取景 · 双指缩放',canUndo:false,canRedo:false,gifPath:'',plain:false,playing:false,layer:'text',cropping:false,styles:[{id:'meme',name:'表情包描边'},{id:'plain',name:'纯色文字'},{id:'band',name:'字幕底条'},{id:'shake',name:'抖动文字'}],styleNames:['表情包描边','纯色文字','字幕底条','抖动文字'],colors:['#ffffff','#293122','#f5dfe4','#d5ed73','#ff4747'],backgrounds:['#ffffff','#fff8ed','#e7efdb','#f5dfe4','#dfe9f5'],sizes:[240,320,480],exportSize:240,brushRadius:.2,scope:35,textColor:'#ffffff',background:'#fff8ed',captionStyleName:'表情包描边',faces:[],faceStatus:'自动定位不改变照片取景，也可点选动作位置。',captionRotation:0,petRotation:0,petScale:1},
  onLoad(options){this.recipeOptions=options;},
  async onReady(){
   this.settings={...defaults,custom:[]};this.history=[];this.future=[];this.alive=true;
@@ -21,7 +22,7 @@ Page({
    this.off=wx.createOffscreenCanvas({type:'2d',width:240,height:240});this.offCtx=this.off.getContext('2d');
    this.assets={createCanvas:(width,height)=>wx.createOffscreenCanvas({type:'2d',width,height})};
    this.assets.hand=await this.image('/assets/pinch-hand.png');this.photo=await this.image('/assets/sample-portrait.jpg');
-   Object.assign(this.settings,fitPhoto(this.photo.width,this.photo.height));const recipe=templates.find(t=>t.id===this.recipeOptions?.t);if(recipe){this.settings.template=recipe.id;this.settings.caption=(this.recipeOptions.c||recipe.caption).slice(0,20);this.setData({selected:recipe.id,caption:this.settings.caption});}this.setData({ready:true});this.start();
+   Object.assign(this.settings,fitPhoto(this.photo.width,this.photo.height));const recipe=templates.find(t=>t.id===this.recipeOptions?.t);if(recipe){this.settings.template=recipe.id;this.settings.caption=recipe.caption;this.setData({selected:recipe.id,caption:this.settings.caption});}this.setData({ready:true});this.start();
   }catch(error){this.error(error);}
  },
  onShow(){this.alive=true;if(this.canvas&&!this.data.busy)this.start();},
@@ -37,7 +38,7 @@ Page({
  sync(){const t=templates.find(t=>t.id===this.settings.template);this.setData({selected:t.id,caption:this.settings.caption,suggestions:t.suggestions,intensity:Math.round(this.settings.intensity*100),plain:this.settings.captionStyle==='plain',captionRotation:this.settings.captionRotation||0,petRotation:this.settings.petRotation||0,petScale:this.settings.petScale||1,scope:Math.round(this.settings.radius*100),textColor:this.settings.captionColor,background:this.settings.background,captionStyleName:this.data.styles.find(t=>t.id===(this.settings.captionStyle||'meme')).name,gifPath:'',status:'已调整，请重新生成 GIF'});this.historyState();this.start();},
  undo(){if(!this.history.length||this.data.busy)return;this.future.push(this.settings);this.settings=this.history.pop();this.sync();},
  redo(){if(!this.future.length||this.data.busy)return;this.history.push(this.settings);this.settings=this.future.pop();this.sync();},
- async choosePhoto(){if(this.data.busy)return;try{const result=await wx.chooseMedia({count:1,mediaType:['image'],sourceType:['album','camera'],sizeType:['compressed']});const image=await this.image(result.tempFiles[0].tempFilePath);this.stop();this.photo=image;this.history=[];this.future=[];this.faces=[];this.setData({faces:[]});Object.assign(this.settings,fitPhoto(image.width,image.height),{focusX:.5,focusY:.5,custom:[]});this.setData({hasPhoto:true,status:'拖动照片并双指缩放，选好要做表情的区域',gifPath:'',canUndo:false,canRedo:false});this.start();}catch(error){if(!/cancel/.test(error.errMsg||''))this.error(error);}},
+ async choosePhoto(){if(this.data.busy)return;try{const result=await wx.chooseMedia({count:1,mediaType:['image'],sourceType:['album','camera'],sizeType:['compressed']});this.stop();this.setData({busy:true,status:'正在检测所选照片…'});await checkPhoto(result.tempFiles[0].tempFilePath,message=>this.setData({status:message}));const image=await this.image(result.tempFiles[0].tempFilePath);this.stop();this.photo=image;this.history=[];this.future=[];this.faces=[];this.setData({faces:[]});Object.assign(this.settings,fitPhoto(image.width,image.height),{focusX:.5,focusY:.5,custom:[]});this.setData({hasPhoto:true,status:'拖动照片并双指缩放，选好要做表情的区域',gifPath:'',canUndo:false,canRedo:false});this.start();}catch(error){if(!/cancel/.test(error.errMsg||''))this.error(error);}finally{this.setData({busy:false});this.start();}},
  switchTool(e){if(this.data.busy)return;const tool=e.currentTarget.dataset.tool;this.setData({tool,playing:tool==='effects',layer:'text',hint:tool==='photo'?'拖动取景 · 双指缩放':tool==='text'?'拖动调整文字位置':tool==='motion'&&this.settings.template==='custom'?'直接拉拽，捏出你的动作':'轻点照片，选择变形的位置'});this.measureStage();this.start();},
  chooseEffect(e){if(this.data.busy)return;this.checkpoint();const t=templates.find(t=>t.id===e.currentTarget.dataset.id);this.settings.template=t.id;this.settings.caption=t.caption;this.setData({playing:t.id!=='custom'});this.sync();if(t.id==='custom')this.switchTool({currentTarget:{dataset:{tool:'motion'}}});},
  fit(){if(this.data.busy)return;this.checkpoint();Object.assign(this.settings,fitPhoto(this.photo.width,this.photo.height));this.sync();},
@@ -68,6 +69,7 @@ Page({
  async exportGif(){if(this.data.busy||!this.photo)return;this.stop();this.setData({busy:true,gifPath:'',status:'正在制作 0%'});let file;
   try{const frames=[],count=24,size=this.data.exportSize;this.off.width=size;this.off.height=size;const snapshot=JSON.parse(JSON.stringify(this.settings));
    for(let i=0;i<count;i++){drawFrame(this.offCtx,this.photo,snapshot,i/count,this.assets);frames.push(new Uint8Array(this.offCtx.getImageData(0,0,size,size).data));this.setData({status:`正在制作 ${Math.round((i+1)/count*70)}%`});await wait();}
+   await checkFrames(frames,size,size,snapshot.caption,message=>this.setData({status:message}),()=>!this.alive);
    this.setData({status:'正在编码 GIF…'});await wait();const bytes=encodeGif(frames,size,Math.round(DURATION/snapshot.speed/count));
    file=`${wx.env.USER_DATA_PATH}/meme-${Date.now()}.gif`;
    await writeBytes(wx.getFileSystemManager(),file,bytes);

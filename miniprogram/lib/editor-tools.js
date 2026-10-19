@@ -17,8 +17,8 @@ module.exports={
  tune(e){if(this.data.busy)return;this.checkpoint();this.settings[e.currentTarget.dataset.key]=Number(e.detail.value);this.sync();},
  exportSize(e){if(this.data.busy)return;this.setData({exportSize:Number(this.data.sizes[e.detail.value])});},
  clearSculpt(){if(this.data.busy)return;this.checkpoint();this.settings.custom=[];this.sync();},
- shareRecipe(){wx.setClipboardData({data:'https://swording-k.github.io/WechatMemeLab/?template='+this.settings.template+'&caption='+encodeURIComponent(this.settings.caption)});},
- onShareAppMessage(){return {title:'用你自己的照片整点怪相',path:'/pages/editor/index?t='+this.settings.template+'&c='+encodeURIComponent(this.settings.caption)};},
+ shareRecipe(){wx.setClipboardData({data:'https://swording-k.github.io/WechatMemeLab/?template='+this.settings.template});},
+ onShareAppMessage(){return {title:'用你自己的照片整点怪相',path:'/pages/editor/index?t='+this.settings.template,imageUrl:'/assets/sample-portrait.jpg'};},
  layerGesture(g,pts){
   const b=g.before,pet=this.data.layer==='pet'&&['cat','dog'].includes(b.template),v=pet?{x:(b.focusX+(b.petX||0)/100)*320,y:(b.focusY+(b.petY||0)/100)*320,scale:b.petScale??1,angle:b.petRotation??0}:{x:b.captionCenterX??160,y:b.captionCenterY??292,scale:b.captionScale??1,angle:b.captionRotation??0};
   let dx=(pts[0].x-g.points[0].x)*320,dy=(pts[0].y-g.points[0].y)*320,scale=1,angle=0;

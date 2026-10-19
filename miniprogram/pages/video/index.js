@@ -1,6 +1,7 @@
+const {checkFrames}=require('../../lib/security');
 const{encodeGif}=require('../../core/engine');const{writeBytes}=require('../../lib/files');const{sampleVideo}=require('../../lib/video-frames');
 Page({
- data:{path:'',name:'还没选择视频',modes:[{id:'forward',title:'原片加字'},{id:'bounce',title:'反复横跳'},{id:'reverse',title:'倒带一下'}],selected:'forward',start:0,end:3,caption:'我真的没事',font:.12,ty:.85,speeds:[.5,1,1.5,2],playbackSpeed:1,ratios:['保持原比例','方形取景'],square:false,sizes:[240,320],outputSize:240,zoom:1,busy:false,gifPath:'',status:'视频仅在本机处理；逐帧解码需真机验证'},
+ data:{path:'',name:'还没选择视频',modes:[{id:'forward',title:'原片加字'},{id:'bounce',title:'反复横跳'},{id:'reverse',title:'倒带一下'}],selected:'forward',start:0,end:3,caption:'我真的没事',font:.12,ty:.85,speeds:[.5,1,1.5,2],playbackSpeed:1,ratios:['保持原比例','方形取景'],square:false,sizes:[240,320],outputSize:240,zoom:1,busy:false,gifPath:'',status:'本机编辑；生成前联网检测全部导出画面'},
  async onReady(){const n=await new Promise(r=>this.createSelectorQuery().select('#frames').fields({node:true}).exec(v=>r(v[0])));this.canvas=n.node;this.ctx=n.node.getContext('2d');},
  onUnload(){this.cancelled=true;this.dispose();},
  async choose(){if(this.data.busy)return;try{const result=await wx.chooseMedia({count:1,mediaType:['video'],sourceType:['album'],maxDuration:60});const file=result.tempFiles[0];if(file.size>100*1024*1024)throw Error('请选小于 100 MB 的视频');this.info=await wx.getVideoInfo({src:file.tempFilePath});this.setData({path:file.tempFilePath,name:'视频 '+this.info.duration.toFixed(1)+' 秒',start:0,end:Math.min(3,this.info.duration),gifPath:''});}catch(e){if(!/cancel/.test(e.errMsg||''))this.error(e);}},
@@ -26,7 +27,7 @@ Page({
     const lines=s.caption.split('\n').slice(0,3),lineHeight=Math.min(width,height)*s.font*1.2;lines.forEach((line,i)=>{const y=height*s.ty+(i-(lines.length-1)/2)*lineHeight;c.strokeText(line,width/2,y,width-14);c.fillText(line,width/2,y,width-14);});return new Uint8Array(c.getImageData(0,0,width,height).data);
    });
    if(s.selected==='reverse')frames.reverse();if(s.selected==='bounce')frames.push(...frames.slice(1,-1).reverse());
-   if(this.cancelled)throw Error('已取消生成');this.setData({status:'正在编码 GIF…'});await new Promise(r=>setTimeout(r,0));const bytes=encodeGif(frames,width,Math.round(100/s.playbackSpeed),()=>{},height),path=`${wx.env.USER_DATA_PATH}/video-${Date.now()}.gif`;await writeBytes(wx.getFileSystemManager(),path,bytes);if(this.lastPath)wx.getFileSystemManager().unlink({filePath:this.lastPath,fail(){}});this.lastPath=path;this.setData({gifPath:path,status:`已生成 ${width} × ${height} · ${Math.round(bytes.length/1024)} KB`});
+   if(this.cancelled)throw Error('已取消生成');await checkFrames(frames,width,height,s.caption,message=>this.setData({status:message}),()=>this.cancelled);this.setData({status:'正在编码 GIF…'});await new Promise(r=>setTimeout(r,0));const bytes=encodeGif(frames,width,Math.round(100/s.playbackSpeed),()=>{},height),path=`${wx.env.USER_DATA_PATH}/video-${Date.now()}.gif`;await writeBytes(wx.getFileSystemManager(),path,bytes);if(this.lastPath)wx.getFileSystemManager().unlink({filePath:this.lastPath,fail(){}});this.lastPath=path;this.setData({gifPath:path,status:`已生成 ${width} × ${height} · ${Math.round(bytes.length/1024)} KB`});
   }catch(e){this.error(e);}finally{await this.dispose();this.setData({busy:false});}
  },
  previewGif(){wx.previewImage({urls:[this.data.gifPath]});},

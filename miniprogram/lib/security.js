@@ -3,7 +3,7 @@ const API='https://fitgenius-d0ghm1rz21cef6594-1441969311.ap-shanghai.app.tcloud
 let session,sessionAt=0,notice=false;
 const pending=new Map();
 function request(op,data,token){return new Promise((resolve,reject)=>wx.request({url:API+'?op=security-'+op,method:'POST',header:{'content-type':'application/octet-stream',...(token?{Authorization:'Bearer '+token}:{})},data:JSON.stringify(data),timeout:60000,success:r=>r.statusCode===200?resolve(r.data):reject(Error(r.data?.error||'内容检测服务未就绪，请稍后重试')),fail:()=>reject(Error('内容检测连接失败，尚未放行，请稍后重试'))}));}
-async function authorize(){if(!notice){const r=await wx.showModal({title:'生成前进行内容检测',content:'制作与反馈中的文字、图片及动图各帧将发送至本站后端和微信内容安全接口进行检测。检测图片为临时存储；编辑仍在本机完成。反馈内容及附件通过后将公开同步到 GitHub。',confirmText:'同意并继续',cancelText:'暂不生成'});if(!r.confirm)throw Error('已取消内容检测');notice=true;}
+async function authorize(){if(!notice){const r=await wx.showModal({title:'生成前进行内容检测',content:'制作与反馈中的文字、图片及动图各帧将发送至本站后端和微信内容安全接口进行检测。检测图片为临时存储；编辑仍在本机完成。反馈内容及附件通过后将公开同步到 GitHub。',confirmText:'同意继续',cancelText:'暂不生成'});if(!r.confirm)throw Error('已取消内容检测');notice=true;}
  if(!session||Date.now()-sessionAt>80*60000){const {code}=await new Promise((resolve,reject)=>wx.login({success:resolve,fail:reject}));const r=await request('login',{code});session=r.session;sessionAt=Date.now();}return session;}
 async function check(data,status=()=>{},cancelled=()=>false){const token=await authorize();const key=JSON.stringify(data);let id=pending.get(key);if(!id){status('正在提交内容检测…');const r=await request('check',data,token);id=r.id;pending.set(key,id);if(pending.size>12)pending.delete(pending.keys().next().value);}
  const until=Date.now()+180000;

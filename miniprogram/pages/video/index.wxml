@@ -1,3 +1,34 @@
-<view class="studio"><view class="headline"><text>把这一秒，变成你的表情</text></view><video wx:if="{{path}}" id="video" src="{{path}}" class="video" controls show-fullscreen-btn="false" object-fit="contain"/><view wx:else class="empty">先选一小段视频，看看哪一秒最有戏。</view>
-<scroll-view scroll-y class="tools"><view class="panel"><button class="primary" disabled="{{busy}}" bindtap="choose">选择视频</button><text class="muted">{{name}} · 最长取 6 秒 · 本机编辑 · GIF 无声音</text><view class="row"><button wx:for="{{modes}}" wx:key="id" data-mode="{{item.id}}" bindtap="mode" class="{{selected===item.id?'primary':''}}">{{item.title}}</button></view><view class="row"><view>开始（秒）<input type="digit" value="{{start}}" data-key="start" bindinput="number"/></view><view>结束（秒）<input type="digit" value="{{end}}" data-key="end" bindinput="number"/></view></view><textarea maxlength="60" value="{{caption}}" placeholder="写一句只有你们懂的话，最多三行" bindinput="caption"/><text class="muted">字幕大小</text><slider min="0.06" max="0.2" step="0.01" value="{{font}}" bindchange="font"/><text class="muted">字幕上下位置</text><slider min="0.1" max="0.95" step="0.01" value="{{ty}}" bindchange="textY"/><view class="row"><picker range="{{speeds}}" bindchange="speed"><view class="pick">速度 {{playbackSpeed}}× ▾</view></picker><picker range="{{ratios}}" bindchange="ratio"><view class="pick">{{square?'方形取景':'保持原比例'}} ▾</view></picker><picker range="{{sizes}}" bindchange="size"><view class="pick">{{outputSize}} px ▾</view></picker></view><text wx:if="{{square}}" class="muted">方形取景放大</text><slider wx:if="{{square}}" min="1" max="3" step="0.05" value="{{zoom}}" bindchange="zoom"/>
-</view></scroll-view><view class="export"><button class="primary" disabled="{{!path||busy}}" loading="{{busy}}" bindtap="generate">{{busy?status:'生成 GIF'}}</button><button wx:if="{{busy}}" bindtap="cancel">取消生成</button><view class="result" wx:if="{{gifPath}}"><image src="{{gifPath}}" mode="aspectFit" bindtap="previewGif"/><button bindtap="saveGif">保存到相册</button></view><text class="status muted">{{status}}</text></view><canvas type="2d" id="frames" class="hidden-canvas"/></view>
+<view class="studio">
+ <view class="headline"><text>把这一秒，变成你的表情</text><button class="change" disabled="{{busy||previewLoading}}" bindtap="choose">{{path?'换个视频':'选择视频'}}</button></view>
+ <view class="video-stage" id="video-stage">
+  <video wx:if="{{path}}" hidden="{{view!=='source'||cropping}}" id="video" src="{{path}}" poster="{{poster}}" class="source-video" controls="{{false}}" show-fullscreen-btn="{{false}}" object-fit="contain" bindtimeupdate="timeUpdate" bindended="sourceEnded" binderror="videoError"/>
+  <canvas type="2d" id="frames" class="output-canvas" style="width:{{previewW}}px;height:{{previewH}}px" hidden="{{!path||view!=='output'||cropping}}"/>
+  <view wx:if="{{!path}}" class="empty">选一段视频，把最有戏的几秒留下来</view>
+  <text wx:if="{{path}}" class="stage-label">{{view==='source'?'原片 · '+cursorLabel+' 秒':'成品画面 · '+(playing?'循环预览':'当前取景')}}</text>
+ </view>
+ <view class="quick"><button disabled="{{!path||busy||previewLoading}}" bindtap="sourcePlay">{{sourcePlaying?'暂停原片':'播放选中片段'}}</button><button class="primary" disabled="{{!path||busy||previewLoading}}" loading="{{previewLoading}}" bindtap="preview">{{playing?'暂停预览':'预览成品'}}</button></view>
+ <view class="tabs"><view wx:for="{{tabs}}" wx:key="id" class="tab {{tool===item.id?'active':''}}" data-tool="{{item.id}}" bindtap="switchTool">{{item.name}}</view></view>
+ <scroll-view scroll-y class="tools">
+  <view wx:if="{{tool==='clip'}}" class="panel">
+   <view class="section-line"><text>留下 {{clipLabel}} 秒</text><text class="muted">原片 {{durationLabel}} 秒 · 最长取 6 秒</text></view>
+   <text class="field-label">从 {{startLabel}} 秒开始</text><slider disabled="{{!path||busy||previewLoading}}" min="0" max="{{duration||1}}" step="0.1" value="{{start}}" activeColor="#71833d" data-edge="start" bindchanging="trim" bindchange="trim"/>
+   <text class="field-label">到 {{endLabel}} 秒结束</text><slider disabled="{{!path||busy||previewLoading}}" min="0" max="{{duration||1}}" step="0.1" value="{{end}}" activeColor="#71833d" data-edge="end" bindchanging="trim" bindchange="trim"/>
+   <view class="section-line"><text class="field-label">查看原片 {{cursorLabel}} 秒的位置</text></view><slider disabled="{{!path||busy||previewLoading}}" min="0" max="{{duration||1}}" step="0.1" value="{{cursor}}" bindchange="scrub" activeColor="#71833d"/>
+   <text class="muted">拖动起止位置选片段；播放只循环选中的几秒。</text>
+  </view>
+  <view wx:if="{{tool==='crop'}}" class="panel">
+   <button class="primary" disabled="{{!path||busy||previewLoading}}" bindtap="openCrop">框选视频画面</button>
+   <view class="row"><button disabled="{{!path||busy||previewLoading}}" bindtap="fullCrop">保留完整画面</button><button disabled="{{!path||busy||previewLoading}}" bindtap="squareCrop">正方形取景</button></view>
+   <text class="muted">在当前时刻的画面上拖动选框或四角。选中的区域就是导出的区域，可自由调整比例。</text>
+  </view>
+  <view wx:if="{{tool==='text'}}" class="panel">
+   <view class="row"><button wx:for="{{modes}}" wx:key="id" data-mode="{{item.id}}" bindtap="mode" disabled="{{busy||previewLoading}}" class="{{selected===item.id?'primary':''}}">{{item.title}}</button></view>
+   <textarea disabled="{{busy||previewLoading}}" maxlength="60" value="{{caption}}" placeholder="写一句只有你们懂的话，最多三行" bindinput="caption"/>
+   <text class="field-label">字幕大小</text><slider disabled="{{busy||previewLoading}}" min="0.06" max="0.2" step="0.01" value="{{font}}" bindchanging="font" bindchange="font" activeColor="#71833d"/>
+   <text class="field-label">字幕上下位置</text><slider disabled="{{busy||previewLoading}}" min="0.1" max="0.95" step="0.01" value="{{ty}}" bindchanging="textY" bindchange="textY" activeColor="#71833d"/>
+   <view class="row"><picker disabled="{{busy||previewLoading}}" value="{{speedIndex}}" range="{{speeds}}" bindchange="speed"><view class="pick">速度 {{playbackSpeed}}× ▾</view></picker><picker disabled="{{busy||previewLoading}}" range="{{sizes}}" bindchange="size"><view class="pick">导出 {{outputSize}} px ▾</view></picker></view>
+  </view>
+ </scroll-view>
+ <view class="export"><button class="primary" disabled="{{!path||busy||previewLoading}}" loading="{{busy}}" bindtap="generate">{{busy?status:'生成 GIF 表情'}}</button><button wx:if="{{busy||previewLoading}}" bindtap="cancel">取消</button><view class="result" wx:if="{{gifPath}}"><image src="{{gifPath}}" mode="aspectFit" bindtap="previewGif"/><button bindtap="saveGif">保存到相册</button></view><text class="status muted">{{status}}</text></view>
+</view>
+<view wx:if="{{cropping}}" class="crop-sheet"><view class="crop-heading"><text>框选视频画面</text><button bindtap="cancelCrop">取消</button></view><text class="muted">拖动选框移动，拖四角调整大小；选框以外不会导出。</text><canvas type="2d" id="crop" class="crop-canvas" bindtouchstart="cropStart" catchtouchmove="cropMove" bindtouchend="cropEnd" bindtouchcancel="cropEnd"/><button class="primary" bindtap="applyCrop">使用这个区域</button></view>

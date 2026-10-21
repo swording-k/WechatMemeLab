@@ -6,7 +6,7 @@ test('unsupported decoder pixel formats fail clearly rather than producing corru
 async function chooseVideo(info, selected={tempFilePath:'clip.mp4',size:1000,duration:9}){
  const {default:vm}=await import('node:vm');const {readFileSync}=await import('node:fs');let page;
  const wx={chooseMedia:async()=>({tempFiles:[selected]}),getVideoInfo:async()=>info,showToast(){}};
- vm.runInNewContext(readFileSync('miniprogram/pages/video/index.js','utf8'),{Page:p=>page=p,wx,require:()=>({})});
+ vm.runInNewContext(readFileSync('miniprogram/pages/video/index.js','utf8'),{Page:p=>page=p,wx,clearTimeout,setTimeout,require:()=>({})});
  const state={...page,data:{...page.data},setData(v){Object.assign(this.data,v)}};
  await state.choose();return state;
 }

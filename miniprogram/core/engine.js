@@ -31,9 +31,20 @@ __export(stdin_exports, {
   photoPlacement: () => photoPlacement,
   resizeCrop: () => resizeCrop,
   templates: () => templates,
+  timeline: () => timeline,
   transformPhoto: () => transformPhoto
 });
 module.exports = __toCommonJS(stdin_exports);
+
+// src/video/timeline.mjs
+function timeline(start, end, speed, mode) {
+  if (![start, end, speed].every(Number.isFinite) || start < 0 || end <= start || end - start > 6.001 || speed < 0.5 || speed > 2 || !["forward", "reverse", "bounce"].includes(mode)) throw new Error("\u8BF7\u9009\u62E9 0\u20136 \u79D2\u7247\u6BB5\u548C\u6709\u6548\u901F\u5EA6");
+  const count = Math.max(2, Math.ceil((end - start) * 10));
+  let times = Array.from({ length: count }, (_, i) => start + (end - start) * i / count);
+  if (mode === "reverse") times.reverse();
+  if (mode === "bounce") times = times.concat(times.slice(1, -1).reverse());
+  return { times, delay: Math.max(10, Math.round((end - start) * 1e3 / count / speed / 10) * 10) };
+}
 
 // src/render/caption-layout.mjs
 function captionBox(textWidth, fontSize, x, y) {

@@ -1,7 +1,7 @@
 <view class="studio">
  <view class="headline"><text>把这一秒，变成你的表情</text><button class="change" disabled="{{busy||previewLoading}}" bindtap="choose">{{path?'换个视频':'选择视频'}}</button></view>
  <view class="video-stage" id="video-stage">
-  <video wx:if="{{path}}" hidden="{{view!=='source'||cropping}}" id="video" src="{{path}}" poster="{{poster}}" class="source-video" controls="{{false}}" show-fullscreen-btn="{{false}}" object-fit="contain" bindtimeupdate="timeUpdate" bindended="sourceEnded" binderror="videoError"/>
+  <video wx:if="{{path}}" hidden="{{view!=='source'||cropping}}" id="video" src="{{path}}" poster="{{poster}}" class="source-video" controls="{{false}}" show-fullscreen-btn="{{false}}" object-fit="contain" bindtimeupdate="timeUpdate" bindended="sourceEnded" bindloadedmetadata="videoMetadata" binderror="videoError"/>
   <canvas type="2d" id="frames" class="output-canvas" style="width:{{previewW}}px;height:{{previewH}}px" hidden="{{!path||view!=='output'||cropping}}"/>
   <view wx:if="{{!path}}" class="empty">选一段视频，把最有戏的几秒留下来</view>
   <text wx:if="{{path}}" class="stage-label">{{view==='source'?'原片 · '+cursorLabel+' 秒':'成品画面 · '+(playing?'循环预览':'当前取景')}}</text>
@@ -19,7 +19,7 @@
   <view wx:if="{{tool==='crop'}}" class="panel">
    <button class="primary" disabled="{{!path||busy||previewLoading}}" bindtap="openCrop">框选视频画面</button>
    <view class="row"><button disabled="{{!path||busy||previewLoading}}" bindtap="fullCrop">保留完整画面</button><button disabled="{{!path||busy||previewLoading}}" bindtap="squareCrop">正方形取景</button></view>
-   <text class="muted">在当前时刻的画面上拖动选框或四角。选中的区域就是导出的区域，可自由调整比例。</text>
+   <text class="muted">在原视频画面上拖动选框或四角。选中的区域就是导出的区域，可自由调整比例。</text>
   </view>
   <view wx:if="{{tool==='text'}}" class="panel">
    <view class="row"><button wx:for="{{modes}}" wx:key="id" data-mode="{{item.id}}" bindtap="mode" disabled="{{busy||previewLoading}}" class="{{selected===item.id?'primary':''}}">{{item.title}}</button></view>
@@ -31,4 +31,4 @@
  </scroll-view>
  <view class="export"><button class="primary" disabled="{{!path||busy||previewLoading}}" loading="{{busy}}" bindtap="generate">{{busy?status:'生成 GIF 表情'}}</button><button wx:if="{{busy||previewLoading}}" bindtap="cancel">取消</button><view class="result" wx:if="{{gifPath}}"><image src="{{gifPath}}" mode="aspectFit" bindtap="previewGif"/><button bindtap="saveGif">保存到相册</button></view><text class="status muted">{{status}}</text></view>
 </view>
-<view wx:if="{{cropping}}" class="crop-sheet"><view class="crop-heading"><text>框选视频画面</text><button bindtap="cancelCrop">取消</button></view><text class="muted">拖动选框移动，拖四角调整大小；选框以外不会导出。</text><canvas type="2d" id="crop" class="crop-canvas" bindtouchstart="cropStart" catchtouchmove="cropMove" bindtouchend="cropEnd" bindtouchcancel="cropEnd"/><button class="primary" bindtap="applyCrop">使用这个区域</button></view>
+<view wx:if="{{cropping}}" class="crop-sheet"><view class="crop-heading"><text>框选视频画面</text><button bindtap="cancelCrop">取消</button></view><text class="muted">拖动选框移动，拖四角调整大小；选框以外不会导出。</text><view class="crop-video-stage" id="crop-video-stage"><video id="crop-video" src="{{path}}" poster="{{poster}}" object-fit="contain" controls="{{false}}" show-center-play-btn="{{false}}" muted bindloadedmetadata="cropReady"/><view class="crop-touch" bindtouchstart="cropStart" catchtouchmove="cropMove" bindtouchend="cropEnd" bindtouchcancel="cropEnd"><view wx:for="{{cropMask}}" wx:key="index" class="crop-shade" style="{{item}}"/><view class="crop-box" style="{{cropBoxStyle}}"><view class="crop-third v a"/><view class="crop-third v b"/><view class="crop-third h a"/><view class="crop-third h b"/><view class="crop-handle nw"/><view class="crop-handle ne"/><view class="crop-handle sw"/><view class="crop-handle se"/></view></view></view><button class="primary" bindtap="applyCrop">使用这个区域</button></view>

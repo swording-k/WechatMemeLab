@@ -1,0 +1,4 @@
+import test from 'node:test';import assert from 'node:assert/strict';import{createRequire}from'node:module';const require=createRequire(import.meta.url);
+function page(){const tools=require('../miniprogram/lib/video-crop');const p={...tools,data:{path:'clip.mp4',cursor:1,crop:{x:0,y:0,w:1,h:1}},info:{width:'1920',height:'1080',orientation:'up'},locked:()=>false,stopPlayback(){},changed(){},setData(d){Object.assign(this.data,d)},loadStill(){throw Error('取景不应调用解码器')},error(e){throw e}};return p;}
+test('square framing opens its selection immediately using video dimensions without decoding',()=>{const p=page();p.squareCrop();assert.equal(p.data.crop.w,.5625);assert.equal(p.data.crop.h,1);assert.equal(p.data.crop.x,.21875);assert.equal(p.data.cropping,true);});
+test('free framing opens on native video even if frame decoding is unavailable',async()=>{const p=page();await p.openCrop();assert.equal(p.data.cropping,true);assert.notEqual(p.data.previewLoading,true);});

@@ -4,7 +4,22 @@ Page({
  data:{path:'',name:'还没选择视频',modes:[{id:'forward',title:'原片加字'},{id:'bounce',title:'反复横跳'},{id:'reverse',title:'倒带一下'}],selected:'forward',start:0,end:3,caption:'我真的没事',font:.12,ty:.85,speeds:[.5,1,1.5,2],playbackSpeed:1,ratios:['保持原比例','方形取景'],square:false,sizes:[240,320],outputSize:240,zoom:1,busy:false,gifPath:'',status:'本机编辑；生成前联网检测全部导出画面'},
  async onReady(){const n=await new Promise(r=>this.createSelectorQuery().select('#frames').fields({node:true}).exec(v=>r(v[0])));this.canvas=n.node;this.ctx=n.node.getContext('2d');},
  onUnload(){this.cancelled=true;this.dispose();},
- async choose(){if(this.data.busy)return;try{const result=await wx.chooseMedia({count:1,mediaType:['video'],sourceType:['album'],maxDuration:60});const file=result.tempFiles[0];if(file.size>100*1024*1024)throw Error('请选小于 100 MB 的视频');this.info=await wx.getVideoInfo({src:file.tempFilePath});this.setData({path:file.tempFilePath,name:'视频 '+this.info.duration.toFixed(1)+' 秒',start:0,end:Math.min(3,this.info.duration),gifPath:''});}catch(e){if(!/cancel/.test(e.errMsg||''))this.error(e);}},
+ async choose(){
+  if(this.data.busy)return;
+  try{
+   const result=await wx.chooseMedia({count:1,mediaType:['video'],sourceType:['album'],maxDuration:60});
+   const file=result.tempFiles?.[0];
+   if(!file?.tempFilePath)throw Error('未读取到视频，请重新选择');
+   if(Number(file.size)>100*1024*1024)throw Error('请选小于 100 MB 的视频');
+   const metadata=await wx.getVideoInfo({src:file.tempFilePath});
+   // Native bridges may return numeric fields as strings. Normalize once before
+   // formatting or arithmetic; chooseMedia provides an independent duration fallback.
+   const duration=[metadata.duration,file.duration].map(Number).find(n=>Number.isFinite(n)&&n>0);
+   if(duration===undefined)throw Error('无法读取视频时长，请重新选择或换一个视频');
+   this.info={...metadata,duration};
+   this.setData({path:file.tempFilePath,name:'视频 '+duration.toFixed(1)+' 秒',start:0,end:Math.min(3,duration),gifPath:'',status:'已选视频，调整片段后生成 GIF'});
+  }catch(e){if(!/cancel/.test(e.errMsg||''))this.error(e);}
+ },
  mode(e){if(!this.data.busy)this.setData({selected:e.currentTarget.dataset.mode});},number(e){if(!this.data.busy)this.setData({[e.currentTarget.dataset.key]:e.detail.value});},caption(e){this.setData({caption:e.detail.value});},font(e){this.setData({font:e.detail.value});},textY(e){this.setData({ty:e.detail.value});},speed(e){this.setData({playbackSpeed:this.data.speeds[e.detail.value]});},ratio(e){this.setData({square:Number(e.detail.value)===1});},size(e){this.setData({outputSize:this.data.sizes[e.detail.value]});},zoom(e){this.setData({zoom:e.detail.value});},cancel(){this.cancelled=true;},
  error(e){this.setData({status:e.message||e.errMsg||'操作失败'});wx.showToast({title:this.data.status,icon:'none'});},
  async dispose(){if(this.decoder){const decoder=this.decoder;this.decoder=null;try{await decoder.stop();}catch{}try{await decoder.remove();}catch{}}},

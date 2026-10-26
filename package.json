@@ -16,7 +16,9 @@
     "test:editor": "node tests/editor-browser.mjs",
     "test:caption": "node tests/caption-browser.mjs",
     "test:layers": "node tests/layers-browser.mjs",
-    "build:miniprogram": "node scripts/build-miniprogram.mjs"
+    "build:miniprogram": "node scripts/build-miniprogram.mjs",
+    "dev:motion": "node --env-file-if-exists=.env.motion.local server/motion/main.mjs",
+    "check:motion": "node --env-file-if-exists=.env.motion.local scripts/check-motion.mjs"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "1.1.0",

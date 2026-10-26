@@ -1,4 +1,5 @@
 import './style.css';
+import {takeVideo} from '../motion/handoff';
 import '../ui/mode-nav.css';
 import '../ui/product-footer.css';
 import {mount} from './view';
@@ -26,8 +27,8 @@ function waitEvent(target:HTMLVideoElement,event:string,action:()=>void,signal?:
  });}
 async function seek(time:number,signal?:AbortSignal){if(signal?.aborted)throw new DOMException('已取消','AbortError');if(Math.abs(video.currentTime-time)<.00001&&video.readyState>=2)return;await waitEvent(video,'seeked',()=>{video.currentTime=time;},signal);}
 function plan(){const start=value('start'),end=value('end');if(end>video.duration+.001)throw new Error('结束时间不能超过视频长度');return timeline(start,end,value('speed'),mode);}
-input('file').onchange=async()=>{
- const file=input('file').files?.[0];if(!file)return;const id=++loadId;
+async function loadVideo(file:File){
+ const id=++loadId;
  stop();clearResult();ready=false;$<HTMLButtonElement>('export').disabled=true;$<HTMLButtonElement>('play').disabled=true;$('empty').hidden=false;
  if(file.size>100*1024*1024){status('视频超过 100 MB，请先截短再试',true);return;}
  if(source)URL.revokeObjectURL(source);source=URL.createObjectURL(file);$('name').textContent=file.name;status('正在读取视频…');
@@ -36,6 +37,7 @@ input('file').onchange=async()=>{
  ready=true;input('start').value='0';input('end').value=Math.min(3,video.duration).toFixed(3);$('empty').hidden=true;$<HTMLButtonElement>('play').disabled=false;$<HTMLButtonElement>('export').disabled=false;paint();status(`已读取 ${video.videoWidth} × ${video.videoHeight} 视频，请选最长 6 秒片段`);
  }catch(e){if(id===loadId)status(e instanceof Error?e.message:'读取失败',true);}
 };
+input('file').onchange=()=>{const file=input('file').files?.[0];if(file)void loadVideo(file);};
 for(const element of document.querySelectorAll<HTMLInputElement|HTMLSelectElement|HTMLTextAreaElement>('input:not([type=file]),select,textarea'))element.oninput=()=>{stop();clearResult();paint();};
 input('start').onchange=async()=>{try{plan();await seek(value('start'));paint();}catch(e){status(e instanceof Error?e.message:'片段无效',true);}};
 for(const b of document.querySelectorAll<HTMLButtonElement>('[data-mode]'))b.onclick=()=>{
@@ -79,3 +81,5 @@ $('export').onclick=async()=>{
 };
 $('share').onclick=async()=>{if(!blob)return;try{await navigator.share({files:[new File([blob],'怪相馆-视频表情.gif',{type:'image/gif'})]});}catch(e){if(!(e instanceof DOMException&&e.name==='AbortError'))status('无法打开分享菜单，请下载后打开文件',true);}};
 window.addEventListener('pagehide',()=>{stop();controller?.abort();worker?.terminate();if(source)URL.revokeObjectURL(source);if(resultUrl)URL.revokeObjectURL(resultUrl);});
+
+const aiId=new URL(location.href).searchParams.get('ai');if(aiId)void(async()=>{try{const value=await takeVideo(aiId);if(!value)throw new Error('生成视频记录已过期，请返回 AI 页面重新导入');$<HTMLTextAreaElement>('text').value=value.caption;await loadVideo(new File([value.blob],'AI动作.mp4',{type:value.blob.type||'video/mp4'}));}catch(e){status(e instanceof Error?e.message:'无法导入视频',true);}})();

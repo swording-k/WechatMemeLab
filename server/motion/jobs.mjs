@@ -1,0 +1,12 @@
+import{mkdir,readFile,writeFile,rename}from'node:fs/promises';import{join}from'node:path';import{createHash}from'node:crypto';
+export async function createJobs({directory,provider,validate,budget=3,maxJobs=2}){
+ await mkdir(directory,{recursive:true,mode:0o700});const file=join(directory,'jobs.json');let rows={};try{rows=JSON.parse(await readFile(file,'utf8'));}catch(e){if(e.code!=='ENOENT')throw Error('任务账本无法读取，停止创建任务');}
+ let queue=Promise.resolve();const lock=fn=>{const p=queue.then(fn);queue=p.catch(()=>{});return p;};const save=async()=>{await writeFile(file+'.next',JSON.stringify(rows),{mode:0o600});await rename(file+'.next',file);};const publicRow=r=>({id:r.id,status:r.status,cost:r.cost,mode:r.mode,error:r.error,created:r.created});const get=id=>{if(!Object.hasOwn(rows,id))throw Error('任务不存在，请检查本次记录');return rows[id];};
+ const summary=()=>({budget,maxJobs,count:Object.keys(rows).length,reserved:Object.values(rows).reduce((s,r)=>s+r.cost,0)});
+ return{
+  info:summary,
+  create(input){return lock(async()=>{if(!/^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(input.id||''))throw Error('任务编号无效');const fingerprint=createHash('sha256').update(JSON.stringify([input.mode,input.image,input.reference,input.prompt])).digest('hex');if(Object.hasOwn(rows,input.id)){const r=get(input.id);if(r.fingerprint!==fingerprint)throw Error('任务编号已用于另一份素材');return publicRow(r);}const s=summary();if(s.count>=maxJobs)throw Error('本轮测试次数已用完');if(Object.values(rows).some(r=>!['failed','success'].includes(r.status)))throw Error('已有任务待确认，请先查询原任务');const data=await validate(input);if(!Number.isFinite(budget)||budget<=0||s.reserved+data.cost>budget+.00001)throw Error('本轮预算不足，未提交生成');const r=rows[input.id]={id:input.id,mode:input.mode,fingerprint,cost:data.cost,status:'submitting',created:Date.now()};await save();try{r.taskId=await provider.create(data);r.status='queued';}catch(e){if(e.rejected){r.status='failed';r.cost=0;r.error='供应商拒绝了本次请求，未提交生成；请检查密钥、模型权限及素材后重试';}else{r.status='unknown';r.error='提交结果未确认，已保留测试额度，请勿重复创建；请联系开发者核对供应商记录';}}await save();return publicRow(r);});},
+  query(id){return lock(async()=>{const r=get(id);if(r.taskId&&!['success','failed'].includes(r.status)){Object.assign(r,await provider.query(r.taskId));await save();}return publicRow(r);});},
+  async video(id){const r=get(id);if(r.status!=='success'||!r.videoUrl)throw Error('视频尚未完成，请先继续查询');return provider.download(r.videoUrl);}
+ };
+}

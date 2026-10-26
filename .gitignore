@@ -10,3 +10,5 @@ test-results/
 cloudfunctions/meme-ai/lib/
 
 miniprogram/project.private.config.json
+
+!.env.motion.example

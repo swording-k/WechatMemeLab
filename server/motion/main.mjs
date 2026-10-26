@@ -1,0 +1,4 @@
+import{createServer}from'node:http';import{createProvider}from'./provider.mjs';import{validateInput}from'./media.mjs';import{createJobs}from'./jobs.mjs';import{handler}from'./http.mjs';
+const key=process.env.DASHSCOPE_API_KEY?.trim(),provider=createProvider({key,base:process.env.DASHSCOPE_BASE_URL||'https://dashscope.aliyuncs.com'});
+const jobs=await createJobs({directory:process.env.MOTION_DATA_DIR||'work/motion-jobs',provider,validate:validateInput,budget:Number(process.env.MOTION_BUDGET_CNY||3),maxJobs:Number(process.env.MOTION_MAX_JOBS||2)});
+createServer(handler({jobs,configured:Boolean(key),probe:()=>provider.probe()})).listen(Number(process.env.MOTION_PORT||8790),'127.0.0.1',()=>console.log('Motion service ready on loopback; provider configured:',Boolean(key)));

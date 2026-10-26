@@ -1,0 +1,2 @@
+import{createProvider}from'../server/motion/provider.mjs';
+const key=process.env.DASHSCOPE_API_KEY?.trim();if(!key){console.log('尚未填写 DASHSCOPE_API_KEY；未调用任何模型。');process.exitCode=1;}else{try{await createProvider({key,base:process.env.DASHSCOPE_BASE_URL||'https://dashscope.aliyuncs.com'}).probe();console.log('阿里云鉴权查询成功。未创建生成任务；此结果不证明模型额度、权限或生成质量。');}catch(e){console.error(e.message);process.exitCode=1;}}

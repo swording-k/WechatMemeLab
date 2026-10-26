@@ -1,0 +1,15 @@
+<view class="motion-studio">
+ <mode-nav current="motion"/>
+ <view class="headline"><text>让照片演你的梗</text><text class="free">免费体验</text></view>
+ <view class="result-stage"><video wx:if="{{resultPath}}" src="{{resultPath}}" controls loop object-fit="contain"/><image wx:elif="{{photoPath}}" src="{{photoPath}}" mode="aspectFit"/><view wx:else class="empty">先选自己、朋友或角色的照片<br/>给它安排一个短动作</view></view>
+ <view class="service">{{service}}</view>
+ <scroll-view scroll-y class="motion-form">
+  <button disabled="{{busy||pending}}" bindtap="choosePhoto">{{photoPath?'换张照片':'选择照片'}}</button>
+  <view class="tabs"><button disabled="{{busy||pending}}" class="{{mode==='describe'?'selected':''}}" data-mode="describe" bindtap="mode">写一个动作</button><button disabled="{{busy||pending}}" class="{{mode==='imitate'?'selected':''}}" data-mode="imitate" bindtap="mode">学一段动作</button></view>
+  <view wx:if="{{mode==='describe'}}" class="fields"><text>这一秒，发生什么</text><textarea disabled="{{busy||pending}}" value="{{prompt}}" bindinput="prompt" maxlength="800" placeholder="先忍住不笑，突然憋不住，最后装作没发生。"/><view class="ideas"><button wx:for="{{ideas}}" wx:key="title" disabled="{{busy||pending}}" data-index="{{index}}" bindtap="idea">{{item.title}}</button></view><text class="note">一个主体、一个短反应，更容易看清。生成约2秒无声动作。</text></view>
+  <view wx:else class="fields"><button disabled="{{busy||pending}}" bindtap="chooseReference">{{referencePath?'换个参考动作':'选择参考动作视频'}}</button><video wx:if="{{referencePath}}" class="reference" src="{{referencePath}}" controls object-fit="contain"/><text class="note">{{referenceName||'2～6秒MP4，最大20MB。一个主体、固定镜头，人物或拟人角色更适合。'}}</text></view>
+  <view class="fields"><text>最后配一句话（选填）</text><input disabled="{{busy}}" value="{{caption}}" bindinput="caption" maxlength="60" placeholder="我没笑，真的"/></view>
+  <text class="note">生成时照片、描述或参考视频将经本站后端交给阿里云处理。生成后仍可剪辑、调取景、加字并导出GIF。</text>
+ </scroll-view>
+ <view class="motion-actions"><text class="status" selectable>{{status}}</text><button wx:if="{{resultPath}}" class="primary" disabled="{{busy}}" bindtap="edit">剪辑配字，制作 GIF</button><button wx:elif="{{pending}}" class="primary" loading="{{busy}}" disabled="{{busy}}" bindtap="resume">{{busy?'正在处理…':'继续查询原任务'}}</button><button wx:else class="primary" loading="{{busy}}" disabled="{{busy||!available||!photoPath}}" bindtap="generate">{{busy?'正在准备动作…':'生成动作'}}</button><button wx:if="{{jobId&&!pending}}" class="again" disabled="{{busy}}" bindtap="reset">再做一个</button></view>
+</view>

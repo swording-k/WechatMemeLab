@@ -18,7 +18,8 @@
     "test:layers": "node tests/layers-browser.mjs",
     "build:miniprogram": "node scripts/build-miniprogram.mjs",
     "dev:motion": "node --env-file-if-exists=.env.motion.local server/motion/main.mjs",
-    "check:motion": "node --env-file-if-exists=.env.motion.local scripts/check-motion.mjs"
+    "check:motion": "node --env-file-if-exists=.env.motion.local scripts/check-motion.mjs",
+    "build:motion-cloud": "node scripts/build-motion-cloud.mjs"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "1.1.0",

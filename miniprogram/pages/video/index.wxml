@@ -1,4 +1,5 @@
 <view class="studio">
+ <mode-nav current="video"/>
  <view class="headline"><text>把这一秒，变成你的表情</text><button class="change" disabled="{{busy||previewLoading}}" bindtap="choose">{{path?'换个视频':'选择视频'}}</button></view>
  <view class="video-stage" id="video-stage">
   <video wx:if="{{path}}" hidden="{{view!=='source'||cropping}}" id="video" src="{{path}}" poster="{{poster}}" class="source-video" controls="{{false}}" show-fullscreen-btn="{{false}}" object-fit="contain" bindtimeupdate="timeUpdate" bindended="sourceEnded" bindloadedmetadata="videoMetadata" binderror="videoError"/>

@@ -2,7 +2,8 @@
   "pages": [
     "pages/editor/index",
     "pages/video/index",
-    "pages/feedback/index"
+    "pages/feedback/index",
+    "pages/motion/index"
   ],
   "window": {
     "navigationBarTitleText": "怪相馆",
@@ -12,5 +13,8 @@
   },
   "style": "v2",
   "lazyCodeLoading": "requiredComponents",
-  "sitemapLocation": "sitemap.json"
+  "sitemapLocation": "sitemap.json",
+  "usingComponents": {
+    "mode-nav": "/components/mode-nav/index"
+  }
 }

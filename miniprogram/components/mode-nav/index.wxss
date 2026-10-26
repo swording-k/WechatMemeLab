@@ -1,0 +1,1 @@
+:host{display:block;flex-shrink:0}.mode-nav{display:flex;gap:6px;border-bottom:1px solid #dfe2d3;padding-bottom:8px}.mode-nav button{flex:1;margin:0;padding:0 6px;line-height:34px;border-radius:9px;font-size:13px;color:#46572e;background:#fff}.mode-nav button::after{border:1px solid #dfe2d3}.mode-nav .chosen{background:#e9efce;color:#293122;font-weight:600}

@@ -21,4 +21,4 @@ async function checkPhoto(path,status){
  if(!type||data.length>1400000)throw Error('检测图片过大或格式不支持，请选用较小的JPG/PNG照片');
  await check({text:'',images:[{type,data}]},status);
 }
-module.exports={check,checkFrames,checkPhoto};
+module.exports={check,checkFrames,checkPhoto,authorize};

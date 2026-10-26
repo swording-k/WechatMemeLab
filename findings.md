@@ -1,5 +1,15 @@
 # 实证与发现
 
+## 2026-10-26 小程序AI移植
+
+- 当前web motion后端只监听127.0.0.1，不能作为手机或线上小程序服务。
+- 原生app仅editor/video/feedback三个页面；Wan客户端和云函数尚无。
+- 现有反馈内容安全会话可验证OpenID。新AI函数使用相同会话签名密钥，任务必须绑定uid，输入照片/提示词检测凭证必须绑定实际内容。
+- CloudBase已有共享环境和Node20方案，新增独立meme-motion-api、meme_motion_*集合和meme-motion/存储前缀；不触碰FitGenius业务。
+- 云函数请求/响应限制不允许沿用35MB POST与80MB直出。优先官方存储直传；原生上传/下载域名如未配置需用户补一次。
+- 成熟替代：image-size@2.0.4和mp4box@2.5.0，可验证图片、MP4元数据，避免在函数内调用未安装的ffprobe。
+- CloudBase认证文件还在，旧部署CLI/私有config已删除。密钥变量文件仍在主目录，读取只输出变量名。
+
 - 当前源码只对局部像素膨胀或扭曲，手动中心，没有人脸识别；取景会裁去长图边缘。
 - 先前九个矩形照片位移动画未通过用户审美验收，不应恢复成主打效果。
 - PetPet参考的价值是手和主体的接触、受压与回弹、写真手部和人物照片的拼贴反差，不是白色背景或模板数量。
@@ -17,3 +27,8 @@ GIF差分帧被独立解码器逐像素验证，新增、保留及删除/恢复�
 官方BlazeFace短距模型卡明示Apache2许可，同源分发附许可原文。首次定位需要下载约12MiB WASM；模型载入失败仍能手动制作和导出。
 
 线上额外观察到同源 `/cdn-cgi/challenge-platform/` POST，属于托管层注入的Cloudflare JavaScript检测；应用请求与托管请求分开记录，不能宣称整页绝无POST。公开匿名真实上传/定位/下载和独立GIF解码均通过。
+
+本轮真实接口修正：当前@cloudbase/node-sdk 3.18.3生成的是PUT签名，不是2.11旧版POST表单。原生改为wx.request PUT原始ArrayBuffer，并验证真实COS返回200。getTempFileURL默认返回tcb.qcloud.la，SDK类型明确支持urlType=COS_URL，需指定以复用用户已配置的COS下载域名。新CLI路由命令不支持系统域名，官方CreateCloudBaseGWAPI已创建仅meme-motion-api路径。
+
+
+2026-10-27收尾：新SDK临时上传凭证对应PUT，并非旧版本POST表单；COS_URL生成的签名绑定GET，HEAD可返回403，真实GET已200并读取2,909,953字节MP4。用户合法域名更新后原生wx.request PUT及wx.downloadFile均成功，无需关闭域名校验。相同样本进入视频编辑页：duration=2、caption=我没笑、无原生异常。独立审查发现的任务锁/恢复问题均已有回归和修复。

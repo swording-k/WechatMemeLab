@@ -1,5 +1,6 @@
 <view class="studio" hidden="{{cropping}}">
- <view class="headline"><text>一张照片，整点怪相</text><text class="help" bindtap="openVideo">视频转 GIF →</text></view>
+ <mode-nav current="editor"/>
+ <view class="headline"><text>一张照片，整点怪相</text></view>
  <view class="stage"><canvas type="2d" id="preview" class="canvas" bindtouchstart="touchStart" catchtouchmove="touchMove" bindtouchend="touchEnd" bindtouchcancel="touchEnd"/><view class="hint">{{hint}}</view></view>
  <view class="quick"><button bindtap="togglePlay">{{playing?'暂停，返回编辑':'播放成品'}}</button><button bindtap="undo" disabled="{{!canUndo}}">撤销</button><button bindtap="redo" disabled="{{!canRedo}}">重做</button></view>
  <view class="tabs"><view wx:for="{{tabs}}" wx:key="id" class="tab {{tool===item.id?'active':''}}" data-tool="{{item.id}}" bindtap="switchTool">{{item.title}}</view></view>

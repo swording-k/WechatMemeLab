@@ -1,3 +1,4 @@
+const exportAccess=require('../../lib/export-access');
 const {checkFrames,checkPhoto}=require('../../lib/security');
 const {paintPhoto,frameQueue}=require('../../lib/preview');
 const {writeBytes}=require('../../lib/files');
@@ -8,8 +9,8 @@ const faceTools=require('../../lib/faces');
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 const wait=()=>new Promise(resolve=>setTimeout(resolve,0));
 Page({
- ...editorTools,...cropTools,...faceTools,
- data:{tabs:[{id:'photo',title:'照片'},{id:'effects',title:'效果'},{id:'text',title:'文字'},{id:'motion',title:'动作'}],tool:'photo',templates,selected:defaults.template,caption:defaults.caption,suggestions:templates.find(t=>t.id===defaults.template).suggestions,intensity:75,speedLabel:'正常速度',sculpt:'drag',sculptModes:[{id:'drag',title:'拉拽'},{id:'expand',title:'鼓起'},{id:'shrink',title:'缩小'}],ready:false,hasPhoto:false,busy:false,status:'本机编辑；生成前联网检测文字与画面',hint:'拖动取景 · 双指缩放',canUndo:false,canRedo:false,gifPath:'',plain:false,playing:false,layer:'text',cropping:false,styles:[{id:'meme',name:'表情包描边'},{id:'plain',name:'纯色文字'},{id:'band',name:'字幕底条'},{id:'shake',name:'抖动文字'}],styleNames:['表情包描边','纯色文字','字幕底条','抖动文字'],colors:['#ffffff','#293122','#f5dfe4','#d5ed73','#ff4747'],backgrounds:['#ffffff','#fff8ed','#e7efdb','#f5dfe4','#dfe9f5'],sizes:[240,320,480],exportSize:240,brushRadius:.2,scope:35,textColor:'#ffffff',background:'#fff8ed',captionStyleName:'表情包描边',faces:[],faceStatus:'自动定位不改变照片取景，也可点选动作位置。',captionRotation:0,petRotation:0,petScale:1},
+ ...editorTools,...cropTools,...faceTools,...exportAccess.pageMethods,
+ data:{...exportAccess.initialData,tabs:[{id:'photo',title:'照片'},{id:'effects',title:'效果'},{id:'text',title:'文字'},{id:'motion',title:'动作'}],tool:'photo',templates,selected:defaults.template,caption:defaults.caption,suggestions:templates.find(t=>t.id===defaults.template).suggestions,intensity:75,speedLabel:'正常速度',sculpt:'drag',sculptModes:[{id:'drag',title:'拉拽'},{id:'expand',title:'鼓起'},{id:'shrink',title:'缩小'}],ready:false,hasPhoto:false,busy:false,status:'本机编辑；生成前联网检测文字与画面',hint:'拖动取景 · 双指缩放',canUndo:false,canRedo:false,gifPath:'',plain:false,playing:false,layer:'text',cropping:false,styles:[{id:'meme',name:'表情包描边'},{id:'plain',name:'纯色文字'},{id:'band',name:'字幕底条'},{id:'shake',name:'抖动文字'}],styleNames:['表情包描边','纯色文字','字幕底条','抖动文字'],colors:['#ffffff','#293122','#f5dfe4','#d5ed73','#ff4747'],backgrounds:['#ffffff','#fff8ed','#e7efdb','#f5dfe4','#dfe9f5'],sizes:[240,320,480],exportSize:240,brushRadius:.2,scope:35,textColor:'#ffffff',background:'#fff8ed',captionStyleName:'表情包描边',faces:[],faceStatus:'自动定位不改变照片取景，也可点选动作位置。',captionRotation:0,petRotation:0,petScale:1},
  onLoad(options){this.recipeOptions=options;},
  async onReady(){
   this.settings={...defaults,custom:[]};this.history=[];this.future=[];this.alive=true;
@@ -25,8 +26,8 @@ Page({
    Object.assign(this.settings,fitPhoto(this.photo.width,this.photo.height));const recipe=templates.find(t=>t.id===this.recipeOptions?.t);if(recipe){this.settings.template=recipe.id;this.settings.caption=recipe.caption;this.setData({selected:recipe.id,caption:this.settings.caption});}this.setData({ready:true});this.start();
   }catch(error){this.error(error);}
  },
- onShow(){this.alive=true;if(this.canvas&&!this.data.busy)this.start();},
- onHide(){this.alive=false;this.stop();},onUnload(){this.alive=false;this.stop();if(this.faceSession)this.faceSession.destroy();},
+ onShow(){this.refreshExportUsage();this.alive=true;if(this.canvas&&!this.data.busy)this.start();},
+ onHide(){if(!this.waitingForExportAd)this.alive=false;this.stop();},onUnload(){this.disposeExportAccess();this.alive=false;this.stop();if(this.faceSession)this.faceSession.destroy();},
  image(path){return new Promise((resolve,reject)=>{const image=this.canvas.createImage();image.onload=()=>resolve(image);image.onerror=()=>reject(Error('图片读取失败，请换一张 JPG 或 PNG 图片'));image.src=path;});},
  stop(){if(this.editQueue)this.editQueue.cancel();if(this.timer)clearTimeout(this.timer);this.timer=null;},
  start(){this.stop();if(!this.alive||!this.photo||this.data.busy||this.data.cropping)return;if(!this.data.playing){this.editQueue.request(.5);return;}const tick=()=>{if(!this.alive||this.data.busy||this.data.cropping)return;try{this.render((Date.now()% (DURATION/this.settings.speed))/(DURATION/this.settings.speed));}catch(e){this.error(e);return;}this.timer=setTimeout(tick,80);};tick();},
@@ -66,16 +67,17 @@ Page({
   }this.editQueue.request(.5);
  },
  touchEnd(){const g=this.gesture;if(!g)return;if(!g.moved&&!g.applied&&(this.data.tool==='effects'||this.data.tool==='motion')){this.settings.focusX=clamp(g.start.x,.02,.98);this.settings.focusY=clamp(g.start.y,.02,.98);}this.gesture=null;this.setData({gifPath:''});this.start();},
- async exportGif(){if(this.data.busy||!this.photo)return;this.stop();this.setData({busy:true,gifPath:'',status:'正在制作 0%'});let file;
-  try{const frames=[],count=24,size=this.data.exportSize;this.off.width=size;this.off.height=size;const snapshot=JSON.parse(JSON.stringify(this.settings));
-   for(let i=0;i<count;i++){drawFrame(this.offCtx,this.photo,snapshot,i/count,this.assets);frames.push(new Uint8Array(this.offCtx.getImageData(0,0,size,size).data));this.setData({status:`正在制作 ${Math.round((i+1)/count*70)}%`});await wait();}
+ async exportGif(){if(this.data.busy||!this.photo)return;this.stop();this.setData({busy:true,status:'正在准备生成…'});let file,permit;
+  try{permit=await this.acquireExport();if(!this.alive||this.exportClosed)throw Error('已取消生成');this.setData({gifPath:''});const frames=[],count=24,size=this.data.exportSize;this.off.width=size;this.off.height=size;const snapshot=JSON.parse(JSON.stringify(this.settings));
+   for(let i=0;i<count;i++){if(!this.alive)throw Error('已取消生成');drawFrame(this.offCtx,this.photo,snapshot,i/count,this.assets);frames.push(new Uint8Array(this.offCtx.getImageData(0,0,size,size).data));this.setData({status:`正在制作 ${Math.round((i+1)/count*70)}%`});await wait();}
    await checkFrames(frames,size,size,snapshot.caption,message=>this.setData({status:message}),()=>!this.alive);
-   this.setData({status:'正在编码 GIF…'});await wait();const bytes=encodeGif(frames,size,Math.round(DURATION/snapshot.speed/count));
+   if(!this.alive)throw Error('已取消生成');this.setData({status:'正在编码 GIF…'});await wait();const bytes=encodeGif(frames,size,Math.round(DURATION/snapshot.speed/count));
    file=`${wx.env.USER_DATA_PATH}/meme-${Date.now()}.gif`;
    await writeBytes(wx.getFileSystemManager(),file,bytes);
+   if(!this.alive||this.exportClosed)throw Error('已取消生成');permit.commit();
    if(this.lastFile&&this.lastFile!==file)wx.getFileSystemManager().unlink({filePath:this.lastFile,fail(){}});this.lastFile=file;
    this.setData({gifPath:file,status:`已生成 ${size} × ${size} · ${Math.round(bytes.length/1024)} KB`});
-  }catch(error){this.error(error);}finally{this.setData({busy:false});this.start();}
+  }catch(error){if(file&&file!==this.lastFile)wx.getFileSystemManager().unlink({filePath:file,fail(){}});this.error(error);}finally{permit?.release();this.exportPermit=undefined;this.refreshExportUsage();this.setData({busy:false});this.start();}
  },
  previewGif(){if(this.data.gifPath)wx.previewImage({urls:[this.data.gifPath]});},
  async saveGif(){if(!this.data.gifPath)return;try{await wx.saveImageToPhotosAlbum({filePath:this.data.gifPath});wx.showModal({title:'已保存到相册',content:'打开微信或其他社交平台，从聊天的相册入口选择这张动图发送。发送后检查是否正常播放。',showCancel:false});}catch(error){if(/auth deny|authorize|auth denied/i.test(error.errMsg||'')){const r=await wx.showModal({title:'需要相册权限',content:'允许保存到相册后，即可保存刚生成的 GIF。',confirmText:'去设置'});if(r.confirm)wx.openSetting({});}else this.error(error);}},

@@ -19,3 +19,9 @@ HTTP路径/meme-motion-api；health为只读公开探针，config/prepare/create
 自动测试不调用付费模型。开发者工具可以验证真实登录/上传/下载与视频工作台交接；其VideoDecoder限制不能代替手机GIF导出验收。支付与广告未启用，未将测试账本包装成用户充值系统。
 
 内测取消额度限制：仅由服务端环境变量MOTION_TEST_UNLIMITED=true开启；同时跳过累计金额与次数门槛，config返回budgetEnforced=false、remaining=null。缺省保持限制，不能由请求参数开启。历史cost/count仅继续记录调用估算，不冻结模型账户余额，不作为产品钱包。身份校验、素材检测、任务归属与幂等/进行中任务互斥保持有效。
+
+## 网页朋友内测
+
+服务端设置 `MEME_WEB_INVITE_CODE`（至少24位随机值）和 `MEME_WEB_ORIGINS`（精确Origin逗号分隔）后启用 `web-login/config/prepare/create/query/result` 操作，均为POST。邀请登录签发专用Web会话，不接受微信会话替代；原微信入口保持原检测凭证校验。Web用浏览器身份隔离在途任务并复用同一持久任务服务，不把邀请登录包装为正式账户。没有邀请配置时关闭Web入口。
+
+网页构建仅设置公开的 `VITE_MOTION_CLOUD_ENDPOINT`，邀请码通过私有部署生成的同目录 `try-<邀请码>.html` 入口读取，不能把模型Key放入任何VITE变量。首次CloudBase确认访问会丢掉片段，故发布必须保留路径入口。实际发布及回归证据见 `docs/2026-10-27-公网AI朋友测试版.md`。

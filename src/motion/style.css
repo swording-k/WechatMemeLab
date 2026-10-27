@@ -2,3 +2,5 @@
 
 .motion-tabs{flex-wrap:wrap}.motion-tabs button{min-width:100px}.motion-shell #picture-actions .motion-primary{margin-top:0}
 @media(max-width:700px){.motion-output{order:-1;position:sticky;top:0;background:#f7f8ef;z-index:3;padding-top:8px}.motion-stage{height:24vh;min-height:140px}.motion-stage img,.motion-stage video{max-height:24vh}.motion-status{min-height:0;margin:8px 0;font-size:13px}.motion-output .motion-note{display:none}.motion-output .motion-actions{margin:8px 0}.motion-output .motion-primary{padding:11px;margin-top:6px}.motion-tabs button{flex-basis:40%}}
+
+.motion-invite{max-width:560px;margin:20px 0;padding:16px;border:1px solid #b8c0a6;border-radius:10px;background:#f6f7ee}.motion-invite .motion-secondary{margin:12px 0}

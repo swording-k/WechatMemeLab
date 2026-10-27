@@ -35,3 +35,7 @@ GIF差分帧被独立解码器逐像素验证，新增、保留及删除/恢复�
 
 
 2026-10-27扩展：Wan2.6图像接口必须使用image-generation/generation异步messages协议，成功图URL读取choices[].message.content[].image，n显式1。文生图1280平方起步，不能套1024；编辑用1K。北京生图/改图0.20元，现有2秒无声动作0.30元，组合原始模型费用0.50元，不能统一按0.50元卖组合。用户谈“开发者不限额”是在讨论产品余额，供应商实测预算须单独明确。既有wx.login可识别用户，但不表示余额/支付已存在。
+
+2026-10-27公网入口诊断：正式Pages仅main推送发布，当前AI分支未更新；网页仍走本机/api/motion代理，云端只有微信会话协议，因此只上传HTML不可用。CloudBase静态托管online、meme-lab-test目录空；现静态Origin对函数OPTIONS204、COS PUT OPTIONS200，不需改FitGenius全局CORS。采用现有CLI hosting deploy dist meme-lab-test --safe --verify，发布独立测试目录；默认测试域名可能有确认访问中间页，正式域名后续单独配置。
+
+首次公网浏览器验证发现CloudBase确认访问中间页会去掉URL片段，#invite直接链接首次丢失邀请信息。改为同目录try-<邀请码>.html静态入口，邀请码从保留的文件路径读取；仅dist生成该入口，不将邀请码写入源码或提交仓库。通过后仍有普通motion.html手动邀请码兜底。

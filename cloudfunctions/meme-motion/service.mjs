@@ -3,14 +3,15 @@ import {catalog,quote,PRICE_VERSION} from '../../server/motion/pricing.mjs';
 import {MODELS} from '../../server/motion/provider.mjs';
 const hash=s=>createHash('sha256').update(s).digest('hex');
 const uuid=s=>/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(s||'');
-export function createMotion({store,storage,provider,validate,verifyInput,inspectResult,inspectImage,budget=3,maxJobs=4,budgetEnforced=true,now=Date.now}){
+export function createMotion({store,storage,provider,validate,verifyInput,inspectResult,inspectImage,budget=3,maxJobs=4,budgetEnforced=true,activeScope='global',now=Date.now}){
+ const activeKey=uid=>activeScope==='user'?'active_'+hash(uid):'active';
  const publicRow=r=>({id:r.id,mode:r.mode,status:r.status,error:r.error,created:r.created});
  async function owned(uid,id){if(!uuid(id))throw Object.assign(Error('任务不存在'),{status:404});const r=await store.read(id);if(!r||r.uid!==uid)throw Object.assign(Error('任务不存在'),{status:404});if(r.expires<now())throw Object.assign(Error('任务已过期，请重新制作'),{status:410});return r;}
- async function finish(id,changes){return store.atomic(id,s=>{Object.assign(s.row,changes);if(['success','failed'].includes(s.row.status)&&s.quota.active===id)delete s.quota.active;return publicRow(s.row);});}
- async function reconcile(){
-  const {active}=await store.info();if(!active)return;
+ async function finish(id,changes){return store.atomic(id,s=>{Object.assign(s.row,changes);const key=activeKey(s.row.uid);if(['success','failed'].includes(s.row.status)&&s.quota[key]===id)delete s.quota[key];return publicRow(s.row);});}
+ async function reconcile(uid){
+  const key=activeKey(uid),active=(await store.info())[key];if(!active)return;
   const row=await store.read(active);
-  if(!row||row.expires<now())return store.atomic(active,s=>{if(s.quota.active===active)delete s.quota.active;if(s.row)s.row.status='expired';});
+  if(!row||row.expires<now())return store.atomic(active,s=>{if(s.quota[key]===active)delete s.quota[key];if(s.row)s.row.status='expired';});
   if(['success','failed'].includes(row.status))return finish(active,{});
   if(row.taskId)return finish(active,await provider.query(row.taskId));
   if(row.status==='submitting'&&now()-row.submitted>120000)return finish(active,{status:'unknown',error:'提交结果待确认，请联系开发者查询原任务，暂勿重复生成'});
@@ -31,21 +32,21 @@ export function createMotion({store,storage,provider,validate,verifyInput,inspec
    const row=await owned(uid,data.id);const prompt=typeof data.prompt==='string'?data.prompt.trim():'';
    if(prompt.length>800||(row.mode!=='imitate'&&!prompt))throw Error('请用800字以内描述创意');
    if(row.status!=='draft'){if(row.promptHash!==hash(prompt))throw Error('任务内容已变化，请新建任务');return publicRow(row);}
-   await reconcile();
+   await reconcile(uid);
    if(row.mode!=='draw'&&!row.imageFile)throw Error('请先上传照片');
    const imageBytes=row.mode==='draw'?undefined:await storage.read(row.imageFile,1024*1024);
    await verifyInput(uid,{...data,prompt,imageBytes});
    const input=await validate({mode:row.mode,prompt,imageBytes,...(row.mode==='imitate'?{referenceBytes:await storage.read(row.referenceFile,20*1024*1024)}:{})});
    const claimed=await store.atomic(row.id,s=>{
     if(s.row.status!=='draft'){if(s.row.promptHash!==hash(prompt))throw Error('任务内容已变化');return false;}
-    if(s.quota.active)throw Error('已有动作任务进行中，请先查询原任务');
+    if(s.quota[activeKey(uid)])throw Error('已有动作任务进行中，请先查询原任务');
     if(!Number.isFinite(input.cost)||input.cost<0||(budgetEnforced&&(!Number.isFinite(budget)||!Number.isSafeInteger(maxJobs)||maxJobs<1||s.quota.count>=maxJobs||s.quota.cost+input.cost>budget+.000001)))throw Error('免费体验额度暂时用完，请稍后再来');
-    s.quota.count++;s.quota.cost+=input.cost;s.quota.active=row.id;
+    s.quota.count++;s.quota.cost+=input.cost;s.quota[activeKey(uid)]=row.id;
     Object.assign(s.row,{status:'submitting',cost:input.cost,model:MODELS[row.mode],priceVersion:PRICE_VERSION,priceFen:quote(row.mode,input.duration).priceFen,promptHash:hash(prompt),submitted:now()});return true;
    });
    if(!claimed)return publicRow(await owned(uid,row.id));
    try{const taskId=await provider.create(input);await finish(row.id,{taskId,status:'queued'});}
-   catch(e){await store.atomic(row.id,s=>{if(e.rejected){s.quota.cost-=s.row.cost;s.row.cost=0;if(s.quota.active===row.id)delete s.quota.active;s.row.status='failed';s.row.error='生成服务未接受本次请求，请调整素材后重试';}else{s.row.status='unknown';s.row.error='提交结果还未确认，请查询原任务，暂勿重复生成';}});}
+   catch(e){await store.atomic(row.id,s=>{if(e.rejected){s.quota.cost-=s.row.cost;s.row.cost=0;const key=activeKey(uid);if(s.quota[key]===row.id)delete s.quota[key];s.row.status='failed';s.row.error='生成服务未接受本次请求，请调整素材后重试';}else{s.row.status='unknown';s.row.error='提交结果还未确认，请查询原任务，暂勿重复生成';}});}
    finally{try{await storage.remove([row.imageFile,row.referenceFile].filter(Boolean));}catch{}}
    return publicRow(await owned(uid,row.id));
   },

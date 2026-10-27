@@ -38,36 +38,36 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 var require_security_core = __commonJS({
   "cloudfunctions/meme-feedback/security-core.cjs"(exports2, module2) {
     "use strict";
-    var { createHash: createHash2, createHmac, timingSafeEqual, createDecipheriv } = require("node:crypto");
-    function fail(message, status = 503) {
+    var { createHash: createHash3, createHmac: createHmac2, timingSafeEqual: timingSafeEqual2, createDecipheriv } = require("node:crypto");
+    function fail2(message, status = 503) {
       throw Object.assign(new Error(message), { status });
     }
-    function equal(a, b) {
+    function equal2(a, b) {
       const x = Buffer.from(String(a)), y = Buffer.from(String(b));
-      return x.length === y.length && timingSafeEqual(x, y);
+      return x.length === y.length && timingSafeEqual2(x, y);
     }
     function secret(env2) {
-      if (!env2.MEME_SECURITY_SECRET || env2.MEME_SECURITY_SECRET.length < 32) fail("\u5185\u5BB9\u5B89\u5168\u670D\u52A1\u5C1A\u672A\u914D\u7F6E");
+      if (!env2.MEME_SECURITY_SECRET || env2.MEME_SECURITY_SECRET.length < 32) fail2("\u5185\u5BB9\u5B89\u5168\u670D\u52A1\u5C1A\u672A\u914D\u7F6E");
       return env2.MEME_SECURITY_SECRET;
     }
     function sign(data, env2) {
       const text = Buffer.from(JSON.stringify(data)).toString("base64url");
-      return text + "." + createHmac("sha256", secret(env2)).update(text).digest("base64url");
+      return text + "." + createHmac2("sha256", secret(env2)).update(text).digest("base64url");
     }
     function verify(token, env2, kind) {
       const [text, mac, ...extra] = String(token || "").split(".");
-      if (extra.length || !text || !mac || !equal(mac, createHmac("sha256", secret(env2)).update(text).digest("base64url"))) fail("\u68C0\u6D4B\u51ED\u8BC1\u65E0\u6548\uFF0C\u8BF7\u91CD\u65B0\u68C0\u6D4B", 401);
+      if (extra.length || !text || !mac || !equal2(mac, createHmac2("sha256", secret(env2)).update(text).digest("base64url"))) fail2("\u68C0\u6D4B\u51ED\u8BC1\u65E0\u6548\uFF0C\u8BF7\u91CD\u65B0\u68C0\u6D4B", 401);
       let data;
       try {
         data = JSON.parse(Buffer.from(text, "base64url"));
       } catch {
-        fail("\u68C0\u6D4B\u51ED\u8BC1\u65E0\u6548", 401);
+        fail2("\u68C0\u6D4B\u51ED\u8BC1\u65E0\u6548", 401);
       }
-      if (data.kind !== kind || !Number.isFinite(data.exp) || data.exp < Date.now()) fail("\u68C0\u6D4B\u51ED\u8BC1\u5DF2\u8FC7\u671F\uFF0C\u8BF7\u91CD\u65B0\u68C0\u6D4B", 401);
+      if (data.kind !== kind || !Number.isFinite(data.exp) || data.exp < Date.now()) fail2("\u68C0\u6D4B\u51ED\u8BC1\u5DF2\u8FC7\u671F\uFF0C\u8BF7\u91CD\u65B0\u68C0\u6D4B", 401);
       return data;
     }
-    function digest(text, images) {
-      const h = createHash2("sha256").update(JSON.stringify(String(text)));
+    function digest2(text, images) {
+      const h = createHash3("sha256").update(JSON.stringify(String(text)));
       for (const image of images) {
         const b = image.buffer || Buffer.from(image.data, "base64");
         h.update(String(b.length) + ":").update(b);
@@ -77,48 +77,48 @@ var require_security_core = __commonJS({
     async function checkText(call, uid, text) {
       if (!text.trim()) return;
       const r = await call("msg_sec_check", { openid: uid, scene: 4, version: 2, content: text });
-      if (r.errcode !== 0 || r.result?.suggest !== "pass") fail(r.result?.suggest === "risky" || r.errcode === 87014 ? "\u5185\u5BB9\u5305\u542B\u8FDD\u89C4\u4FE1\u606F\uFF0C\u8BF7\u4FEE\u6539\u540E\u91CD\u8BD5" : "\u6587\u5B57\u672A\u901A\u8FC7\u68C0\u6D4B\uFF0C\u8BF7\u4FEE\u6539\u5185\u5BB9\u6216\u7A0D\u540E\u91CD\u8BD5", 422);
+      if (r.errcode !== 0 || r.result?.suggest !== "pass") fail2(r.result?.suggest === "risky" || r.errcode === 87014 ? "\u5185\u5BB9\u5305\u542B\u8FDD\u89C4\u4FE1\u606F\uFF0C\u8BF7\u4FEE\u6539\u540E\u91CD\u8BD5" : "\u6587\u5B57\u672A\u901A\u8FC7\u68C0\u6D4B\uFF0C\u8BF7\u4FEE\u6539\u5185\u5BB9\u6216\u7A0D\u540E\u91CD\u8BD5", 422);
     }
     function signature(q, env2, encrypted) {
-      if (!env2.WECHAT_CALLBACK_TOKEN || env2.WECHAT_CALLBACK_TOKEN.length < 3 || env2.WECHAT_CALLBACK_TOKEN.length > 32) fail("\u56DE\u8C03Token\u987B\u4E3A3\u81F332\u4F4D");
-      if (!/^\d+$/.test(q.timestamp || "") || Math.abs(Date.now() / 1e3 - Number(q.timestamp)) > 600 || !q.nonce) fail("\u65E0\u6548\u56DE\u8C03", 403);
+      if (!env2.WECHAT_CALLBACK_TOKEN || env2.WECHAT_CALLBACK_TOKEN.length < 3 || env2.WECHAT_CALLBACK_TOKEN.length > 32) fail2("\u56DE\u8C03Token\u987B\u4E3A3\u81F332\u4F4D");
+      if (!/^\d+$/.test(q.timestamp || "") || Math.abs(Date.now() / 1e3 - Number(q.timestamp)) > 600 || !q.nonce) fail2("\u65E0\u6548\u56DE\u8C03", 403);
       const values = [env2.WECHAT_CALLBACK_TOKEN, q.timestamp, q.nonce];
       if (encrypted) values.push(encrypted);
-      const hash2 = createHash2("sha1").update(values.sort().join("")).digest("hex");
-      if (!equal(hash2, encrypted ? q.msg_signature : q.signature)) fail("\u56DE\u8C03\u7B7E\u540D\u4E0D\u7B26", 403);
+      const hash2 = createHash3("sha1").update(values.sort().join("")).digest("hex");
+      if (!equal2(hash2, encrypted ? q.msg_signature : q.signature)) fail2("\u56DE\u8C03\u7B7E\u540D\u4E0D\u7B26", 403);
     }
     function callbackMessage(q, body, env2) {
       const encrypted = body.Encrypt || body.encrypt;
       signature(q, env2, encrypted);
-      if (!encrypted) fail("\u8BF7\u4F7F\u7528\u5B89\u5168\u6A21\u5F0F\u6D88\u606F\u63A8\u9001", 403);
+      if (!encrypted) fail2("\u8BF7\u4F7F\u7528\u5B89\u5168\u6A21\u5F0F\u6D88\u606F\u63A8\u9001", 403);
       const key = Buffer.from((env2.WECHAT_CALLBACK_AES_KEY || "") + "=", "base64");
-      if (key.length !== 32) fail("\u56DE\u8C03AES\u5BC6\u94A5\u65E0\u6548");
+      if (key.length !== 32) fail2("\u56DE\u8C03AES\u5BC6\u94A5\u65E0\u6548");
       const decipher = createDecipheriv("aes-256-cbc", key, key.subarray(0, 16));
       decipher.setAutoPadding(false);
       let data;
       try {
         data = Buffer.concat([decipher.update(Buffer.from(encrypted, "base64")), decipher.final()]);
       } catch {
-        fail("\u56DE\u8C03\u89E3\u5BC6\u5931\u8D25", 403);
+        fail2("\u56DE\u8C03\u89E3\u5BC6\u5931\u8D25", 403);
       }
       const pad = data[data.length - 1];
-      if (pad < 1 || pad > 32 || !data.subarray(data.length - pad).every((x) => x === pad)) fail("\u56DE\u8C03\u586B\u5145\u9519\u8BEF", 403);
+      if (pad < 1 || pad > 32 || !data.subarray(data.length - pad).every((x) => x === pad)) fail2("\u56DE\u8C03\u586B\u5145\u9519\u8BEF", 403);
       data = data.subarray(0, data.length - pad);
-      if (data.length < 20) fail("\u56DE\u8C03\u683C\u5F0F\u9519\u8BEF", 403);
+      if (data.length < 20) fail2("\u56DE\u8C03\u683C\u5F0F\u9519\u8BEF", 403);
       const n = data.readUInt32BE(16);
-      if (n > data.length - 20 || data.subarray(20 + n).toString() !== env2.WECHAT_APP_ID) fail("\u56DE\u8C03AppID\u4E0D\u5339\u914D", 403);
+      if (n > data.length - 20 || data.subarray(20 + n).toString() !== env2.WECHAT_APP_ID) fail2("\u56DE\u8C03AppID\u4E0D\u5339\u914D", 403);
       try {
         return JSON.parse(data.subarray(20, 20 + n).toString());
       } catch {
-        fail("\u8BF7\u914D\u7F6EJSON\u6D88\u606F\u63A8\u9001", 400);
+        fail2("\u8BF7\u914D\u7F6EJSON\u6D88\u606F\u63A8\u9001", 400);
       }
     }
     function receiptMatches(ticket, text, images, env2) {
       const r = verify(ticket, env2, "receipt");
-      if (r.hash !== digest(text, images)) fail("\u63D0\u4EA4\u5185\u5BB9\u5DF2\u53D8\u5316\uFF0C\u8BF7\u91CD\u65B0\u68C0\u6D4B", 403);
+      if (r.hash !== digest2(text, images)) fail2("\u63D0\u4EA4\u5185\u5BB9\u5DF2\u53D8\u5316\uFF0C\u8BF7\u91CD\u65B0\u68C0\u6D4B", 403);
       return r;
     }
-    module2.exports = { fail, sign, verify, digest, checkText, callbackMessage, signature, receiptMatches };
+    module2.exports = { fail: fail2, sign, verify, digest: digest2, checkText, callbackMessage, signature, receiptMatches };
   }
 });
 
@@ -253,7 +253,8 @@ function createProvider({ key, base = "https://dashscope.aliyuncs.com", fetcher 
 // cloudfunctions/meme-motion/service.mjs
 var hash = (s) => (0, import_node_crypto2.createHash)("sha256").update(s).digest("hex");
 var uuid = (s) => /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(s || "");
-function createMotion({ store: store2, storage: storage2, provider, validate, verifyInput, inspectResult, inspectImage, budget = 3, maxJobs = 4, budgetEnforced = true, now = Date.now }) {
+function createMotion({ store: store2, storage: storage2, provider, validate, verifyInput, inspectResult, inspectImage, budget = 3, maxJobs = 4, budgetEnforced = true, activeScope = "global", now = Date.now }) {
+  const activeKey = (uid) => activeScope === "user" ? "active_" + hash(uid) : "active";
   const publicRow = (r) => ({ id: r.id, mode: r.mode, status: r.status, error: r.error, created: r.created });
   async function owned(uid, id) {
     if (!uuid(id)) throw Object.assign(Error("\u4EFB\u52A1\u4E0D\u5B58\u5728"), { status: 404 });
@@ -265,16 +266,17 @@ function createMotion({ store: store2, storage: storage2, provider, validate, ve
   async function finish(id, changes) {
     return store2.atomic(id, (s) => {
       Object.assign(s.row, changes);
-      if (["success", "failed"].includes(s.row.status) && s.quota.active === id) delete s.quota.active;
+      const key = activeKey(s.row.uid);
+      if (["success", "failed"].includes(s.row.status) && s.quota[key] === id) delete s.quota[key];
       return publicRow(s.row);
     });
   }
-  async function reconcile() {
-    const { active } = await store2.info();
+  async function reconcile(uid) {
+    const key = activeKey(uid), active = (await store2.info())[key];
     if (!active) return;
     const row = await store2.read(active);
     if (!row || row.expires < now()) return store2.atomic(active, (s) => {
-      if (s.quota.active === active) delete s.quota.active;
+      if (s.quota[key] === active) delete s.quota[key];
       if (s.row) s.row.status = "expired";
     });
     if (["success", "failed"].includes(row.status)) return finish(active, {});
@@ -319,7 +321,7 @@ function createMotion({ store: store2, storage: storage2, provider, validate, ve
         if (row.promptHash !== hash(prompt)) throw Error("\u4EFB\u52A1\u5185\u5BB9\u5DF2\u53D8\u5316\uFF0C\u8BF7\u65B0\u5EFA\u4EFB\u52A1");
         return publicRow(row);
       }
-      await reconcile();
+      await reconcile(uid);
       if (row.mode !== "draw" && !row.imageFile) throw Error("\u8BF7\u5148\u4E0A\u4F20\u7167\u7247");
       const imageBytes = row.mode === "draw" ? void 0 : await storage2.read(row.imageFile, 1024 * 1024);
       await verifyInput(uid, { ...data, prompt, imageBytes });
@@ -329,11 +331,11 @@ function createMotion({ store: store2, storage: storage2, provider, validate, ve
           if (s.row.promptHash !== hash(prompt)) throw Error("\u4EFB\u52A1\u5185\u5BB9\u5DF2\u53D8\u5316");
           return false;
         }
-        if (s.quota.active) throw Error("\u5DF2\u6709\u52A8\u4F5C\u4EFB\u52A1\u8FDB\u884C\u4E2D\uFF0C\u8BF7\u5148\u67E5\u8BE2\u539F\u4EFB\u52A1");
+        if (s.quota[activeKey(uid)]) throw Error("\u5DF2\u6709\u52A8\u4F5C\u4EFB\u52A1\u8FDB\u884C\u4E2D\uFF0C\u8BF7\u5148\u67E5\u8BE2\u539F\u4EFB\u52A1");
         if (!Number.isFinite(input.cost) || input.cost < 0 || budgetEnforced && (!Number.isFinite(budget) || !Number.isSafeInteger(maxJobs) || maxJobs < 1 || s.quota.count >= maxJobs || s.quota.cost + input.cost > budget + 1e-6)) throw Error("\u514D\u8D39\u4F53\u9A8C\u989D\u5EA6\u6682\u65F6\u7528\u5B8C\uFF0C\u8BF7\u7A0D\u540E\u518D\u6765");
         s.quota.count++;
         s.quota.cost += input.cost;
-        s.quota.active = row.id;
+        s.quota[activeKey(uid)] = row.id;
         Object.assign(s.row, { status: "submitting", cost: input.cost, model: MODELS[row.mode], priceVersion: PRICE_VERSION, priceFen: quote(row.mode, input.duration).priceFen, promptHash: hash(prompt), submitted: now() });
         return true;
       });
@@ -346,7 +348,8 @@ function createMotion({ store: store2, storage: storage2, provider, validate, ve
           if (e.rejected) {
             s.quota.cost -= s.row.cost;
             s.row.cost = 0;
-            if (s.quota.active === row.id) delete s.quota.active;
+            const key = activeKey(uid);
+            if (s.quota[key] === row.id) delete s.quota[key];
             s.row.status = "failed";
             s.row.error = "\u751F\u6210\u670D\u52A1\u672A\u63A5\u53D7\u672C\u6B21\u8BF7\u6C42\uFF0C\u8BF7\u8C03\u6574\u7D20\u6750\u540E\u91CD\u8BD5";
           } else {
@@ -383,6 +386,58 @@ function createMotion({ store: store2, storage: storage2, provider, validate, ve
         row = await owned(uid, id);
       }
       return { ...row.resultInfo, kind: image ? "image" : "video", url: await storage2.url(row.resultFile) };
+    }
+  };
+}
+
+// cloudfunctions/meme-motion/web.mjs
+var import_node_crypto3 = require("node:crypto");
+var import_security_core = __toESM(require_security_core(), 1);
+var digest = (x) => (0, import_node_crypto3.createHash)("sha256").update(x).digest("hex");
+var equal = (a, b) => {
+  const x = Buffer.from(a), y = Buffer.from(b);
+  return x.length === y.length && (0, import_node_crypto3.timingSafeEqual)(x, y);
+};
+var fail = (message, status) => {
+  throw Object.assign(Error(message), { status });
+};
+function createWebMotionHandler({ service: service2, env: env2 }) {
+  return async (event, op) => {
+    const headers = Object.fromEntries(Object.entries(event.headers || {}).map(([k, v]) => [k.toLowerCase(), String(v)])), origin = headers.origin;
+    const allowed = (env2.MEME_WEB_ORIGINS || "").split(",").map((x) => x.trim()).filter(Boolean), cors = origin && allowed.includes(origin) ? { "Access-Control-Allow-Origin": origin, Vary: "Origin" } : {};
+    const json = (statusCode, body) => ({ statusCode, headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", ...cors }, body: JSON.stringify(body) });
+    try {
+      if (origin && !allowed.includes(origin)) fail("\u6B64\u9875\u9762\u672A\u83B7\u51C6\u8C03\u7528\u6D4B\u8BD5\u670D\u52A1", 403);
+      if ((event.httpMethod || "").toUpperCase() !== "POST") fail("\u8BF7\u6C42\u65B9\u5F0F\u4E0D\u652F\u6301", 405);
+      const invite = env2.MEME_WEB_INVITE_CODE;
+      if (!invite || invite.length < 24) fail("\u7F51\u9875\u6D4B\u8BD5\u670D\u52A1\u5C1A\u672A\u542F\u7528", 503);
+      const raw = event.isBase64Encoded ? Buffer.from(event.body || "", "base64").toString() : event.body || "{}";
+      if (Buffer.byteLength(raw) > 3e4) fail("\u53C2\u6570\u8FC7\u5927\uFF0C\u8BF7\u91CD\u65B0\u9009\u62E9\u7D20\u6750", 413);
+      let data;
+      try {
+        data = JSON.parse(raw);
+      } catch {
+        fail("\u53C2\u6570\u683C\u5F0F\u65E0\u6548", 400);
+      }
+      if (!data || Array.isArray(data) || typeof data !== "object") fail("\u53C2\u6570\u683C\u5F0F\u65E0\u6548", 400);
+      const token = (headers.authorization || "").replace(/^Bearer /, "");
+      if (op === "web-login") {
+        if (!equal(token, invite)) fail("\u9080\u8BF7\u7801\u4E0D\u6B63\u786E\uFF0C\u8BF7\u68C0\u67E5\u5B8C\u6574\u6D4B\u8BD5\u94FE\u63A5", 401);
+        if (!/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(data.clientId || "")) fail("\u6D4F\u89C8\u5668\u6807\u8BC6\u65E0\u6548\uFF0C\u8BF7\u91CD\u65B0\u6253\u5F00\u9875\u9762", 400);
+        const uid = "web:" + (0, import_node_crypto3.createHmac)("sha256", env2.MEME_SECURITY_SECRET).update(invite + ":" + data.clientId).digest("hex").slice(0, 40);
+        const session2 = import_security_core.default.sign({ kind: "web-motion-session", uid, invite: digest(invite), exp: Date.now() + 30 * 24 * 36e5 }, env2);
+        return json(200, { session: session2 });
+      }
+      const session = import_security_core.default.verify(token, env2, "web-motion-session");
+      if (session.invite !== digest(invite) || !session.uid?.startsWith("web:")) fail("\u6D4B\u8BD5\u767B\u5F55\u5DF2\u5931\u6548\uFF0C\u8BF7\u91CD\u65B0\u6253\u5F00\u9080\u8BF7\u94FE\u63A5", 401);
+      if (op === "web-config") return json(200, { ...await service2.info(), configured: true });
+      if (op === "web-prepare") return json(200, await service2.prepare(session.uid, data));
+      if (op === "web-create") return json(200, await service2.create(session.uid, data));
+      if (op === "web-query") return json(200, await service2.query(session.uid, data.id));
+      if (op === "web-result") return json(200, await service2.result(session.uid, data.id));
+      return json(404, { error: "\u64CD\u4F5C\u4E0D\u5B58\u5728" });
+    } catch (e) {
+      return json(e.status || 422, { error: e.status === 401 && op !== "web-login" ? "\u6D4B\u8BD5\u767B\u5F55\u5DF2\u5931\u6548\uFF0C\u8BF7\u91CD\u65B0\u6253\u5F00\u9080\u8BF7\u94FE\u63A5" : e.message || "\u6D4B\u8BD5\u670D\u52A1\u6682\u65F6\u4E0D\u53EF\u7528\uFF0C\u8BF7\u67E5\u8BE2\u539F\u4EFB\u52A1" });
     }
   };
 }
@@ -546,11 +601,16 @@ async function validateMedia({ mode, prompt, imageBytes, referenceBytes }) {
 }
 
 // cloudfunctions/meme-motion/entry.mjs
-var import_security_core = __toESM(require_security_core(), 1);
+var import_security_core2 = __toESM(require_security_core(), 1);
 var env = process.env;
 var { store, storage } = cloudStore(env);
-var service = createMotion({ store, storage, provider: createProvider({ key: env.DASHSCOPE_API_KEY, base: env.DASHSCOPE_BASE_URL || "https://dashscope.aliyuncs.com" }), budgetEnforced: env.MOTION_TEST_UNLIMITED !== "true", budget: Number(env.MOTION_BUDGET_CNY || 3), maxJobs: Number(env.MOTION_MAX_JOBS || 4), validate: validateMedia, inspectResult: videoInfo, inspectImage: imageInfo, verifyInput: async (uid, { receipt, prompt, imageBytes }) => {
-  const checked = import_security_core.default.receiptMatches(receipt, prompt, imageBytes ? [{ buffer: imageBytes }] : [], env);
+var shared = { store, storage, provider: createProvider({ key: env.DASHSCOPE_API_KEY, base: env.DASHSCOPE_BASE_URL || "https://dashscope.aliyuncs.com" }), budgetEnforced: env.MOTION_TEST_UNLIMITED !== "true", budget: Number(env.MOTION_BUDGET_CNY || 3), maxJobs: Number(env.MOTION_MAX_JOBS || 4), validate: validateMedia, inspectResult: videoInfo, inspectImage: imageInfo };
+var webService = createMotion({ ...shared, activeScope: "user", verifyInput: async (uid) => {
+  if (!uid?.startsWith("web:")) throw Error("\u7F51\u9875\u6D4B\u8BD5\u8EAB\u4EFD\u65E0\u6548");
+} });
+var webHandler = createWebMotionHandler({ service: webService, env });
+var service = createMotion({ ...shared, verifyInput: async (uid, { receipt, prompt, imageBytes }) => {
+  const checked = import_security_core2.default.receiptMatches(receipt, prompt, imageBytes ? [{ buffer: imageBytes }] : [], env);
   if (checked.uid !== uid) throw Error("\u68C0\u6D4B\u51ED\u8BC1\u4E0D\u5C5E\u4E8E\u5F53\u524D\u7528\u6237\uFF0C\u8BF7\u91CD\u65B0\u68C0\u6D4B");
 } });
 async function main(event) {
@@ -562,10 +622,11 @@ async function main(event) {
   const op = (event.queryStringParameters || event.queryString || {}).op;
   if (op === "health") return json(200, { configured: Boolean(env.DASHSCOPE_API_KEY), service: "meme-motion", version: "0.3.0" });
   if (!env.DASHSCOPE_API_KEY) return json(503, { error: "AI\u52A8\u4F5C\u670D\u52A1\u5C1A\u672A\u914D\u7F6E" });
+  if (typeof op === "string" && op.startsWith("web-")) return webHandler(event, op);
   try {
     if ((event.httpMethod || "").toUpperCase() !== "POST") return json(405, { error: "\u8BF7\u6C42\u65B9\u5F0F\u4E0D\u652F\u6301" });
     const headers = Object.fromEntries(Object.entries(event.headers || {}).map(([k, v]) => [k.toLowerCase(), v]));
-    const session = import_security_core.default.verify(String(headers.authorization || "").replace(/^Bearer /, ""), env, "session");
+    const session = import_security_core2.default.verify(String(headers.authorization || "").replace(/^Bearer /, ""), env, "session");
     const raw = event.isBase64Encoded ? Buffer.from(event.body || "", "base64").toString() : event.body || "{}";
     if (Buffer.byteLength(raw) > 3e4) return json(413, { error: "\u53C2\u6570\u8FC7\u5927\uFF0C\u8BF7\u91CD\u65B0\u9009\u62E9\u7D20\u6750" });
     const data = JSON.parse(raw);

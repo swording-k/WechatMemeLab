@@ -285,7 +285,7 @@ function createMotion({ store: store2, storage: storage2, provider, validate, ve
     reconcile,
     async info() {
       const q = await store2.info();
-      return { available: Number.isFinite(budget) && budget > 0 && q.count < maxJobs && q.cost + 0.2 <= budget, remaining: Math.max(0, Math.min(maxJobs - q.count, Math.floor((budget - q.cost + 1e-6) / 0.2))), models: MODELS, pricing: catalog() };
+      return { available: Number.isFinite(budget) && budget > 0 && q.count < maxJobs && q.cost + 0.2 <= budget + 1e-6, remaining: Math.max(0, Math.min(maxJobs - q.count, Math.floor((budget - q.cost + 1e-6) / 0.2))), models: MODELS, pricing: catalog() };
     },
     async prepare(uid, { id, mode }) {
       if (!uuid(id) || !Object.hasOwn(MODELS, mode)) throw Error("\u5236\u4F5C\u53C2\u6570\u65E0\u6548");

@@ -1,7 +1,7 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 import {createMotion} from '../cloudfunctions/meme-motion/service.mjs';
-function client({reject=false,unknown=false,budget=3,maxJobs=4,running=false}={}){
- const rows=new Map();let clock=Date.now(),quota={count:0,cost:0},queue=Promise.resolve(),creates=0,downloads=0,removed=0;
+function client({reject=false,unknown=false,budget=3,maxJobs=4,running=false,baseCost=0}={}){
+ const rows=new Map();let clock=Date.now(),quota={count:0,cost:baseCost},queue=Promise.resolve(),creates=0,downloads=0,removed=0;
  const store={read:async id=>structuredClone(rows.get(id)),info:async()=>({...quota}),atomic(id,fn){const p=queue.then(()=>{const context={row:structuredClone(rows.get(id)),quota:{...quota}},value=fn(context);if(context.row)rows.set(id,structuredClone(context.row));quota=context.quota;return value;});queue=p.catch(()=>{});return p;}};
  const storage={ticket:async(path)=>({fileId:'cloud://'+path,url:'https://bucket.cos.ap-shanghai.myqcloud.com',cloudPath:path,formData:{}}),read:async()=>Buffer.from('photo'),remove:async files=>{removed+=files.length;},save:async()=>{downloads++;return'cloud://result'},url:async()=> 'https://bucket.cos.ap-shanghai.myqcloud.com/result'};
  const provider={create:async()=>{creates++;if(reject)throw Object.assign(Error('no'),{rejected:true});if(unknown)throw Error('network');return'upstream'},query:async()=>running?({status:'processing'}):({status:'success',videoUrl:'https://dashscope-test.oss-cn-beijing.aliyuncs.com/result.mp4'}),download:async()=>Buffer.from('video')};
@@ -31,3 +31,9 @@ test('a second active job cannot spend money concurrently with the first',async(
 
 test('expired active job releases the service lock without refunding unknown costs',async()=>{const c=client({running:true}),other='32345678-1234-4234-8234-123456789abc';await c.service.prepare('alice',{id,mode:'describe'});await c.service.create('alice',{id,prompt:'笑',receipt:'valid-alice'});c.advance(25*3600000);await c.service.prepare('bob',{id:other,mode:'describe'});await c.service.create('bob',{id:other,prompt:'笑',receipt:'valid-bob'});assert.equal(c.creates,2);assert.equal(c.quota.cost,.6);});
 test('new submission reconciles a completed upstream task even when its owner never came back',async()=>{const c=client(),other='42345678-1234-4234-8234-123456789abc';await c.service.prepare('alice',{id,mode:'describe'});await c.service.create('alice',{id,prompt:'笑',receipt:'valid-alice'});await c.service.prepare('bob',{id:other,mode:'describe'});await c.service.create('bob',{id:other,prompt:'笑',receipt:'valid-bob'});assert.equal(c.creates,2);});
+
+test('last image allowance tolerates floating point residue but never a real shortfall',async()=>{
+ const c=client({baseCost:2.8000000000000003,maxJobs:100});const info=await c.service.info();assert.equal(info.remaining,1);assert.equal(info.available,true);
+ assert.equal((await client({baseCost:2.81,maxJobs:100}).service.info()).available,false);
+ assert.equal((await client({baseCost:3,maxJobs:100}).service.info()).available,false);
+});

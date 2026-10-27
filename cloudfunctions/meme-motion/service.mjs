@@ -17,7 +17,7 @@ export function createMotion({store,storage,provider,validate,verifyInput,inspec
  }
  return {
   reconcile,
-  async info(){const q=await store.info();return{available:Number.isFinite(budget)&&budget>0&&q.count<maxJobs&&q.cost+.2<=budget,remaining:Math.max(0,Math.min(maxJobs-q.count,Math.floor((budget-q.cost+.000001)/.2))),models:MODELS,pricing:catalog()};},
+  async info(){const q=await store.info();return{available:Number.isFinite(budget)&&budget>0&&q.count<maxJobs&&q.cost+.2<=budget+.000001,remaining:Math.max(0,Math.min(maxJobs-q.count,Math.floor((budget-q.cost+.000001)/.2))),models:MODELS,pricing:catalog()};},
   async prepare(uid,{id,mode}){
    if(!uuid(id)||!Object.hasOwn(MODELS,mode))throw Error('制作参数无效');
    await store.atomic(id,s=>{if(s.row){if(s.row.uid!==uid)throw Error('任务不存在');if(s.row.mode!==mode)throw Error('任务内容已变化');return;}s.row={id,uid,mode,status:'draft',created:now(),expires:now()+24*3600000};});

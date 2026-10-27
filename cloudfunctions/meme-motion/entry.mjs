@@ -4,7 +4,7 @@ import {validateMedia,videoInfo,imageInfo} from './media.mjs';
 import {createProvider} from '../../server/motion/provider.mjs';
 import security from '../meme-feedback/security-core.cjs';
 const env=process.env,{store,storage}=cloudStore(env);
-const service=createMotion({store,storage,provider:createProvider({key:env.DASHSCOPE_API_KEY,base:env.DASHSCOPE_BASE_URL||'https://dashscope.aliyuncs.com'}),budget:Number(env.MOTION_BUDGET_CNY||3),maxJobs:Number(env.MOTION_MAX_JOBS||4),validate:validateMedia,inspectResult:videoInfo,inspectImage:imageInfo,verifyInput:async(uid,{receipt,prompt,imageBytes})=>{
+const service=createMotion({store,storage,provider:createProvider({key:env.DASHSCOPE_API_KEY,base:env.DASHSCOPE_BASE_URL||'https://dashscope.aliyuncs.com'}),budgetEnforced:env.MOTION_TEST_UNLIMITED!=='true',budget:Number(env.MOTION_BUDGET_CNY||3),maxJobs:Number(env.MOTION_MAX_JOBS||4),validate:validateMedia,inspectResult:videoInfo,inspectImage:imageInfo,verifyInput:async(uid,{receipt,prompt,imageBytes})=>{
  const checked=security.receiptMatches(receipt,prompt,imageBytes?[{buffer:imageBytes}]:[],env);if(checked.uid!==uid)throw Error('检测凭证不属于当前用户，请重新检测');
 }});
 export async function main(event){

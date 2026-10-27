@@ -17,3 +17,5 @@ HTTP路径/meme-motion-api；health为只读公开探针，config/prepare/create
 ## 运行与发布边界
 
 自动测试不调用付费模型。开发者工具可以验证真实登录/上传/下载与视频工作台交接；其VideoDecoder限制不能代替手机GIF导出验收。支付与广告未启用，未将测试账本包装成用户充值系统。
+
+内测取消额度限制：仅由服务端环境变量MOTION_TEST_UNLIMITED=true开启；同时跳过累计金额与次数门槛，config返回budgetEnforced=false、remaining=null。缺省保持限制，不能由请求参数开启。历史cost/count仅继续记录调用估算，不冻结模型账户余额，不作为产品钱包。身份校验、素材检测、任务归属与幂等/进行中任务互斥保持有效。

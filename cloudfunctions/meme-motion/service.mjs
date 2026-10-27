@@ -3,7 +3,7 @@ import {catalog,quote,PRICE_VERSION} from '../../server/motion/pricing.mjs';
 import {MODELS} from '../../server/motion/provider.mjs';
 const hash=s=>createHash('sha256').update(s).digest('hex');
 const uuid=s=>/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(s||'');
-export function createMotion({store,storage,provider,validate,verifyInput,inspectResult,inspectImage,budget=3,maxJobs=4,now=Date.now}){
+export function createMotion({store,storage,provider,validate,verifyInput,inspectResult,inspectImage,budget=3,maxJobs=4,budgetEnforced=true,now=Date.now}){
  const publicRow=r=>({id:r.id,mode:r.mode,status:r.status,error:r.error,created:r.created});
  async function owned(uid,id){if(!uuid(id))throw Object.assign(Error('任务不存在'),{status:404});const r=await store.read(id);if(!r||r.uid!==uid)throw Object.assign(Error('任务不存在'),{status:404});if(r.expires<now())throw Object.assign(Error('任务已过期，请重新制作'),{status:410});return r;}
  async function finish(id,changes){return store.atomic(id,s=>{Object.assign(s.row,changes);if(['success','failed'].includes(s.row.status)&&s.quota.active===id)delete s.quota.active;return publicRow(s.row);});}
@@ -17,7 +17,7 @@ export function createMotion({store,storage,provider,validate,verifyInput,inspec
  }
  return {
   reconcile,
-  async info(){const q=await store.info();return{available:Number.isFinite(budget)&&budget>0&&q.count<maxJobs&&q.cost+.2<=budget+.000001,remaining:Math.max(0,Math.min(maxJobs-q.count,Math.floor((budget-q.cost+.000001)/.2))),models:MODELS,pricing:catalog()};},
+  async info(){const q=await store.info();return{budgetEnforced,available:!budgetEnforced||(Number.isFinite(budget)&&budget>0&&q.count<maxJobs&&q.cost+.2<=budget+.000001),remaining:budgetEnforced?Math.max(0,Math.min(maxJobs-q.count,Math.floor((budget-q.cost+.000001)/.2))):null,models:MODELS,pricing:catalog()};},
   async prepare(uid,{id,mode}){
    if(!uuid(id)||!Object.hasOwn(MODELS,mode))throw Error('制作参数无效');
    await store.atomic(id,s=>{if(s.row){if(s.row.uid!==uid)throw Error('任务不存在');if(s.row.mode!==mode)throw Error('任务内容已变化');return;}s.row={id,uid,mode,status:'draft',created:now(),expires:now()+24*3600000};});
@@ -39,7 +39,7 @@ export function createMotion({store,storage,provider,validate,verifyInput,inspec
    const claimed=await store.atomic(row.id,s=>{
     if(s.row.status!=='draft'){if(s.row.promptHash!==hash(prompt))throw Error('任务内容已变化');return false;}
     if(s.quota.active)throw Error('已有动作任务进行中，请先查询原任务');
-    if(!Number.isFinite(budget)||!Number.isSafeInteger(maxJobs)||maxJobs<1||s.quota.count>=maxJobs||!Number.isFinite(input.cost)||s.quota.cost+input.cost>budget+.000001)throw Error('免费体验额度暂时用完，请稍后再来');
+    if(!Number.isFinite(input.cost)||input.cost<0||(budgetEnforced&&(!Number.isFinite(budget)||!Number.isSafeInteger(maxJobs)||maxJobs<1||s.quota.count>=maxJobs||s.quota.cost+input.cost>budget+.000001)))throw Error('免费体验额度暂时用完，请稍后再来');
     s.quota.count++;s.quota.cost+=input.cost;s.quota.active=row.id;
     Object.assign(s.row,{status:'submitting',cost:input.cost,model:MODELS[row.mode],priceVersion:PRICE_VERSION,priceFen:quote(row.mode,input.duration).priceFen,promptHash:hash(prompt),submitted:now()});return true;
    });

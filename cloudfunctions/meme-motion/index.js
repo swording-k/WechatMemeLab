@@ -253,7 +253,7 @@ function createProvider({ key, base = "https://dashscope.aliyuncs.com", fetcher 
 // cloudfunctions/meme-motion/service.mjs
 var hash = (s) => (0, import_node_crypto2.createHash)("sha256").update(s).digest("hex");
 var uuid = (s) => /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(s || "");
-function createMotion({ store: store2, storage: storage2, provider, validate, verifyInput, inspectResult, inspectImage, budget = 3, maxJobs = 4, now = Date.now }) {
+function createMotion({ store: store2, storage: storage2, provider, validate, verifyInput, inspectResult, inspectImage, budget = 3, maxJobs = 4, budgetEnforced = true, now = Date.now }) {
   const publicRow = (r) => ({ id: r.id, mode: r.mode, status: r.status, error: r.error, created: r.created });
   async function owned(uid, id) {
     if (!uuid(id)) throw Object.assign(Error("\u4EFB\u52A1\u4E0D\u5B58\u5728"), { status: 404 });
@@ -285,7 +285,7 @@ function createMotion({ store: store2, storage: storage2, provider, validate, ve
     reconcile,
     async info() {
       const q = await store2.info();
-      return { available: Number.isFinite(budget) && budget > 0 && q.count < maxJobs && q.cost + 0.2 <= budget + 1e-6, remaining: Math.max(0, Math.min(maxJobs - q.count, Math.floor((budget - q.cost + 1e-6) / 0.2))), models: MODELS, pricing: catalog() };
+      return { budgetEnforced, available: !budgetEnforced || Number.isFinite(budget) && budget > 0 && q.count < maxJobs && q.cost + 0.2 <= budget + 1e-6, remaining: budgetEnforced ? Math.max(0, Math.min(maxJobs - q.count, Math.floor((budget - q.cost + 1e-6) / 0.2))) : null, models: MODELS, pricing: catalog() };
     },
     async prepare(uid, { id, mode }) {
       if (!uuid(id) || !Object.hasOwn(MODELS, mode)) throw Error("\u5236\u4F5C\u53C2\u6570\u65E0\u6548");
@@ -330,7 +330,7 @@ function createMotion({ store: store2, storage: storage2, provider, validate, ve
           return false;
         }
         if (s.quota.active) throw Error("\u5DF2\u6709\u52A8\u4F5C\u4EFB\u52A1\u8FDB\u884C\u4E2D\uFF0C\u8BF7\u5148\u67E5\u8BE2\u539F\u4EFB\u52A1");
-        if (!Number.isFinite(budget) || !Number.isSafeInteger(maxJobs) || maxJobs < 1 || s.quota.count >= maxJobs || !Number.isFinite(input.cost) || s.quota.cost + input.cost > budget + 1e-6) throw Error("\u514D\u8D39\u4F53\u9A8C\u989D\u5EA6\u6682\u65F6\u7528\u5B8C\uFF0C\u8BF7\u7A0D\u540E\u518D\u6765");
+        if (!Number.isFinite(input.cost) || input.cost < 0 || budgetEnforced && (!Number.isFinite(budget) || !Number.isSafeInteger(maxJobs) || maxJobs < 1 || s.quota.count >= maxJobs || s.quota.cost + input.cost > budget + 1e-6)) throw Error("\u514D\u8D39\u4F53\u9A8C\u989D\u5EA6\u6682\u65F6\u7528\u5B8C\uFF0C\u8BF7\u7A0D\u540E\u518D\u6765");
         s.quota.count++;
         s.quota.cost += input.cost;
         s.quota.active = row.id;
@@ -549,7 +549,7 @@ async function validateMedia({ mode, prompt, imageBytes, referenceBytes }) {
 var import_security_core = __toESM(require_security_core(), 1);
 var env = process.env;
 var { store, storage } = cloudStore(env);
-var service = createMotion({ store, storage, provider: createProvider({ key: env.DASHSCOPE_API_KEY, base: env.DASHSCOPE_BASE_URL || "https://dashscope.aliyuncs.com" }), budget: Number(env.MOTION_BUDGET_CNY || 3), maxJobs: Number(env.MOTION_MAX_JOBS || 4), validate: validateMedia, inspectResult: videoInfo, inspectImage: imageInfo, verifyInput: async (uid, { receipt, prompt, imageBytes }) => {
+var service = createMotion({ store, storage, provider: createProvider({ key: env.DASHSCOPE_API_KEY, base: env.DASHSCOPE_BASE_URL || "https://dashscope.aliyuncs.com" }), budgetEnforced: env.MOTION_TEST_UNLIMITED !== "true", budget: Number(env.MOTION_BUDGET_CNY || 3), maxJobs: Number(env.MOTION_MAX_JOBS || 4), validate: validateMedia, inspectResult: videoInfo, inspectImage: imageInfo, verifyInput: async (uid, { receipt, prompt, imageBytes }) => {
   const checked = import_security_core.default.receiptMatches(receipt, prompt, imageBytes ? [{ buffer: imageBytes }] : [], env);
   if (checked.uid !== uid) throw Error("\u68C0\u6D4B\u51ED\u8BC1\u4E0D\u5C5E\u4E8E\u5F53\u524D\u7528\u6237\uFF0C\u8BF7\u91CD\u65B0\u68C0\u6D4B");
 } });

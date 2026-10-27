@@ -1,1 +1,11 @@
-{"name":"meme-motion-api","version":"0.2.0","private":true,"type":"commonjs","dependencies":{"@cloudbase/node-sdk":"3.18.3","image-size":"2.0.4","mp4box":"2.5.0"}}
+{
+  "name": "meme-motion-api",
+  "version": "0.3.0",
+  "private": true,
+  "type": "commonjs",
+  "dependencies": {
+    "@cloudbase/node-sdk": "3.18.3",
+    "image-size": "2.0.4",
+    "mp4box": "2.5.0"
+  }
+}

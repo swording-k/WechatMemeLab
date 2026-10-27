@@ -1,7 +1,9 @@
 import {createHash} from 'node:crypto';
+import {catalog,quote,PRICE_VERSION} from '../../server/motion/pricing.mjs';
+import {MODELS} from '../../server/motion/provider.mjs';
 const hash=s=>createHash('sha256').update(s).digest('hex');
 const uuid=s=>/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(s||'');
-export function createMotion({store,storage,provider,validate,verifyInput,inspectResult,budget=3,maxJobs=4,now=Date.now}){
+export function createMotion({store,storage,provider,validate,verifyInput,inspectResult,inspectImage,budget=3,maxJobs=4,now=Date.now}){
  const publicRow=r=>({id:r.id,mode:r.mode,status:r.status,error:r.error,created:r.created});
  async function owned(uid,id){if(!uuid(id))throw Object.assign(Error('任务不存在'),{status:404});const r=await store.read(id);if(!r||r.uid!==uid)throw Object.assign(Error('任务不存在'),{status:404});if(r.expires<now())throw Object.assign(Error('任务已过期，请重新制作'),{status:410});return r;}
  async function finish(id,changes){return store.atomic(id,s=>{Object.assign(s.row,changes);if(['success','failed'].includes(s.row.status)&&s.quota.active===id)delete s.quota.active;return publicRow(s.row);});}
@@ -15,23 +17,23 @@ export function createMotion({store,storage,provider,validate,verifyInput,inspec
  }
  return {
   reconcile,
-  async info(){const q=await store.info();return{available:Number.isFinite(budget)&&budget>0&&q.count<maxJobs&&q.cost+.3<=budget,remaining:Math.max(0,Math.min(maxJobs-q.count,Math.floor((budget-q.cost+.000001)/.3))),models:{describe:'wan2.6-i2v-flash',imitate:'wan2.2-animate-move'}};},
+  async info(){const q=await store.info();return{available:Number.isFinite(budget)&&budget>0&&q.count<maxJobs&&q.cost+.2<=budget,remaining:Math.max(0,Math.min(maxJobs-q.count,Math.floor((budget-q.cost+.000001)/.2))),models:MODELS,pricing:catalog()};},
   async prepare(uid,{id,mode}){
-   if(!uuid(id)||!['describe','imitate'].includes(mode))throw Error('制作参数无效');
+   if(!uuid(id)||!Object.hasOwn(MODELS,mode))throw Error('制作参数无效');
    await store.atomic(id,s=>{if(s.row){if(s.row.uid!==uid)throw Error('任务不存在');if(s.row.mode!==mode)throw Error('任务内容已变化');return;}s.row={id,uid,mode,status:'draft',created:now(),expires:now()+24*3600000};});
    const row=await owned(uid,id);if(row.status!=='draft')return publicRow(row);
    const prefix=`meme-motion/${hash(uid).slice(0,24)}/${id}`;
-   const image=await storage.ticket(prefix+'/input.jpg');const reference=mode==='imitate'?await storage.ticket(prefix+'/reference.mp4'):undefined;
-   await store.atomic(id,s=>{if(s.row.status==='draft'){s.row.imageFile=image.fileId;if(reference)s.row.referenceFile=reference.fileId;s.row.prefix=prefix;}});
-   return{...publicRow(row),uploads:{image,...(reference?{reference}:{})}};
+   const image=mode==='draw'?undefined:await storage.ticket(prefix+'/input.jpg');const reference=mode==='imitate'?await storage.ticket(prefix+'/reference.mp4'):undefined;
+   await store.atomic(id,s=>{if(s.row.status==='draft'){if(image)s.row.imageFile=image.fileId;if(reference)s.row.referenceFile=reference.fileId;s.row.prefix=prefix;}});
+   return{...publicRow(row),uploads:{...(image?{image}:{}),...(reference?{reference}:{})}};
   },
   async create(uid,data){
    const row=await owned(uid,data.id);const prompt=typeof data.prompt==='string'?data.prompt.trim():'';
-   if(prompt.length>800||(row.mode==='describe'&&!prompt))throw Error('请用800字以内描述动作');
+   if(prompt.length>800||(row.mode!=='imitate'&&!prompt))throw Error('请用800字以内描述创意');
    if(row.status!=='draft'){if(row.promptHash!==hash(prompt))throw Error('任务内容已变化，请新建任务');return publicRow(row);}
    await reconcile();
-   if(!row.imageFile)throw Error('请先上传照片');
-   const imageBytes=await storage.read(row.imageFile,1024*1024);
+   if(row.mode!=='draw'&&!row.imageFile)throw Error('请先上传照片');
+   const imageBytes=row.mode==='draw'?undefined:await storage.read(row.imageFile,1024*1024);
    await verifyInput(uid,{...data,prompt,imageBytes});
    const input=await validate({mode:row.mode,prompt,imageBytes,...(row.mode==='imitate'?{referenceBytes:await storage.read(row.referenceFile,20*1024*1024)}:{})});
    const claimed=await store.atomic(row.id,s=>{
@@ -39,7 +41,7 @@ export function createMotion({store,storage,provider,validate,verifyInput,inspec
     if(s.quota.active)throw Error('已有动作任务进行中，请先查询原任务');
     if(!Number.isFinite(budget)||!Number.isSafeInteger(maxJobs)||maxJobs<1||s.quota.count>=maxJobs||!Number.isFinite(input.cost)||s.quota.cost+input.cost>budget+.000001)throw Error('免费体验额度暂时用完，请稍后再来');
     s.quota.count++;s.quota.cost+=input.cost;s.quota.active=row.id;
-    Object.assign(s.row,{status:'submitting',cost:input.cost,promptHash:hash(prompt),submitted:now()});return true;
+    Object.assign(s.row,{status:'submitting',cost:input.cost,model:MODELS[row.mode],priceVersion:PRICE_VERSION,priceFen:quote(row.mode,input.duration).priceFen,promptHash:hash(prompt),submitted:now()});return true;
    });
    if(!claimed)return publicRow(await owned(uid,row.id));
    try{const taskId=await provider.create(input);await finish(row.id,{taskId,status:'queued'});}
@@ -54,13 +56,13 @@ export function createMotion({store,storage,provider,validate,verifyInput,inspec
    return publicRow(row);
   },
   async result(uid,id){
-   let row=await owned(uid,id);if(row.status!=='success'||!row.videoUrl)throw Error('动作尚未完成，请继续查询');
+   let row=await owned(uid,id);const image=['draw','edit'].includes(row.mode);if(row.status!=='success'||!(image?row.imageUrl:row.videoUrl))throw Error('作品尚未完成，请继续查询');
    if(!row.resultFile){
-    const bytes=await provider.download(row.videoUrl);const info=await inspectResult(bytes);
-    const resultFile=await storage.save(row.prefix+'/result.mp4',bytes);
+    const bytes=image?await provider.downloadImage(row.imageUrl):await provider.download(row.videoUrl);const info=image?await inspectImage(bytes):await inspectResult(bytes);
+    const resultFile=await storage.save(row.prefix+(image?'/result.png':'/result.mp4'),bytes);
     await store.atomic(id,s=>{s.row.resultFile=resultFile;s.row.resultInfo=info;});row=await owned(uid,id);
    }
-   return{...row.resultInfo,url:await storage.url(row.resultFile)};
+   return{...row.resultInfo,kind:image?'image':'video',url:await storage.url(row.resultFile)};
   }
  };
 }

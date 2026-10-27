@@ -3,6 +3,6 @@ export function handler({jobs,configured=false,origins=['http://127.0.0.1:5180',
  const path=new URL(req.url,'http://localhost').pathname.replace(/^\/api\/motion/,'');try{if(path==='/config'&&req.method==='GET')return send(200,{configured,...jobs.info()});if(!configured)return send(503,{error:'阿里云 API Key 尚未配置，当前不会发起生成'});
  if(path==='/probe'&&req.method==='GET')return send(200,await probe());
  if(path==='/jobs'&&req.method==='POST'){let size=0;const chunks=[];for await(const c of req){size+=c.length;if(size>35*1024*1024)return send(413,{error:'素材过大，请缩短参考视频'});chunks.push(c);}return send(200,await jobs.create(JSON.parse(Buffer.concat(chunks).toString())));}
- const m=path.match(/^\/jobs\/([a-f0-9-]{36})(\/video)?$/i);if(m&&req.method==='GET'){if(!m[2])return send(200,await jobs.query(m[1]));const b=await jobs.video(m[1]);res.writeHead(200,{'Content-Type':'video/mp4','Content-Length':b.length,'Cache-Control':'no-store'});return res.end(b);}return send(404,{error:'找不到此接口'});
+ const m=path.match(/^\/jobs\/([a-f0-9-]{36})(\/(video|image))?$/i);if(m&&req.method==='GET'){if(!m[2])return send(200,await jobs.query(m[1]));const b=await jobs[m[3]](m[1]);res.writeHead(200,{'Content-Type':m[3]==='image'?'image/png':'video/mp4','Content-Length':b.length,'Cache-Control':'no-store'});return res.end(b);}return send(404,{error:'找不到此接口'});
  }catch(e){return send(/任务不存在/.test(e.message)?404:e instanceof SyntaxError?400:422,{error:e.message||'生成服务暂不可用'});}};
 }

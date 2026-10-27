@@ -1,15 +1,22 @@
 <view class="motion-studio">
  <mode-nav current="motion"/>
- <view class="headline"><text>让照片演你的梗</text><text class="free">免费体验</text></view>
- <view class="result-stage"><video wx:if="{{resultPath}}" src="{{resultPath}}" controls loop object-fit="contain"/><image wx:elif="{{photoPath}}" src="{{photoPath}}" mode="aspectFit"/><view wx:else class="empty">先选自己、朋友或角色的照片<br/>给它安排一个短动作</view></view>
+ <view class="headline"><text>把脑洞做成表情</text><button class="price-link" bindtap="prices">免费内测 · 用量说明</button></view>
+ <view class="result-stage"><video wx:if="{{resultPath}}" src="{{resultPath}}" controls loop object-fit="contain"/><image wx:elif="{{picturePath}}" src="{{picturePath}}" mode="aspectFit"/><image wx:elif="{{photoPath}}" src="{{photoPath}}" mode="aspectFit"/><view wx:else class="empty">写一句脑洞，或上传自己、朋友、角色的照片<br/>先做出满意的图，再安排一个动作</view></view>
  <view class="service">{{service}}</view>
  <scroll-view scroll-y class="motion-form">
-  <button disabled="{{busy||pending}}" bindtap="choosePhoto">{{photoPath?'换张照片':'选择照片'}}</button>
-  <view class="tabs"><button disabled="{{busy||pending}}" class="{{mode==='describe'?'selected':''}}" data-mode="describe" bindtap="mode">写一个动作</button><button disabled="{{busy||pending}}" class="{{mode==='imitate'?'selected':''}}" data-mode="imitate" bindtap="mode">学一段动作</button></view>
-  <view wx:if="{{mode==='describe'}}" class="fields"><text>这一秒，发生什么</text><textarea disabled="{{busy||pending}}" value="{{prompt}}" bindinput="prompt" maxlength="800" placeholder="先忍住不笑，突然憋不住，最后装作没发生。"/><view class="ideas"><button wx:for="{{ideas}}" wx:key="title" disabled="{{busy||pending}}" data-index="{{index}}" bindtap="idea">{{item.title}}</button></view><text class="note">一个主体、一个短反应，更容易看清。生成约2秒无声动作。</text></view>
+  <view class="tabs family-tabs"><button disabled="{{busy||pending}}" class="{{family==='image'?'selected':''}}" data-family="image" bindtap="family">做图片</button><button disabled="{{busy||pending}}" class="{{family==='motion'?'selected':''}}" data-family="motion" bindtap="family">让图动起来</button></view>
+  <view class="tabs"><button wx:if="{{family==='image'}}" disabled="{{busy||pending}}" class="{{mode==='draw'?'selected':''}}" data-mode="draw" bindtap="mode">一句话生图</button><button wx:if="{{family==='image'}}" disabled="{{busy||pending}}" class="{{mode==='edit'?'selected':''}}" data-mode="edit" bindtap="mode">上传照片改图</button><button wx:if="{{family==='motion'}}" disabled="{{busy||pending}}" class="{{mode==='describe'?'selected':''}}" data-mode="describe" bindtap="mode">写一个动作</button><button wx:if="{{family==='motion'}}" disabled="{{busy||pending}}" class="{{mode==='imitate'?'selected':''}}" data-mode="imitate" bindtap="mode">学一段动作</button></view>
+  <button wx:if="{{mode!=='draw'}}" disabled="{{busy||pending}}" bindtap="choosePhoto">{{photoPath?'换张照片':'选择照片或角色图'}}</button>
+  <view wx:if="{{mode!=='imitate'}}" class="fields"><text>{{family==='image'?(mode==='draw'?'想做什么画面':'想把这张图怎么改'):'这一秒，发生什么'}}</text><textarea disabled="{{busy||pending}}" value="{{prompt}}" bindinput="prompt" maxlength="800" placeholder="{{family==='image'?(mode==='draw'?'一只抱着巨大饭碗的小恐龙，盯着空碗发呆，夸张的聊天表情。':'给人物戴一顶猫耳帽，换上睡衣，背景改成深夜的冰箱前。'):'先忍住不笑，突然憋不住，最后装作没发生。'}}"/><view wx:if="{{family==='motion'}}" class="ideas"><button wx:for="{{ideas}}" wx:key="title" disabled="{{busy||pending}}" data-index="{{index}}" bindtap="idea">{{item.title}}</button></view><text class="note">{{family==='image'?'每次生成一张图。满意后可以保存，或另写动作继续做动图。':'一个主体、一个短反应。生成约2秒无声动作，再剪辑配字。'}}</text></view>
   <view wx:else class="fields"><button disabled="{{busy||pending}}" bindtap="chooseReference">{{referencePath?'换个参考动作':'选择参考动作视频'}}</button><video wx:if="{{referencePath}}" class="reference" src="{{referencePath}}" controls object-fit="contain"/><text class="note">{{referenceName||'2～6秒MP4，最大20MB。一个主体、固定镜头，人物或拟人角色更适合。'}}</text></view>
-  <view class="fields"><text>最后配一句话（选填）</text><input disabled="{{busy}}" value="{{caption}}" bindinput="caption" maxlength="60" placeholder="我没笑，真的"/></view>
-  <text class="note">生成时照片、描述或参考视频将经本站后端交给阿里云处理。生成后仍可剪辑、调取景、加字并导出GIF。</text>
+  <view wx:if="{{family==='motion'}}" class="fields"><text>最后配一句话（选填）</text><input disabled="{{busy}}" value="{{caption}}" bindinput="caption" maxlength="60" placeholder="我没笑，真的"/></view>
+  <text class="note">生成时照片、描述或参考视频经本站后端交给阿里云处理。生图、改图与动作分别提交，保存或编辑已有作品不会再次调用模型。</text>
  </scroll-view>
- <view class="motion-actions"><text class="status" selectable>{{status}}</text><button wx:if="{{resultPath}}" class="primary" disabled="{{busy}}" bindtap="edit">剪辑配字，制作 GIF</button><button wx:elif="{{pending}}" class="primary" loading="{{busy}}" disabled="{{busy}}" bindtap="resume">{{busy?'正在处理…':'继续查询原任务'}}</button><button wx:else class="primary" loading="{{busy}}" disabled="{{busy||!available||!photoPath}}" bindtap="generate">{{busy?'正在准备动作…':'生成动作'}}</button><button wx:if="{{jobId&&!pending}}" class="again" disabled="{{busy}}" bindtap="reset">再做一个</button></view>
+ <view class="motion-actions"><text class="status" selectable>{{status}}</text>
+  <block wx:if="{{resultKind==='image'&&pictureReady}}"><view class="picture-actions"><button disabled="{{busy}}" bindtap="savePicture">保存图片</button><button disabled="{{busy}}" bindtap="editPicture">继续改图</button></view><button class="primary" disabled="{{busy}}" bindtap="animatePicture">让这张图动起来</button></block>
+  <button wx:elif="{{resultPath}}" class="primary" disabled="{{busy}}" bindtap="edit">剪辑配字，制作 GIF</button>
+  <button wx:elif="{{pending}}" class="primary" loading="{{busy}}" disabled="{{busy}}" bindtap="resume">{{busy?'正在处理…':'继续查询原任务'}}</button>
+  <button wx:else class="primary" loading="{{busy}}" disabled="{{busy||!available||(mode!=='draw'&&!photoPath)}}" bindtap="generate">{{busy?'正在准备…':family==='image'?'生成图片':'生成动作'}}</button>
+  <button wx:if="{{jobId&&(!pending||jobStatus==='success')}}" class="again" disabled="{{busy}}" bindtap="reset">{{pending?'放弃获取，重新创作':'再做一个'}}</button>
+ </view>
 </view>

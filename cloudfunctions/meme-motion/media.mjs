@@ -11,11 +11,14 @@ export function videoInfo(bytes){
  });
 }
 const dims=(d,max)=>d.width>=200&&d.height>=200&&d.width<=max&&d.height<=max&&d.width/d.height>=1/3&&d.width/d.height<=3;
+export function imageInfo(bytes){let info;try{info=imageSize(bytes);}catch{throw Error('生成图片无法读取，请重新获取原任务');}if(info.type!=='png'||!dims(info,4096)||bytes.length>10*1024*1024)throw Error('生成图片格式或尺寸不支持');return{width:info.width,height:info.height};}
 export async function validateMedia({mode,prompt,imageBytes,referenceBytes}){
+ if(mode==='draw')return{mode,prompt,cost:.2};
  let im;try{im=imageSize(imageBytes);}catch{throw Error('照片读取失败，请重新选择');}
  const imageType=({jpg:'image/jpeg',png:'image/png',webp:'image/webp'})[im.type];
  if(!imageType||!dims(im,4096)||imageBytes.length>1024*1024)throw Error('请使用200～4096像素、1MB以内的JPG/PNG照片');
- const result={mode,prompt,imageBytes,imageType,image:'data:'+imageType+';base64,'+imageBytes.toString('base64'),cost:.3};
- if(mode==='imitate'){if(!referenceBytes?.length||referenceBytes.length>20*1024*1024)throw Error('参考视频最大20MB');const v=await videoInfo(referenceBytes);if(!dims(v,2048)||v.duration<2||v.duration>6.05)throw Error('参考视频需为2～6秒、宽高200～2048像素的MP4');result.referenceBytes=referenceBytes;result.cost=Math.ceil(v.duration)*.4;}
+ if(mode==='edit'&&(im.width<240||im.height<240))throw Error('AI改图照片的宽高至少240像素');
+ const result={mode,prompt,imageBytes,imageType,image:'data:'+imageType+';base64,'+imageBytes.toString('base64'),cost:mode==='edit'?.2:.3};
+ if(mode==='imitate'){if(!referenceBytes?.length||referenceBytes.length>20*1024*1024)throw Error('参考视频最大20MB');const v=await videoInfo(referenceBytes);if(!dims(v,2048)||v.duration<2||v.duration>6.05)throw Error('参考视频需为2～6秒、宽高200～2048像素的MP4');result.referenceBytes=referenceBytes;result.duration=v.duration;result.cost=Math.ceil(v.duration)*.4;}
  return result;
 }

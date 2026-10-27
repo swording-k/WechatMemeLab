@@ -1,17 +1,17 @@
 import {createMotion} from './service.mjs';
 import {cloudStore} from './store.mjs';
-import {validateMedia,videoInfo} from './media.mjs';
+import {validateMedia,videoInfo,imageInfo} from './media.mjs';
 import {createProvider} from '../../server/motion/provider.mjs';
 import security from '../meme-feedback/security-core.cjs';
 const env=process.env,{store,storage}=cloudStore(env);
-const service=createMotion({store,storage,provider:createProvider({key:env.DASHSCOPE_API_KEY,base:env.DASHSCOPE_BASE_URL||'https://dashscope.aliyuncs.com'}),budget:Number(env.MOTION_BUDGET_CNY||3),maxJobs:Number(env.MOTION_MAX_JOBS||4),validate:validateMedia,inspectResult:videoInfo,verifyInput:async(uid,{receipt,prompt,imageBytes})=>{
- const checked=security.receiptMatches(receipt,prompt,[{buffer:imageBytes}],env);if(checked.uid!==uid)throw Error('检测凭证不属于当前用户，请重新检测');
+const service=createMotion({store,storage,provider:createProvider({key:env.DASHSCOPE_API_KEY,base:env.DASHSCOPE_BASE_URL||'https://dashscope.aliyuncs.com'}),budget:Number(env.MOTION_BUDGET_CNY||3),maxJobs:Number(env.MOTION_MAX_JOBS||4),validate:validateMedia,inspectResult:videoInfo,inspectImage:imageInfo,verifyInput:async(uid,{receipt,prompt,imageBytes})=>{
+ const checked=security.receiptMatches(receipt,prompt,imageBytes?[{buffer:imageBytes}]:[],env);if(checked.uid!==uid)throw Error('检测凭证不属于当前用户，请重新检测');
 }});
 export async function main(event){
  if(event.Type==='Timer'){await service.reconcile();return{cleaned:await store.cleanup()};}
  const json=(statusCode,body)=>({statusCode,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'},body:JSON.stringify(body)});
  const op=(event.queryStringParameters||event.queryString||{}).op;
- if(op==='health')return json(200,{configured:Boolean(env.DASHSCOPE_API_KEY),service:'meme-motion',version:'0.2.0'});
+ if(op==='health')return json(200,{configured:Boolean(env.DASHSCOPE_API_KEY),service:'meme-motion',version:'0.3.0'});
  if(!env.DASHSCOPE_API_KEY)return json(503,{error:'AI动作服务尚未配置'});
  try{
   if((event.httpMethod||'').toUpperCase()!=='POST')return json(405,{error:'请求方式不支持'});

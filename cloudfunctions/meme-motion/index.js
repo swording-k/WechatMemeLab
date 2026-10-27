@@ -130,10 +130,130 @@ __export(entry_exports, {
 module.exports = __toCommonJS(entry_exports);
 
 // cloudfunctions/meme-motion/service.mjs
+var import_node_crypto2 = require("node:crypto");
+
+// server/motion/pricing.mjs
+var PRICE_VERSION = "2026-10-27";
+function quote(mode, duration = 2) {
+  if (mode === "draw" || mode === "edit") return { costFen: 20, priceFen: 50 };
+  if (mode === "describe") return { costFen: 30, priceFen: 80 };
+  if (mode === "imitate") {
+    if (!Number.isFinite(duration) || duration < 2 || duration > 6.05) throw Error("\u53C2\u8003\u52A8\u4F5C\u65F6\u957F\u9700\u4E3A2\uFF5E6\u79D2");
+    const seconds = Math.ceil(duration);
+    return { costFen: seconds * 40, priceFen: seconds * 80 };
+  }
+  throw Error("\u8BF7\u9009\u62E9\u5236\u4F5C\u65B9\u5F0F");
+}
+function catalog() {
+  return { version: PRICE_VERSION, currency: "CNY", paymentsEnabled: false, items: [
+    { mode: "draw", name: "\u4E00\u53E5\u8BDD\u751F\u56FE", ...quote("draw"), unit: "\u5F20" },
+    { mode: "edit", name: "AI\u6539\u56FE", ...quote("edit"), unit: "\u5F20" },
+    { mode: "describe", name: "2\u79D2\u52A8\u4F5C", ...quote("describe"), unit: "\u6B21" },
+    { mode: "imitate", name: "\u53C2\u8003\u52A8\u4F5C", costFen: 40, priceFen: 80, unit: "\u79D2\uFF08\u5411\u4E0A\u53D6\u6574\uFF09" }
+  ] };
+}
+
+// server/motion/provider.mjs
 var import_node_crypto = require("node:crypto");
-var hash = (s) => (0, import_node_crypto.createHash)("sha256").update(s).digest("hex");
+var MODELS = { draw: "wan2.6-t2i", edit: "wan2.6-image", describe: "wan2.6-i2v-flash", imitate: "wan2.2-animate-move" };
+function buildRequest({ mode, prompt = "", image, reference }) {
+  if (!MODELS[mode]) throw Error("\u8BF7\u9009\u62E9\u5199\u52A8\u4F5C\u6216\u5B66\u52A8\u4F5C");
+  if (mode === "draw" || mode === "edit") return { path: "/services/aigc/image-generation/generation", body: { model: MODELS[mode], input: { messages: [{ role: "user", content: [...mode === "edit" ? [{ image }] : [], { text: prompt }] }] }, parameters: { n: 1, size: mode === "draw" ? "1280*1280" : "1K", prompt_extend: false, watermark: true, ...mode === "edit" ? { enable_interleave: false } : {} } } };
+  if (mode === "imitate") return { path: "/services/aigc/image2video/video-synthesis", body: { model: MODELS.imitate, input: { image_url: image, video_url: reference, watermark: true }, parameters: { mode: "wan-std", check_image: true } } };
+  return { path: "/services/aigc/video-generation/video-synthesis", body: { model: MODELS.describe, input: { img_url: image, prompt: `${prompt}\u3002\u56FA\u5B9A\u955C\u5934\uFF0C\u53EA\u6709\u7167\u7247\u4E2D\u7684\u4E3B\u4F53\u8868\u6F14\u8FD9\u4E2A\u52A8\u4F5C\uFF0C\u4FDD\u6301\u8EAB\u4EFD\u3001\u539F\u753B\u98CE\u548C\u80CC\u666F\uFF0C\u5355\u4E2A\u8FDE\u7EED\u955C\u5934\u3002`, negative_prompt: "\u65B0\u589E\u4EBA\u7269\uFF0C\u591A\u4EBA\uFF0C\u955C\u5934\u5207\u6362\uFF0C\u6587\u5B57\uFF0C\u5B57\u5E55\uFF0C\u6807\u5FD7\uFF0C\u9762\u90E8\u4E25\u91CD\u7578\u53D8" }, parameters: { resolution: "720P", duration: 2, audio: false, prompt_extend: false, watermark: true } } };
+}
+function parseTask(data) {
+  const o = data.output;
+  if (!o?.task_status) throw Error("\u751F\u6210\u670D\u52A1\u8FD4\u56DE\u4E86\u65E0\u6548\u4EFB\u52A1\u72B6\u6001");
+  const status = { PENDING: "queued", RUNNING: "processing", SUCCEEDED: "success", FAILED: "failed", CANCELED: "failed", UNKNOWN: "unknown" }[o.task_status] || "unknown";
+  const videoUrl = o.video_url || o.results?.video_url, imageUrl = o.choices?.flatMap((x) => x.message?.content || []).find((x) => typeof x.image === "string")?.image;
+  if (status === "success" && !videoUrl && !imageUrl) throw Error("\u4EFB\u52A1\u6210\u529F\u4F46\u672A\u8FD4\u56DE\u89C6\u9891\u6216\u56FE\u7247\u7ED3\u679C\uFF0C\u8BF7\u7EE7\u7EED\u67E5\u8BE2");
+  return { status, ...videoUrl ? { videoUrl } : {}, ...imageUrl ? { imageUrl } : {}, ...status === "failed" ? { error: `\u751F\u6210\u672A\u5B8C\u6210\uFF08${o.code || "Failed"}\uFF09\uFF0C\u53EF\u8C03\u6574\u7D20\u6750\u540E\u91CD\u65B0\u521B\u5EFA\u4EFB\u52A1` } : {}, requestId: data.request_id };
+}
+function remote(url, upgrade = false) {
+  let u;
+  try {
+    u = new URL(url);
+  } catch {
+    throw Error("\u89C6\u9891\u5730\u5740\u65E0\u6548");
+  }
+  if (upgrade && u.protocol === "http:" && /^dashscope-[a-z0-9-]+\.oss(?:-[a-z0-9-]+)?\.aliyuncs\.com$/.test(u.hostname)) u.protocol = "https:";
+  if (u.protocol !== "https:" || u.port || u.username || u.password || !u.hostname.endsWith(".aliyuncs.com")) throw Error("\u89C6\u9891\u5730\u5740\u672A\u901A\u8FC7\u6821\u9A8C");
+  return u;
+}
+function createProvider({ key, base = "https://dashscope.aliyuncs.com", fetcher = fetch }) {
+  const u = new URL(base);
+  if (u.protocol !== "https:" || !(u.hostname === "dashscope.aliyuncs.com" || u.hostname === "dashscope-intl.aliyuncs.com" || u.hostname.endsWith(".maas.aliyuncs.com")) || u.username || u.password || u.port || u.pathname !== "/") throw Error("\u963F\u91CC\u4E91\u670D\u52A1\u5730\u5740\u914D\u7F6E\u65E0\u6548");
+  const api = async (path, body) => {
+    const r = await fetcher(u.origin + "/api/v1" + path, { method: body ? "POST" : "GET", headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json", ...body ? { "X-DashScope-Async": "enable", "X-DashScope-OssResourceResolve": "enable" } : {} }, ...body ? { body: JSON.stringify(body) } : {}, signal: AbortSignal.timeout(6e4), redirect: "error" });
+    const data = await r.json();
+    if (!r.ok) throw Object.assign(Error(`\u963F\u91CC\u4E91\u8BF7\u6C42\u5931\u8D25\uFF08${r.status}/${String(data.code || "Unknown").slice(0, 80)}\uFF09`), { rejected: r.status >= 400 && r.status < 500 && r.status !== 408 });
+    return data;
+  };
+  return {
+    async upload(bytes, type, model) {
+      const ext = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp", "video/mp4": "mp4" }[type];
+      if (!ext) throw Error("\u7D20\u6750\u683C\u5F0F\u4E0D\u652F\u6301");
+      const p = (await api("/uploads?action=getPolicy&model=" + encodeURIComponent(model))).data;
+      remote(p.upload_host);
+      const filename = (0, import_node_crypto.randomUUID)() + "." + ext, keyname = p.upload_dir + "/" + filename, f = new FormData();
+      for (const [k, v] of Object.entries({ OSSAccessKeyId: p.oss_access_key_id, Signature: p.signature, policy: p.policy, "x-oss-object-acl": p.x_oss_object_acl, "x-oss-forbid-overwrite": p.x_oss_forbid_overwrite, key: keyname, success_action_status: "200" })) {
+        if (typeof v !== "string") throw Error("\u4E34\u65F6\u4E0A\u4F20\u51ED\u8BC1\u65E0\u6548");
+        f.append(k, v);
+      }
+      f.append("file", new Blob([bytes], { type }), filename);
+      const r = await fetcher(p.upload_host, { method: "POST", body: f, signal: AbortSignal.timeout(9e4), redirect: "error" });
+      if (!r.ok) throw Error("\u7D20\u6750\u4E34\u65F6\u4E0A\u4F20\u5931\u8D25\uFF0C\u8BF7\u91CD\u8BD5");
+      return "oss://" + keyname;
+    },
+    async create(input) {
+      let image = input.image, reference;
+      if (input.mode === "imitate") {
+        try {
+          image = await this.upload(input.imageBytes, input.imageType, MODELS.imitate);
+          reference = await this.upload(input.referenceBytes, "video/mp4", MODELS.imitate);
+        } catch {
+          throw Object.assign(Error("\u53C2\u8003\u7D20\u6750\u4E0A\u4F20\u5931\u8D25\uFF0C\u5C1A\u672A\u63D0\u4EA4\u751F\u6210"), { rejected: true });
+        }
+      }
+      const x = buildRequest({ ...input, image, reference });
+      const d = await api(x.path, x.body);
+      if (!d.output?.task_id) throw Error("\u4EFB\u52A1\u63D0\u4EA4\u7ED3\u679C\u672A\u786E\u8BA4");
+      return d.output.task_id;
+    },
+    async query(id) {
+      return parseTask(await api("/tasks/" + encodeURIComponent(id)));
+    },
+    async download(url) {
+      return download(url, "video/", 80 * 1024 * 1024);
+    },
+    async downloadImage(url) {
+      return download(url, "image/", 10 * 1024 * 1024);
+    },
+    async probe() {
+      await api("/models?page_size=1");
+      return { authenticated: true };
+    }
+  };
+  async function download(url, type, max) {
+    const secure = remote(url, true);
+    const r = await fetcher(secure.href, { redirect: "error", signal: AbortSignal.timeout(9e4) });
+    if (!r.ok || !r.headers.get("content-type")?.startsWith(type) || Number(r.headers.get("content-length")) > max) throw Error("\u7ED3\u679C\u4E0B\u8F7D\u672A\u5B8C\u6210\uFF0C\u8BF7\u7A0D\u540E\u91CD\u8BD5");
+    const chunks = [];
+    let size = 0;
+    for await (const c of r.body) {
+      size += c.length;
+      if (size > max) throw Error("\u7ED3\u679C\u8FC7\u5927\uFF0C\u8BF7\u8054\u7CFB\u5F00\u53D1\u8005");
+      chunks.push(c);
+    }
+    return Buffer.concat(chunks);
+  }
+}
+
+// cloudfunctions/meme-motion/service.mjs
+var hash = (s) => (0, import_node_crypto2.createHash)("sha256").update(s).digest("hex");
 var uuid = (s) => /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(s || "");
-function createMotion({ store: store2, storage: storage2, provider, validate, verifyInput, inspectResult, budget = 3, maxJobs = 4, now = Date.now }) {
+function createMotion({ store: store2, storage: storage2, provider, validate, verifyInput, inspectResult, inspectImage, budget = 3, maxJobs = 4, now = Date.now }) {
   const publicRow = (r) => ({ id: r.id, mode: r.mode, status: r.status, error: r.error, created: r.created });
   async function owned(uid, id) {
     if (!uuid(id)) throw Object.assign(Error("\u4EFB\u52A1\u4E0D\u5B58\u5728"), { status: 404 });
@@ -165,10 +285,10 @@ function createMotion({ store: store2, storage: storage2, provider, validate, ve
     reconcile,
     async info() {
       const q = await store2.info();
-      return { available: Number.isFinite(budget) && budget > 0 && q.count < maxJobs && q.cost + 0.3 <= budget, remaining: Math.max(0, Math.min(maxJobs - q.count, Math.floor((budget - q.cost + 1e-6) / 0.3))), models: { describe: "wan2.6-i2v-flash", imitate: "wan2.2-animate-move" } };
+      return { available: Number.isFinite(budget) && budget > 0 && q.count < maxJobs && q.cost + 0.2 <= budget, remaining: Math.max(0, Math.min(maxJobs - q.count, Math.floor((budget - q.cost + 1e-6) / 0.2))), models: MODELS, pricing: catalog() };
     },
     async prepare(uid, { id, mode }) {
-      if (!uuid(id) || !["describe", "imitate"].includes(mode)) throw Error("\u5236\u4F5C\u53C2\u6570\u65E0\u6548");
+      if (!uuid(id) || !Object.hasOwn(MODELS, mode)) throw Error("\u5236\u4F5C\u53C2\u6570\u65E0\u6548");
       await store2.atomic(id, (s) => {
         if (s.row) {
           if (s.row.uid !== uid) throw Error("\u4EFB\u52A1\u4E0D\u5B58\u5728");
@@ -180,28 +300,28 @@ function createMotion({ store: store2, storage: storage2, provider, validate, ve
       const row = await owned(uid, id);
       if (row.status !== "draft") return publicRow(row);
       const prefix = `meme-motion/${hash(uid).slice(0, 24)}/${id}`;
-      const image = await storage2.ticket(prefix + "/input.jpg");
+      const image = mode === "draw" ? void 0 : await storage2.ticket(prefix + "/input.jpg");
       const reference = mode === "imitate" ? await storage2.ticket(prefix + "/reference.mp4") : void 0;
       await store2.atomic(id, (s) => {
         if (s.row.status === "draft") {
-          s.row.imageFile = image.fileId;
+          if (image) s.row.imageFile = image.fileId;
           if (reference) s.row.referenceFile = reference.fileId;
           s.row.prefix = prefix;
         }
       });
-      return { ...publicRow(row), uploads: { image, ...reference ? { reference } : {} } };
+      return { ...publicRow(row), uploads: { ...image ? { image } : {}, ...reference ? { reference } : {} } };
     },
     async create(uid, data) {
       const row = await owned(uid, data.id);
       const prompt = typeof data.prompt === "string" ? data.prompt.trim() : "";
-      if (prompt.length > 800 || row.mode === "describe" && !prompt) throw Error("\u8BF7\u7528800\u5B57\u4EE5\u5185\u63CF\u8FF0\u52A8\u4F5C");
+      if (prompt.length > 800 || row.mode !== "imitate" && !prompt) throw Error("\u8BF7\u7528800\u5B57\u4EE5\u5185\u63CF\u8FF0\u521B\u610F");
       if (row.status !== "draft") {
         if (row.promptHash !== hash(prompt)) throw Error("\u4EFB\u52A1\u5185\u5BB9\u5DF2\u53D8\u5316\uFF0C\u8BF7\u65B0\u5EFA\u4EFB\u52A1");
         return publicRow(row);
       }
       await reconcile();
-      if (!row.imageFile) throw Error("\u8BF7\u5148\u4E0A\u4F20\u7167\u7247");
-      const imageBytes = await storage2.read(row.imageFile, 1024 * 1024);
+      if (row.mode !== "draw" && !row.imageFile) throw Error("\u8BF7\u5148\u4E0A\u4F20\u7167\u7247");
+      const imageBytes = row.mode === "draw" ? void 0 : await storage2.read(row.imageFile, 1024 * 1024);
       await verifyInput(uid, { ...data, prompt, imageBytes });
       const input = await validate({ mode: row.mode, prompt, imageBytes, ...row.mode === "imitate" ? { referenceBytes: await storage2.read(row.referenceFile, 20 * 1024 * 1024) } : {} });
       const claimed = await store2.atomic(row.id, (s) => {
@@ -214,7 +334,7 @@ function createMotion({ store: store2, storage: storage2, provider, validate, ve
         s.quota.count++;
         s.quota.cost += input.cost;
         s.quota.active = row.id;
-        Object.assign(s.row, { status: "submitting", cost: input.cost, promptHash: hash(prompt), submitted: now() });
+        Object.assign(s.row, { status: "submitting", cost: input.cost, model: MODELS[row.mode], priceVersion: PRICE_VERSION, priceFen: quote(row.mode, input.duration).priceFen, promptHash: hash(prompt), submitted: now() });
         return true;
       });
       if (!claimed) return publicRow(await owned(uid, row.id));
@@ -250,18 +370,19 @@ function createMotion({ store: store2, storage: storage2, provider, validate, ve
     },
     async result(uid, id) {
       let row = await owned(uid, id);
-      if (row.status !== "success" || !row.videoUrl) throw Error("\u52A8\u4F5C\u5C1A\u672A\u5B8C\u6210\uFF0C\u8BF7\u7EE7\u7EED\u67E5\u8BE2");
+      const image = ["draw", "edit"].includes(row.mode);
+      if (row.status !== "success" || !(image ? row.imageUrl : row.videoUrl)) throw Error("\u4F5C\u54C1\u5C1A\u672A\u5B8C\u6210\uFF0C\u8BF7\u7EE7\u7EED\u67E5\u8BE2");
       if (!row.resultFile) {
-        const bytes = await provider.download(row.videoUrl);
-        const info = await inspectResult(bytes);
-        const resultFile = await storage2.save(row.prefix + "/result.mp4", bytes);
+        const bytes = image ? await provider.downloadImage(row.imageUrl) : await provider.download(row.videoUrl);
+        const info = image ? await inspectImage(bytes) : await inspectResult(bytes);
+        const resultFile = await storage2.save(row.prefix + (image ? "/result.png" : "/result.mp4"), bytes);
         await store2.atomic(id, (s) => {
           s.row.resultFile = resultFile;
           s.row.resultInfo = info;
         });
         row = await owned(uid, id);
       }
-      return { ...row.resultInfo, url: await storage2.url(row.resultFile) };
+      return { ...row.resultInfo, kind: image ? "image" : "video", url: await storage2.url(row.resultFile) };
     }
   };
 }
@@ -391,7 +512,18 @@ function videoInfo(bytes) {
   });
 }
 var dims = (d, max) => d.width >= 200 && d.height >= 200 && d.width <= max && d.height <= max && d.width / d.height >= 1 / 3 && d.width / d.height <= 3;
+function imageInfo(bytes) {
+  let info;
+  try {
+    info = (0, import_image_size.imageSize)(bytes);
+  } catch {
+    throw Error("\u751F\u6210\u56FE\u7247\u65E0\u6CD5\u8BFB\u53D6\uFF0C\u8BF7\u91CD\u65B0\u83B7\u53D6\u539F\u4EFB\u52A1");
+  }
+  if (info.type !== "png" || !dims(info, 4096) || bytes.length > 10 * 1024 * 1024) throw Error("\u751F\u6210\u56FE\u7247\u683C\u5F0F\u6216\u5C3A\u5BF8\u4E0D\u652F\u6301");
+  return { width: info.width, height: info.height };
+}
 async function validateMedia({ mode, prompt, imageBytes, referenceBytes }) {
+  if (mode === "draw") return { mode, prompt, cost: 0.2 };
   let im;
   try {
     im = (0, import_image_size.imageSize)(imageBytes);
@@ -400,113 +532,25 @@ async function validateMedia({ mode, prompt, imageBytes, referenceBytes }) {
   }
   const imageType = { jpg: "image/jpeg", png: "image/png", webp: "image/webp" }[im.type];
   if (!imageType || !dims(im, 4096) || imageBytes.length > 1024 * 1024) throw Error("\u8BF7\u4F7F\u7528200\uFF5E4096\u50CF\u7D20\u30011MB\u4EE5\u5185\u7684JPG/PNG\u7167\u7247");
-  const result = { mode, prompt, imageBytes, imageType, image: "data:" + imageType + ";base64," + imageBytes.toString("base64"), cost: 0.3 };
+  if (mode === "edit" && (im.width < 240 || im.height < 240)) throw Error("AI\u6539\u56FE\u7167\u7247\u7684\u5BBD\u9AD8\u81F3\u5C11240\u50CF\u7D20");
+  const result = { mode, prompt, imageBytes, imageType, image: "data:" + imageType + ";base64," + imageBytes.toString("base64"), cost: mode === "edit" ? 0.2 : 0.3 };
   if (mode === "imitate") {
     if (!referenceBytes?.length || referenceBytes.length > 20 * 1024 * 1024) throw Error("\u53C2\u8003\u89C6\u9891\u6700\u592720MB");
     const v = await videoInfo(referenceBytes);
     if (!dims(v, 2048) || v.duration < 2 || v.duration > 6.05) throw Error("\u53C2\u8003\u89C6\u9891\u9700\u4E3A2\uFF5E6\u79D2\u3001\u5BBD\u9AD8200\uFF5E2048\u50CF\u7D20\u7684MP4");
     result.referenceBytes = referenceBytes;
+    result.duration = v.duration;
     result.cost = Math.ceil(v.duration) * 0.4;
   }
   return result;
-}
-
-// server/motion/provider.mjs
-var import_node_crypto2 = require("node:crypto");
-var MODELS = { describe: "wan2.6-i2v-flash", imitate: "wan2.2-animate-move" };
-function buildRequest({ mode, prompt = "", image, reference }) {
-  if (!MODELS[mode]) throw Error("\u8BF7\u9009\u62E9\u5199\u52A8\u4F5C\u6216\u5B66\u52A8\u4F5C");
-  if (mode === "imitate") return { path: "/services/aigc/image2video/video-synthesis", body: { model: MODELS.imitate, input: { image_url: image, video_url: reference, watermark: true }, parameters: { mode: "wan-std", check_image: true } } };
-  return { path: "/services/aigc/video-generation/video-synthesis", body: { model: MODELS.describe, input: { img_url: image, prompt: `${prompt}\u3002\u56FA\u5B9A\u955C\u5934\uFF0C\u53EA\u6709\u7167\u7247\u4E2D\u7684\u4E3B\u4F53\u8868\u6F14\u8FD9\u4E2A\u52A8\u4F5C\uFF0C\u4FDD\u6301\u8EAB\u4EFD\u3001\u539F\u753B\u98CE\u548C\u80CC\u666F\uFF0C\u5355\u4E2A\u8FDE\u7EED\u955C\u5934\u3002`, negative_prompt: "\u65B0\u589E\u4EBA\u7269\uFF0C\u591A\u4EBA\uFF0C\u955C\u5934\u5207\u6362\uFF0C\u6587\u5B57\uFF0C\u5B57\u5E55\uFF0C\u6807\u5FD7\uFF0C\u9762\u90E8\u4E25\u91CD\u7578\u53D8" }, parameters: { resolution: "720P", duration: 2, audio: false, prompt_extend: false, watermark: true } } };
-}
-function parseTask(data) {
-  const o = data.output;
-  if (!o?.task_status) throw Error("\u751F\u6210\u670D\u52A1\u8FD4\u56DE\u4E86\u65E0\u6548\u4EFB\u52A1\u72B6\u6001");
-  const status = { PENDING: "queued", RUNNING: "processing", SUCCEEDED: "success", FAILED: "failed", CANCELED: "failed", UNKNOWN: "unknown" }[o.task_status] || "unknown";
-  const videoUrl = o.video_url || o.results?.video_url;
-  if (status === "success" && !videoUrl) throw Error("\u4EFB\u52A1\u6210\u529F\u4F46\u672A\u8FD4\u56DE\u89C6\u9891\uFF0C\u8BF7\u7EE7\u7EED\u67E5\u8BE2");
-  return { status, ...videoUrl ? { videoUrl } : {}, ...status === "failed" ? { error: `\u751F\u6210\u672A\u5B8C\u6210\uFF08${o.code || "Failed"}\uFF09\uFF0C\u53EF\u8C03\u6574\u7D20\u6750\u540E\u91CD\u65B0\u521B\u5EFA\u4EFB\u52A1` } : {}, requestId: data.request_id };
-}
-function remote(url, upgrade = false) {
-  let u;
-  try {
-    u = new URL(url);
-  } catch {
-    throw Error("\u89C6\u9891\u5730\u5740\u65E0\u6548");
-  }
-  if (upgrade && u.protocol === "http:" && /^dashscope-[a-z0-9-]+\.oss(?:-[a-z0-9-]+)?\.aliyuncs\.com$/.test(u.hostname)) u.protocol = "https:";
-  if (u.protocol !== "https:" || u.port || u.username || u.password || !u.hostname.endsWith(".aliyuncs.com")) throw Error("\u89C6\u9891\u5730\u5740\u672A\u901A\u8FC7\u6821\u9A8C");
-  return u;
-}
-function createProvider({ key, base = "https://dashscope.aliyuncs.com", fetcher = fetch }) {
-  const u = new URL(base);
-  if (u.protocol !== "https:" || !(u.hostname === "dashscope.aliyuncs.com" || u.hostname === "dashscope-intl.aliyuncs.com" || u.hostname.endsWith(".maas.aliyuncs.com")) || u.username || u.password || u.port || u.pathname !== "/") throw Error("\u963F\u91CC\u4E91\u670D\u52A1\u5730\u5740\u914D\u7F6E\u65E0\u6548");
-  const api = async (path, body) => {
-    const r = await fetcher(u.origin + "/api/v1" + path, { method: body ? "POST" : "GET", headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json", ...body ? { "X-DashScope-Async": "enable", "X-DashScope-OssResourceResolve": "enable" } : {} }, ...body ? { body: JSON.stringify(body) } : {}, signal: AbortSignal.timeout(6e4), redirect: "error" });
-    const data = await r.json();
-    if (!r.ok) throw Object.assign(Error(`\u963F\u91CC\u4E91\u8BF7\u6C42\u5931\u8D25\uFF08${r.status}/${String(data.code || "Unknown").slice(0, 80)}\uFF09`), { rejected: r.status >= 400 && r.status < 500 && r.status !== 408 });
-    return data;
-  };
-  return {
-    async upload(bytes, type, model) {
-      const ext = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp", "video/mp4": "mp4" }[type];
-      if (!ext) throw Error("\u7D20\u6750\u683C\u5F0F\u4E0D\u652F\u6301");
-      const p = (await api("/uploads?action=getPolicy&model=" + encodeURIComponent(model))).data;
-      remote(p.upload_host);
-      const filename = (0, import_node_crypto2.randomUUID)() + "." + ext, keyname = p.upload_dir + "/" + filename, f = new FormData();
-      for (const [k, v] of Object.entries({ OSSAccessKeyId: p.oss_access_key_id, Signature: p.signature, policy: p.policy, "x-oss-object-acl": p.x_oss_object_acl, "x-oss-forbid-overwrite": p.x_oss_forbid_overwrite, key: keyname, success_action_status: "200" })) {
-        if (typeof v !== "string") throw Error("\u4E34\u65F6\u4E0A\u4F20\u51ED\u8BC1\u65E0\u6548");
-        f.append(k, v);
-      }
-      f.append("file", new Blob([bytes], { type }), filename);
-      const r = await fetcher(p.upload_host, { method: "POST", body: f, signal: AbortSignal.timeout(9e4), redirect: "error" });
-      if (!r.ok) throw Error("\u7D20\u6750\u4E34\u65F6\u4E0A\u4F20\u5931\u8D25\uFF0C\u8BF7\u91CD\u8BD5");
-      return "oss://" + keyname;
-    },
-    async create(input) {
-      let image = input.image, reference;
-      if (input.mode === "imitate") {
-        try {
-          image = await this.upload(input.imageBytes, input.imageType, MODELS.imitate);
-          reference = await this.upload(input.referenceBytes, "video/mp4", MODELS.imitate);
-        } catch {
-          throw Object.assign(Error("\u53C2\u8003\u7D20\u6750\u4E0A\u4F20\u5931\u8D25\uFF0C\u5C1A\u672A\u63D0\u4EA4\u751F\u6210"), { rejected: true });
-        }
-      }
-      const x = buildRequest({ ...input, image, reference });
-      const d = await api(x.path, x.body);
-      if (!d.output?.task_id) throw Error("\u4EFB\u52A1\u63D0\u4EA4\u7ED3\u679C\u672A\u786E\u8BA4");
-      return d.output.task_id;
-    },
-    async query(id) {
-      return parseTask(await api("/tasks/" + encodeURIComponent(id)));
-    },
-    async download(url) {
-      const secure = remote(url, true);
-      const r = await fetcher(secure.href, { redirect: "error", signal: AbortSignal.timeout(9e4) });
-      if (!r.ok || !r.headers.get("content-type")?.startsWith("video/")) throw Error("\u89C6\u9891\u4E0B\u8F7D\u672A\u5B8C\u6210\uFF0C\u8BF7\u7A0D\u540E\u91CD\u8BD5");
-      const chunks = [];
-      let size = 0;
-      for await (const c of r.body) {
-        size += c.length;
-        if (size > 80 * 1024 * 1024) throw Error("\u89C6\u9891\u8FC7\u5927\uFF0C\u8BF7\u8054\u7CFB\u5F00\u53D1\u8005");
-        chunks.push(c);
-      }
-      return Buffer.concat(chunks);
-    },
-    async probe() {
-      await api("/models?page_size=1");
-      return { authenticated: true };
-    }
-  };
 }
 
 // cloudfunctions/meme-motion/entry.mjs
 var import_security_core = __toESM(require_security_core(), 1);
 var env = process.env;
 var { store, storage } = cloudStore(env);
-var service = createMotion({ store, storage, provider: createProvider({ key: env.DASHSCOPE_API_KEY, base: env.DASHSCOPE_BASE_URL || "https://dashscope.aliyuncs.com" }), budget: Number(env.MOTION_BUDGET_CNY || 3), maxJobs: Number(env.MOTION_MAX_JOBS || 4), validate: validateMedia, inspectResult: videoInfo, verifyInput: async (uid, { receipt, prompt, imageBytes }) => {
-  const checked = import_security_core.default.receiptMatches(receipt, prompt, [{ buffer: imageBytes }], env);
+var service = createMotion({ store, storage, provider: createProvider({ key: env.DASHSCOPE_API_KEY, base: env.DASHSCOPE_BASE_URL || "https://dashscope.aliyuncs.com" }), budget: Number(env.MOTION_BUDGET_CNY || 3), maxJobs: Number(env.MOTION_MAX_JOBS || 4), validate: validateMedia, inspectResult: videoInfo, inspectImage: imageInfo, verifyInput: async (uid, { receipt, prompt, imageBytes }) => {
+  const checked = import_security_core.default.receiptMatches(receipt, prompt, imageBytes ? [{ buffer: imageBytes }] : [], env);
   if (checked.uid !== uid) throw Error("\u68C0\u6D4B\u51ED\u8BC1\u4E0D\u5C5E\u4E8E\u5F53\u524D\u7528\u6237\uFF0C\u8BF7\u91CD\u65B0\u68C0\u6D4B");
 } });
 async function main(event) {
@@ -516,7 +560,7 @@ async function main(event) {
   }
   const json = (statusCode, body) => ({ statusCode, headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" }, body: JSON.stringify(body) });
   const op = (event.queryStringParameters || event.queryString || {}).op;
-  if (op === "health") return json(200, { configured: Boolean(env.DASHSCOPE_API_KEY), service: "meme-motion", version: "0.2.0" });
+  if (op === "health") return json(200, { configured: Boolean(env.DASHSCOPE_API_KEY), service: "meme-motion", version: "0.3.0" });
   if (!env.DASHSCOPE_API_KEY) return json(503, { error: "AI\u52A8\u4F5C\u670D\u52A1\u5C1A\u672A\u914D\u7F6E" });
   try {
     if ((event.httpMethod || "").toUpperCase() !== "POST") return json(405, { error: "\u8BF7\u6C42\u65B9\u5F0F\u4E0D\u652F\u6301" });

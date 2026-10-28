@@ -1,0 +1,5 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {createAccounts,accountId} from '../cloudfunctions/meme-motion/accounts.mjs';
+import {createPayments} from '../cloudfunctions/meme-motion/payments.mjs';
+test('developer role is derived only from server whitelist and stays free',async()=>{const rows=new Map(),store={transaction:fn=>fn({get:async(c,id)=>rows.get(c+id),set:async(c,id,v)=>rows.set(c+id,v)})};const a=createAccounts({store,env:{MEME_DEVELOPER_ACCOUNT_IDS:accountId('owner')},billingEnabled:true});assert.equal((await a.me('owner')).developer,true);assert.equal((await a.me('owner')).free,true);assert.equal((await a.me('stranger')).developer,false);});
+test('unverified real payments can be enabled solely for the owner test account',async()=>{const env={MEME_PAY_OFFER_ID:'offer',MEME_PAY_APP_KEY:'key',MEME_PAY_PRODUCTS_JSON:JSON.stringify([{id:'starter',productId:'points',priceFen:100,points:100}]),MEME_PAY_TEST_ACCOUNT_IDS:accountId('owner')};const p=createPayments({store:{},env});assert.equal(p.catalog('owner').enabled,true);assert.equal(p.catalog('stranger').enabled,false);assert.equal(p.catalog().enabled,false);});

@@ -2,10 +2,10 @@ const api=require('../../lib/account-api');
 function freshCode(){return new Promise((resolve,reject)=>wx.login({success:r=>r.code?resolve(r.code):reject(Error('微信登录未完成，请重试')),fail:()=>reject(Error('微信登录未完成，请重试'))}));}
 function orderView(order){const states={credited:'已到账',closed:'已关闭',pending:'等待确认到账',created:'等待支付',paid:'已到账',success:'已到账',failed:'支付未完成',cancelled:'已取消',refunded:'已退款'};return{...order,statusText:states[order.status]||'待查询',canQuery:!!order.deliveryPending||!['credited','closed','paid','success','refunded'].includes(order.status)};}
 Page({
- data:{loading:false,busy:false,error:'',notice:'',account:null,wallet:{available:0},free:true,payments:{enabled:false,products:[]},orders:[],loginCode:'',lastOrder:null},
+ data:{loading:false,busy:false,error:'',notice:'',account:null,wallet:{available:0},free:true,developer:false,payments:{enabled:false,products:[]},orders:[],loginCode:'',lastOrder:null},
  onLoad(options={}){if(/^\d{8}$/.test(options.code||''))this.setData({loginCode:options.code});},
  async onShow(){await this.refresh();},
- async refresh(){if(this.data.loading)return;this.setData({loading:true,error:''});try{const info=await api.request('me');this.setData({account:info.account,wallet:info.wallet,free:info.free,payments:{enabled:!!info.payments?.enabled,products:(info.payments?.products||[]).map(p=>({...p,priceText:(p.priceFen/100).toFixed(2)}))}});await this.loadOrders();}catch(e){this.setData({error:e.message});}finally{this.setData({loading:false});}},
+ async refresh(){if(this.data.loading)return;this.setData({loading:true,error:''});try{const info=await api.request('me');this.setData({account:info.account,wallet:info.wallet,free:info.free,developer:info.developer===true,payments:{enabled:!!info.payments?.enabled,products:(info.payments?.products||[]).map(p=>({...p,priceText:(p.priceFen/100).toFixed(2)}))}});await this.loadOrders();}catch(e){this.setData({error:e.message});}finally{this.setData({loading:false});}},
  async loadOrders(){const r=await api.request('orders');this.setData({orders:(r.orders||[]).map(orderView)});},
  codeInput(e){this.setData({loginCode:e.detail.value.replace(/\D/g,'').slice(0,8),notice:'',error:''});},
  async confirmLogin(){if(this.data.busy)return;if(!/^\d{8}$/.test(this.data.loginCode)){this.setData({error:'请输入网页上显示的 8 位登录码'});return;}

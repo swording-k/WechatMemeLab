@@ -3,7 +3,7 @@
  <view class="heading">我的怪相馆</view>
  <view class="card" wx:if="{{account}}">
   <text class="label">账户编号</text><text class="account-id" selectable>{{account.number || account.id}}</text>
-  <text class="tag">微信已登录</text>
+  <text class="tag">微信已登录</text><text class="note" wx:if="{{developer}}">开发者测试账户 · AI生成免点数，无需充值</text>
   <view class="balance"><text>可用点数</text><text class="points">{{wallet.available}}</text></view>
   <text class="note" wx:if="{{free}}">当前免费测试，创作暂不扣点。</text>
  </view>

@@ -18,7 +18,7 @@ const validCode=code=>typeof code==='string'&&code.length>0&&code.length<=256;
 export function createPayments({store,env=process.env,fetcher=fetch,now=Date.now,wxSession,accessToken}){
  let products=[];
  try{
-  const parsed=JSON.parse(env.MEME_PAY_PRODUCTS_JSON||'[]');
+  const parsed=JSON.parse(env.MEME_PAY_PRODUCTS_BASE64?Buffer.from(env.MEME_PAY_PRODUCTS_BASE64,'base64').toString('utf8'):env.MEME_PAY_PRODUCTS_JSON||'[]');
   if(!Array.isArray(parsed)||!parsed.length||parsed.length>30)throw Error('catalog');
   const ids=new Set(),providerIds=new Set();
   products=parsed.map(p=>{
@@ -29,7 +29,9 @@ export function createPayments({store,env=process.env,fetcher=fetch,now=Date.now
  // VERIFIED is set only after an operator completes real payment, delivery and
  // refund acceptance. Merely filling credentials must never turn charging on.
  const enabled=env.MEME_PAY_ENABLED==='true'&&env.MEME_PAY_VERIFIED==='true'&&Boolean(env.MEME_PAY_OFFER_ID?.trim())&&Boolean(env.MEME_PAY_APP_KEY?.trim())&&products.length>0;
- const guard=()=>{if(!enabled)throw fail('充值尚未开通，当前保持免费使用',503);};
+ const testers=new Set((env.MEME_PAY_TEST_ACCOUNT_IDS||'').split(',').map(x=>x.trim()).filter(Boolean));
+ const canPay=uid=>enabled||(validUid(uid)&&testers.has(paymentAccountId(uid))&&Boolean(env.MEME_PAY_OFFER_ID?.trim())&&Boolean(env.MEME_PAY_APP_KEY?.trim())&&products.length>0);
+ const guard=uid=>{if(!canPay(uid))throw fail('充值尚未开通，当前保持免费使用',503);};
  const auth=async(uid,code)=>{
   if(!validUid(uid))throw fail('请先使用微信登录',401);
   if(!validCode(code))throw fail('请重新登录后支付',401);
@@ -107,9 +109,9 @@ export function createPayments({store,env=process.env,fetcher=fetch,now=Date.now
  };
  const response=(statusCode,value,plain=false)=>({statusCode,headers:{'Content-Type':plain?'text/plain; charset=utf-8':'application/json; charset=utf-8','Cache-Control':'no-store'},body:plain?value:JSON.stringify(value)});
  return{
-  catalog(){return{enabled,currency:'CNY',products:products.map(p=>({...p}))};},
+  catalog(uid){return{enabled:canPay(uid),currency:'CNY',products:products.map(p=>({...p}))};},
   async prepare(uid,{productId,code}={}){
-   guard();const p=products.find(p=>p.id===productId);
+   guard(uid);const p=products.find(p=>p.id===productId);
    if(!p)throw fail('充值商品不存在');
    const s=await auth(uid,code),accountId=paymentAccountId(uid);
    const id='M'+randomBytes(15).toString('hex');
@@ -127,7 +129,7 @@ export function createPayments({store,env=process.env,fetcher=fetch,now=Date.now
    return{...publicOrder(row),payData:{signData,mode:'short_series_goods',paySig:hmac(env.MEME_PAY_APP_KEY,'requestVirtualPayment&'+signData),signature:hmac(s.session_key,signData)}};
   },
   async reconcile(uid,{id,code}={}){
-   guard();if(!validUid(uid))throw fail('请先使用微信登录',401);
+   guard(uid);if(!validUid(uid))throw fail('请先使用微信登录',401);
    if(typeof id!=='string'||!/^M[0-9a-f]{30}$/.test(id))throw fail('订单不存在',404);
    const before=await store.transaction(tx=>owned(tx,uid,id));
    if(before.status==='credited')return notifyDelivery(uid,id);

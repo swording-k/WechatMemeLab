@@ -152,7 +152,7 @@ function createAccounts({ store: store2, env: env2, billingEnabled: billingEnabl
       wallet = { accountId: id, available: 0, frozen: 0, spent: 0, credited: 0 };
       await tx.set("meme_wallets", id, wallet);
     }
-    return { account: { id, number: "GX" + id.slice(0, 12).toUpperCase(), createdAt: account.createdAt }, wallet: { available: wallet.available, frozen: wallet.frozen, spent: wallet.spent }, free: !billingEnabled2 };
+    return { account: { id, number: "GX" + id.slice(0, 12).toUpperCase(), createdAt: account.createdAt }, wallet: { available: wallet.available, frozen: wallet.frozen, spent: wallet.spent }, developer: (env2.MEME_DEVELOPER_ACCOUNT_IDS || "").split(",").map((x) => x.trim()).includes(id), free: !billingEnabled2 || (env2.MEME_DEVELOPER_ACCOUNT_IDS || "").split(",").map((x) => x.trim()).includes(id) };
   }
   async function rate(tx, key, limit, window) {
     const r = await tx.get("meme_login_limits", key) || { at: now(), count: 0 };
@@ -258,7 +258,7 @@ var validCode = (code) => typeof code === "string" && code.length > 0 && code.le
 function createPayments({ store: store2, env: env2 = process.env, fetcher = fetch, now = Date.now, wxSession, accessToken }) {
   let products = [];
   try {
-    const parsed = JSON.parse(env2.MEME_PAY_PRODUCTS_JSON || "[]");
+    const parsed = JSON.parse(env2.MEME_PAY_PRODUCTS_BASE64 ? Buffer.from(env2.MEME_PAY_PRODUCTS_BASE64, "base64").toString("utf8") : env2.MEME_PAY_PRODUCTS_JSON || "[]");
     if (!Array.isArray(parsed) || !parsed.length || parsed.length > 30) throw Error("catalog");
     const ids = /* @__PURE__ */ new Set(), providerIds = /* @__PURE__ */ new Set();
     products = parsed.map((p) => {
@@ -271,8 +271,10 @@ function createPayments({ store: store2, env: env2 = process.env, fetcher = fetc
     products = [];
   }
   const enabled = env2.MEME_PAY_ENABLED === "true" && env2.MEME_PAY_VERIFIED === "true" && Boolean(env2.MEME_PAY_OFFER_ID?.trim()) && Boolean(env2.MEME_PAY_APP_KEY?.trim()) && products.length > 0;
-  const guard = () => {
-    if (!enabled) throw fail2("\u5145\u503C\u5C1A\u672A\u5F00\u901A\uFF0C\u5F53\u524D\u4FDD\u6301\u514D\u8D39\u4F7F\u7528", 503);
+  const testers = new Set((env2.MEME_PAY_TEST_ACCOUNT_IDS || "").split(",").map((x) => x.trim()).filter(Boolean));
+  const canPay = (uid) => enabled || validUid(uid) && testers.has(paymentAccountId(uid)) && Boolean(env2.MEME_PAY_OFFER_ID?.trim()) && Boolean(env2.MEME_PAY_APP_KEY?.trim()) && products.length > 0;
+  const guard = (uid) => {
+    if (!canPay(uid)) throw fail2("\u5145\u503C\u5C1A\u672A\u5F00\u901A\uFF0C\u5F53\u524D\u4FDD\u6301\u514D\u8D39\u4F7F\u7528", 503);
   };
   const auth = async (uid, code) => {
     if (!validUid(uid)) throw fail2("\u8BF7\u5148\u4F7F\u7528\u5FAE\u4FE1\u767B\u5F55", 401);
@@ -353,11 +355,11 @@ function createPayments({ store: store2, env: env2 = process.env, fetcher = fetc
   };
   const response = (statusCode, value, plain = false) => ({ statusCode, headers: { "Content-Type": plain ? "text/plain; charset=utf-8" : "application/json; charset=utf-8", "Cache-Control": "no-store" }, body: plain ? value : JSON.stringify(value) });
   return {
-    catalog() {
-      return { enabled, currency: "CNY", products: products.map((p) => ({ ...p })) };
+    catalog(uid) {
+      return { enabled: canPay(uid), currency: "CNY", products: products.map((p) => ({ ...p })) };
     },
     async prepare(uid, { productId, code } = {}) {
-      guard();
+      guard(uid);
       const p = products.find((p2) => p2.id === productId);
       if (!p) throw fail2("\u5145\u503C\u5546\u54C1\u4E0D\u5B58\u5728");
       const s = await auth(uid, code), accountId2 = paymentAccountId(uid);
@@ -376,7 +378,7 @@ function createPayments({ store: store2, env: env2 = process.env, fetcher = fetc
       return { ...publicOrder(row), payData: { signData, mode: "short_series_goods", paySig: hmac(env2.MEME_PAY_APP_KEY, "requestVirtualPayment&" + signData), signature: hmac(s.session_key, signData) } };
     },
     async reconcile(uid, { id, code } = {}) {
-      guard();
+      guard(uid);
       if (!validUid(uid)) throw fail2("\u8BF7\u5148\u4F7F\u7528\u5FAE\u4FE1\u767B\u5F55", 401);
       if (typeof id !== "string" || !/^M[0-9a-f]{30}$/.test(id)) throw fail2("\u8BA2\u5355\u4E0D\u5B58\u5728", 404);
       const before = await store2.transaction((tx) => owned(tx, uid, id));
@@ -517,7 +519,7 @@ function createAccountHandler({ accounts: accounts2, payments: payments2, env: e
       if (op === "account-web-logout") return json(200, await accounts2.logout(token));
       const web = op.startsWith("account-web-"), uid = web ? await accounts2.resolve(token) : import_security_core3.default.verify(token, env2, "session").uid;
       const action = op.slice(web ? "account-web-".length : "account-".length);
-      if (action === "me") return json(200, { ...await accounts2.me(uid), payments: payments2.catalog() });
+      if (action === "me") return json(200, { ...await accounts2.me(uid), payments: payments2.catalog(uid) });
       if (action === "orders") return json(200, { orders: await payments2.orders(uid) });
       if (!web && action === "confirm-login") return json(200, await accounts2.confirm(uid, data));
       if (!web && action === "pay-prepare") {

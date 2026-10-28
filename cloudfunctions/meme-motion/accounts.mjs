@@ -10,7 +10,7 @@ export function createAccounts({store,env,billingEnabled=false,now=Date.now}){
   const id=accountId(uid);let account=await tx.get('meme_accounts',id);
   if(!account){account={id,createdAt:now()};await tx.set('meme_accounts',id,account);}
   let wallet=await tx.get('meme_wallets',id);if(!wallet){wallet={accountId:id,available:0,frozen:0,spent:0,credited:0};await tx.set('meme_wallets',id,wallet);}
-  return {account:{id,number:'GX'+id.slice(0,12).toUpperCase(),createdAt:account.createdAt},wallet:{available:wallet.available,frozen:wallet.frozen,spent:wallet.spent},free:!billingEnabled};
+  return {account:{id,number:'GX'+id.slice(0,12).toUpperCase(),createdAt:account.createdAt},wallet:{available:wallet.available,frozen:wallet.frozen,spent:wallet.spent},developer:(env.MEME_DEVELOPER_ACCOUNT_IDS||'').split(',').map(x=>x.trim()).includes(id),free:!billingEnabled||(env.MEME_DEVELOPER_ACCOUNT_IDS||'').split(',').map(x=>x.trim()).includes(id)};
  }
  async function rate(tx,key,limit,window){const r=await tx.get('meme_login_limits',key)||{at:now(),count:0};if(now()-r.at>=window){r.at=now();r.count=0;}if(r.count>=limit)return false;r.count++;await tx.set('meme_login_limits',key,r);return true;}
  return {

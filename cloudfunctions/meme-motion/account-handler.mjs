@@ -16,7 +16,7 @@ export function createAccountHandler({accounts,payments,env}){
    if(op==='account-web-logout')return json(200,await accounts.logout(token));
    const web=op.startsWith('account-web-'),uid=web?await accounts.resolve(token):security.verify(token,env,'session').uid;
    const action=op.slice(web?'account-web-'.length:'account-'.length);
-   if(action==='me')return json(200,{...await accounts.me(uid),payments:payments.catalog()});
+   if(action==='me')return json(200,{...await accounts.me(uid),payments:payments.catalog(uid)});
    if(action==='orders')return json(200,{orders:await payments.orders(uid)});
    if(!web&&action==='confirm-login')return json(200,await accounts.confirm(uid,data));
    if(!web&&action==='pay-prepare'){await accounts.me(uid);const r=await payments.prepare(uid,data);return json(200,{id:r.id,payment:r.payData});}

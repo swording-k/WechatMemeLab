@@ -954,6 +954,16 @@ function createWebMotionHandler({ service: service2, env: env2, resolveAccount }
   };
 }
 
+// cloudfunctions/meme-motion/transaction.mjs
+async function retryTransaction(operation, sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))) {
+  for (let attempt = 0; ; attempt++) try {
+    return await operation();
+  } catch (error) {
+    if (attempt >= 3 || !/TransactionBusy|TransactionConflict/.test(String(error.code || "") + " " + String(error.message || ""))) throw error;
+    await sleep(100 * (attempt + 1));
+  }
+}
+
 // cloudfunctions/meme-motion/store.mjs
 var import_node_crypto7 = require("node:crypto");
 var import_node_sdk = __toESM(require("@cloudbase/node-sdk"), 1);
@@ -971,12 +981,13 @@ function cloudStore(env2 = process.env) {
     initialized = null;
     throw e;
   });
+  const runTransaction = (fn) => retryTransaction(() => db.runTransaction(fn));
   const get = async (c, id) => (await c.where({ _id: id }).get()).data[0];
   const accountCollections = /* @__PURE__ */ new Set(["meme_accounts", "meme_wallets", "meme_orders", "meme_wallet_events", "meme_login_challenges", "meme_login_limits", "meme_account_sessions"]);
   const store2 = {
     async transaction(fn) {
       await ready();
-      return db.runTransaction(async (tx) => fn({
+      return runTransaction(async (tx) => fn({
         async get(c, id) {
           if (!accountCollections.has(c)) throw Error("\u8D26\u6237\u96C6\u5408\u65E0\u6548");
           return get(tx.collection(c), id);
@@ -998,7 +1009,7 @@ function cloudStore(env2 = process.env) {
     },
     async atomic(id, fn) {
       await ready();
-      return db.runTransaction(async (tx) => {
+      return runTransaction(async (tx) => {
         const jobs = tx.collection("meme_motion_jobs"), quotas = tx.collection("meme_motion_quota");
         const row = await get(jobs, id), accountId2 = row?.uid ? (0, import_node_crypto7.createHash)("sha256").update("wechat:" + row.uid).digest("hex") : null;
         const wallets = tx.collection("meme_wallets"), events = tx.collection("meme_wallet_events");

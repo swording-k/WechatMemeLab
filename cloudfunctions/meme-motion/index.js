@@ -252,7 +252,7 @@ var fail2 = (message, status = 400) => {
   e.status = status;
   return e;
 };
-var publicOrder = (r) => ({ id: r.id, productId: r.productId, priceFen: r.priceFen, points: r.points, status: r.status, createdAt: r.createdAt, updatedAt: r.updatedAt, creditedAt: r.creditedAt ?? null, deliveryPending: r.deliveryPending === true });
+var publicOrder = (r) => ({ id: r.id, productId: r.productId, priceFen: r.priceFen, points: r.points, status: r.status, createdAt: r.createdAt, updatedAt: r.updatedAt, creditedAt: r.creditedAt ?? null, deliveryPending: r.deliveryPending === true, clientFailure: r.clientFailure || null });
 var validUid = (uid) => typeof uid === "string" && uid.length > 0 && uid.length <= 128 && !uid.startsWith("web:");
 var validCode = (code) => typeof code === "string" && code.length > 0 && code.length <= 256;
 function createPayments({ store: store2, env: env2 = process.env, fetcher = fetch, now = Date.now, wxSession, accessToken }) {
@@ -298,7 +298,7 @@ function createPayments({ store: store2, env: env2 = process.env, fetcher = fetc
     } catch {
       throw fail2("\u652F\u4ED8\u72B6\u6001\u67E5\u8BE2\u6682\u4E0D\u53EF\u7528\uFF0C\u8BF7\u7A0D\u540E\u67E5\u8BE2\u539F\u8BA2\u5355", 502);
     }
-    if (!response2.ok || data?.errcode !== 0 || !data.order || typeof data.order !== "object") throw fail2("\u652F\u4ED8\u72B6\u6001\u67E5\u8BE2\u5931\u8D25\uFF0C\u8BF7\u7A0D\u540E\u67E5\u8BE2\u539F\u8BA2\u5355", 502);
+    if (!response2.ok || data?.errcode !== 0 || !data.order || typeof data.order !== "object") throw fail2("\u5FAE\u4FE1\u67E5\u5355\u672A\u5B8C\u6210\uFF08\u9519\u8BEF\u7801 " + (Number.isSafeInteger(data?.errcode) ? data.errcode : "\u672A\u77E5") + "\uFF09\uFF0C\u8BF7\u67E5\u8BE2\u539F\u8BA2\u5355\uFF0C\u52FF\u91CD\u590D\u4ED8\u6B3E", 502);
     return data.order;
   };
   const hash3 = (value) => (0, import_node_crypto2.createHash)("sha256").update(value).digest("hex");
@@ -358,15 +358,16 @@ function createPayments({ store: store2, env: env2 = process.env, fetcher = fetc
     catalog(uid) {
       return { enabled: canPay(uid), currency: "CNY", products: products.map((p) => ({ ...p })) };
     },
-    async prepare(uid, { productId, code } = {}) {
+    async prepare(uid, { productId, code, quantity = 1 } = {}) {
       guard(uid);
       const p = products.find((p2) => p2.id === productId);
       if (!p) throw fail2("\u5145\u503C\u5546\u54C1\u4E0D\u5B58\u5728");
+      if (!Number.isSafeInteger(quantity) || quantity < 1 || quantity > 500 || !Number.isSafeInteger(p.priceFen * quantity) || !Number.isSafeInteger(p.points * quantity)) throw fail2("\u5145\u503C\u6570\u91CF\u987B\u4E3A1\u81F3500\u7684\u6574\u6570");
       const s = await auth(uid, code), accountId2 = paymentAccountId(uid);
       const id = "M" + (0, import_node_crypto2.randomBytes)(15).toString("hex");
       const createdAt = now();
-      const row = { id, accountId: accountId2, openid: uid, productId: p.productId, catalogId: p.id, priceFen: p.priceFen, points: p.points, status: "pending", createdAt, updatedAt: createdAt };
-      const signData = JSON.stringify({ offerId: env2.MEME_PAY_OFFER_ID, buyQuantity: 1, env: 0, currencyType: "CNY", productId: p.productId, goodsPrice: p.priceFen, outTradeNo: id, attach: id });
+      const row = { id, accountId: accountId2, openid: uid, productId: p.productId, catalogId: p.id, quantity, unitPriceFen: p.priceFen, priceFen: p.priceFen * quantity, points: p.points * quantity, status: "pending", createdAt, updatedAt: createdAt };
+      const signData = JSON.stringify({ offerId: env2.MEME_PAY_OFFER_ID, buyQuantity: quantity, env: 0, currencyType: "CNY", productId: p.productId, goodsPrice: p.priceFen, outTradeNo: id, attach: id });
       await store2.transaction(async (tx) => {
         const account = await tx.get("meme_accounts", accountId2);
         if (!account || account.deletedAt || account.status === "deleted") throw fail2("\u8D26\u6237\u4E0D\u5B58\u5728\uFF0C\u8BF7\u91CD\u65B0\u767B\u5F55", 401);
@@ -433,7 +434,7 @@ function createPayments({ store: store2, env: env2 = process.env, fetcher = fetc
           if (!validUid(message.OpenId) || message.Env !== 0 || typeof message.OutTradeNo !== "string") throw fail2("\u652F\u4ED8\u56DE\u8C03\u8EAB\u4EFD\u6216\u73AF\u5883\u4E0D\u4E00\u81F4", 403);
           await store2.transaction(async (tx) => {
             const row = await owned(tx, message.OpenId, message.OutTradeNo), goods = message.GoodsInfo;
-            if (!goods || goods.ProductId !== row.productId || goods.Quantity !== 1 || goods.OrigPrice !== row.priceFen || goods.ActualPrice !== row.priceFen || goods.Attach !== row.id) throw fail2("\u652F\u4ED8\u56DE\u8C03\u5546\u54C1\u4FE1\u606F\u4E0D\u4E00\u81F4", 409);
+            if (!goods || goods.ProductId !== row.productId || goods.Quantity !== (row.quantity || 1) || goods.OrigPrice !== row.priceFen || goods.ActualPrice !== row.priceFen || goods.Attach !== row.id) throw fail2("\u652F\u4ED8\u56DE\u8C03\u5546\u54C1\u4FE1\u606F\u4E0D\u4E00\u81F4", 409);
             const providerId = message.WeChatPayInfo?.MchOrderNo;
             if (providerId !== void 0 && (typeof providerId !== "string" || !providerId || providerId.length > 128)) throw fail2("\u652F\u4ED8\u56DE\u8C03\u4EA4\u6613\u53F7\u4E0D\u4E00\u81F4", 409);
             row.deliveryPending = false;
@@ -487,6 +488,14 @@ function createPayments({ store: store2, env: env2 = process.env, fetcher = fetc
         return response(e.status || 503, { ErrCode: -1, ErrMsg: e.status ? e.message : "\u652F\u4ED8\u56DE\u8C03\u5904\u7406\u5931\u8D25\uFF0C\u8BF7\u91CD\u8BD5" });
       }
     },
+    async recordClientFailure(uid, { id, errorCode, errorMessage } = {}) {
+      return store2.transaction(async (tx) => {
+        const row = await owned(tx, uid, id);
+        row.clientFailure = { code: Number.isSafeInteger(errorCode) ? errorCode : null, message: String(errorMessage || "").slice(0, 200), at: now() };
+        await tx.set("meme_orders", id, row);
+        return { recorded: true };
+      });
+    },
     async orders(uid) {
       if (!validUid(uid)) throw fail2("\u8BF7\u5148\u4F7F\u7528\u5FAE\u4FE1\u767B\u5F55", 401);
       return store2.transaction(async (tx) => {
@@ -527,6 +536,7 @@ function createAccountHandler({ accounts: accounts2, payments: payments2, env: e
         const r = await payments2.prepare(uid, data);
         return json(200, { id: r.id, payment: r.payData });
       }
+      if (!web && action === "pay-error") return json(200, await payments2.recordClientFailure(uid, data));
       if (!web && action === "pay-query") {
         const order = await payments2.reconcile(uid, data);
         return json(200, { order, wallet: (await accounts2.me(uid)).wallet });

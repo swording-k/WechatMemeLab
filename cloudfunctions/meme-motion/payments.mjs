@@ -5,7 +5,7 @@ import security from '../meme-feedback/security-core.cjs';
 export const paymentAccountId=uid=>createHash('sha256').update('wechat:'+uid).digest('hex');
 const hmac=(key,value)=>createHmac('sha256',key).update(value,'utf8').digest('hex');
 const fail=(message,status=400)=>{const e=new Error(message);e.status=status;return e;};
-const publicOrder=r=>({id:r.id,productId:r.productId,priceFen:r.priceFen,points:r.points,status:r.status,createdAt:r.createdAt,updatedAt:r.updatedAt,creditedAt:r.creditedAt??null,deliveryPending:r.deliveryPending===true});
+const publicOrder=r=>({id:r.id,productId:r.productId,priceFen:r.priceFen,points:r.points,status:r.status,createdAt:r.createdAt,updatedAt:r.updatedAt,creditedAt:r.creditedAt??null,deliveryPending:r.deliveryPending===true,clientFailure:r.clientFailure||null});
 const validUid=uid=>typeof uid==='string'&&uid.length>0&&uid.length<=128&&!uid.startsWith('web:');
 const validCode=code=>typeof code==='string'&&code.length>0&&code.length<=256;
 
@@ -52,7 +52,7 @@ export function createPayments({store,env=process.env,fetcher=fetch,now=Date.now
    response=await fetcher('https://api.weixin.qq.com/xpay/query_order?'+params,{method:'POST',headers:{'Content-Type':'application/json'},body,redirect:'error',signal:AbortSignal.timeout(15000)});
    data=await response.json();
   }catch{throw fail('支付状态查询暂不可用，请稍后查询原订单',502);}
-  if(!response.ok||data?.errcode!==0||!data.order||typeof data.order!=='object')throw fail('支付状态查询失败，请稍后查询原订单',502);
+  if(!response.ok||data?.errcode!==0||!data.order||typeof data.order!=='object')throw fail('微信查单未完成（错误码 '+(Number.isSafeInteger(data?.errcode)?data.errcode:'未知')+'），请查询原订单，勿重复付款',502);
   return data.order;
  };
  const hash=value=>createHash('sha256').update(value).digest('hex');
@@ -110,14 +110,15 @@ export function createPayments({store,env=process.env,fetcher=fetch,now=Date.now
  const response=(statusCode,value,plain=false)=>({statusCode,headers:{'Content-Type':plain?'text/plain; charset=utf-8':'application/json; charset=utf-8','Cache-Control':'no-store'},body:plain?value:JSON.stringify(value)});
  return{
   catalog(uid){return{enabled:canPay(uid),currency:'CNY',products:products.map(p=>({...p}))};},
-  async prepare(uid,{productId,code}={}){
+  async prepare(uid,{productId,code,quantity=1}={}){
    guard(uid);const p=products.find(p=>p.id===productId);
    if(!p)throw fail('充值商品不存在');
+   if(!Number.isSafeInteger(quantity)||quantity<1||quantity>500||!Number.isSafeInteger(p.priceFen*quantity)||!Number.isSafeInteger(p.points*quantity))throw fail('充值数量须为1至500的整数');
    const s=await auth(uid,code),accountId=paymentAccountId(uid);
    const id='M'+randomBytes(15).toString('hex');
    const createdAt=now();
-   const row={id,accountId,openid:uid,productId:p.productId,catalogId:p.id,priceFen:p.priceFen,points:p.points,status:'pending',createdAt,updatedAt:createdAt};
-   const signData=JSON.stringify({offerId:env.MEME_PAY_OFFER_ID,buyQuantity:1,env:0,currencyType:'CNY',productId:p.productId,goodsPrice:p.priceFen,outTradeNo:id,attach:id});
+   const row={id,accountId,openid:uid,productId:p.productId,catalogId:p.id,quantity,unitPriceFen:p.priceFen,priceFen:p.priceFen*quantity,points:p.points*quantity,status:'pending',createdAt,updatedAt:createdAt};
+   const signData=JSON.stringify({offerId:env.MEME_PAY_OFFER_ID,buyQuantity:quantity,env:0,currencyType:'CNY',productId:p.productId,goodsPrice:p.priceFen,outTradeNo:id,attach:id});
    await store.transaction(async tx=>{
     const account=await tx.get('meme_accounts',accountId);
     if(!account||account.deletedAt||account.status==='deleted')throw fail('账户不存在，请重新登录',401);
@@ -184,7 +185,7 @@ export function createPayments({store,env=process.env,fetcher=fetch,now=Date.now
      if(!validUid(message.OpenId)||message.Env!==0||typeof message.OutTradeNo!=='string')throw fail('支付回调身份或环境不一致',403);
      await store.transaction(async tx=>{
       const row=await owned(tx,message.OpenId,message.OutTradeNo),goods=message.GoodsInfo;
-      if(!goods||goods.ProductId!==row.productId||goods.Quantity!==1||goods.OrigPrice!==row.priceFen||goods.ActualPrice!==row.priceFen||goods.Attach!==row.id)throw fail('支付回调商品信息不一致',409);
+      if(!goods||goods.ProductId!==row.productId||goods.Quantity!==(row.quantity||1)||goods.OrigPrice!==row.priceFen||goods.ActualPrice!==row.priceFen||goods.Attach!==row.id)throw fail('支付回调商品信息不一致',409);
       const providerId=message.WeChatPayInfo?.MchOrderNo;
       if(providerId!==undefined&&(typeof providerId!=='string'||!providerId||providerId.length>128))throw fail('支付回调交易号不一致',409);
       row.deliveryPending=false;row.deliveryNotifiedAt=now();
@@ -229,6 +230,9 @@ export function createPayments({store,env=process.env,fetcher=fetch,now=Date.now
     }
     return response(200,{ErrCode:0,ErrMsg:'success'});
    }catch(e){return response(e.status||503,{ErrCode:-1,ErrMsg:e.status?e.message:'支付回调处理失败，请重试'});}
+  },
+  async recordClientFailure(uid,{id,errorCode,errorMessage}={}){
+   return store.transaction(async tx=>{const row=await owned(tx,uid,id);row.clientFailure={code:Number.isSafeInteger(errorCode)?errorCode:null,message:String(errorMessage||'').slice(0,200),at:now()};await tx.set('meme_orders',id,row);return{recorded:true};});
   },
   async orders(uid){
    if(!validUid(uid))throw fail('请先使用微信登录',401);

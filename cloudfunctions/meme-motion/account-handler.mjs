@@ -20,6 +20,7 @@ export function createAccountHandler({accounts,payments,env}){
    if(action==='orders')return json(200,{orders:await payments.orders(uid)});
    if(!web&&action==='confirm-login')return json(200,await accounts.confirm(uid,data));
    if(!web&&action==='pay-prepare'){await accounts.me(uid);const r=await payments.prepare(uid,data);return json(200,{id:r.id,payment:r.payData});}
+   if(!web&&action==='pay-error')return json(200,await payments.recordClientFailure(uid,data));
    if(!web&&action==='pay-query'){const order=await payments.reconcile(uid,data);return json(200,{order,wallet:(await accounts.me(uid)).wallet});}
    return json(404,{error:'操作不存在'});
   }catch(e){return json(e.status||422,{error:e instanceof SyntaxError?'参数格式错误':e.message||'账户服务暂不可用，请稍后重试'});}

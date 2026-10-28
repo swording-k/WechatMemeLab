@@ -1,0 +1,30 @@
+<scroll-view class="account-page" scroll-y>
+ <mode-nav current="account" />
+ <view class="heading">我的怪相馆</view>
+ <view class="card" wx:if="{{account}}">
+  <text class="label">账户编号</text><text class="account-id" selectable>{{account.number || account.id}}</text>
+  <text class="tag">微信已登录</text>
+  <view class="balance"><text>可用点数</text><text class="points">{{wallet.available}}</text></view>
+  <text class="note" wx:if="{{free}}">当前免费测试，创作暂不扣点。</text>
+ </view>
+ <view class="card" wx:else><text class="note">{{loading ? '正在登录微信账户…' : '账户尚未加载'}}</text></view>
+ <view class="card">
+  <view class="section-title">在网页端登录</view>
+  <text class="note">打开怪相馆网页的“登录”，将网页上的 8 位数字输入下方，再确认登录。</text>
+  <input type="number" maxlength="8" value="{{loginCode}}" bindinput="codeInput" placeholder="输入网页的 8 位登录码" aria-label="网页登录码" />
+  <button class="primary" bindtap="confirmLogin" disabled="{{busy || loginCode.length !== 8}}">确认网页登录</button>
+ </view>
+ <view class="card">
+  <view class="section-title">充值</view>
+  <text class="note" wx:if="{{!payments.enabled}}">充值尚未开放，当前无需充值即可免费测试。</text>
+  <block wx:else><text class="note">点数用于已标价的 AI 创作，按实际订单到账。</text><button wx:for="{{payments.products}}" wx:key="id" class="product" data-id="{{item.id}}" bindtap="purchase" disabled="{{busy}}">{{item.points}} 点 · ¥{{item.priceText}}</button></block>
+ </view>
+ <view class="card">
+  <view class="section-title">充值订单</view>
+  <text class="note" wx:if="{{!orders.length}}">暂无充值订单</text>
+  <view class="order" wx:for="{{orders}}" wx:key="id"><text class="order-id" selectable>{{item.id}}</text><view class="order-status"><text>{{item.statusText}}</text><button wx:if="{{item.canQuery}}" data-id="{{item.id}}" bindtap="queryOrder" disabled="{{busy}}">查询到账</button></view></view>
+ </view>
+ <text class="message" wx:if="{{notice}}">{{notice}}</text><text class="error" wx:if="{{error}}">{{error}}</text>
+ <button bindtap="refresh" disabled="{{loading || busy}}">{{loading ? '正在刷新…' : '刷新账户与订单'}}</button>
+ <view class="bottom-space"></view>
+</scroll-view>

@@ -1,15 +1,26 @@
+import {createHash} from 'node:crypto';
 import cloudbase from '@cloudbase/node-sdk';
 export function cloudStore(env=process.env){
  const app=cloudbase.init({env:env.TCB_ENV||env.CLOUDBASE_ENV_ID}),db=app.database();let initialized;
  const base=()=>({count:Number(env.MOTION_BASE_COUNT||0),cost:Number(env.MOTION_BASE_COST||0)});
- const ready=()=>initialized??=(async()=>{for(const n of ['meme_motion_jobs','meme_motion_quota'])try{await db.createCollection(n);}catch(e){if(!/exist|已存在/i.test(e.message||''))throw e;}})().catch(e=>{initialized=null;throw e;});
+ const ready=()=>initialized??=(async()=>{for(const n of ['meme_motion_jobs','meme_motion_quota','meme_accounts','meme_wallets','meme_orders','meme_wallet_events','meme_login_challenges','meme_login_limits','meme_account_sessions'])try{await db.createCollection(n);}catch(e){if(!/exist|已存在/i.test(e.message||''))throw e;}})().catch(e=>{initialized=null;throw e;});
  const get=async(c,id)=>(await c.where({_id:id}).get()).data[0];
+ const accountCollections=new Set(['meme_accounts','meme_wallets','meme_orders','meme_wallet_events','meme_login_challenges','meme_login_limits','meme_account_sessions']);
  const store={
+  async transaction(fn){await ready();return db.runTransaction(async tx=>fn({
+   async get(c,id){if(!accountCollections.has(c))throw Error('账户集合无效');return get(tx.collection(c),id);},
+   async set(c,id,row){if(!accountCollections.has(c))throw Error('账户集合无效');const{_id,...safe}=row;return tx.collection(c).doc(id).set(safe);}
+  }));},
   async read(id){await ready();return get(db.collection('meme_motion_jobs'),id);},
   async info(){await ready();return await get(db.collection('meme_motion_quota'),'global')||base();},
   async atomic(id,fn){await ready();return db.runTransaction(async tx=>{
    const jobs=tx.collection('meme_motion_jobs'),quotas=tx.collection('meme_motion_quota');
-   const data={row:await get(jobs,id),quota:await get(quotas,'global')||base()};const result=fn(data);
+   const row=await get(jobs,id),accountId=row?.uid?createHash('sha256').update('wechat:'+row.uid).digest('hex'):null;
+   const wallets=tx.collection('meme_wallets'),events=tx.collection('meme_wallet_events');
+   const wallet=accountId?await get(wallets,accountId):undefined,usage=await get(events,'usage:'+id);
+   const data={row,quota:await get(quotas,'global')||base(),wallet,usage};const result=fn(data);
+   if(data.wallet&&data.wallet!==wallet){if(data.wallet.accountId!==accountId)throw Error('任务账户点数归属异常');const{_id,...safe}=data.wallet;await wallets.doc(accountId).set(safe);}
+   if(data.usage&&data.usage!==usage){if(data.usage.id!==id||data.usage.accountId!==accountId)throw Error('任务扣费归属异常');const{_id,...safe}=data.usage;await events.doc('usage:'+id).set(safe);}
    if(data.row){const{_id,...row}=data.row;await jobs.doc(id).set(row);}
    const{_id,...quota}=data.quota;await quotas.doc('global').set(quota);return result;
   });},

@@ -1,10 +1,16 @@
 const{encodeGif}=require('../core/engine');
 const API='https://fitgenius-d0ghm1rz21cef6594-1441969311.ap-shanghai.app.tcloudbase.com/meme-feedback-api';
-let session,sessionAt=0,notice=false;
+let session,sessionAt=0,notice=false,loginPending;
 const pending=new Map();
 function request(op,data,token){return new Promise((resolve,reject)=>wx.request({url:API+'?op=security-'+op,method:'POST',header:{'content-type':'application/octet-stream',...(token?{Authorization:'Bearer '+token}:{})},data:JSON.stringify(data),timeout:60000,success:r=>r.statusCode===200?resolve(r.data):reject(Error(r.data?.error||'内容检测服务未就绪，请稍后重试')),fail:()=>reject(Error('内容检测连接失败，尚未放行，请稍后重试'))}));}
+async function getSession(force=false){
+ if(force){session=undefined;sessionAt=0;}
+ if(session&&Date.now()-sessionAt<=80*60000)return session;
+ if(!loginPending)loginPending=(async()=>{const {code}=await new Promise((resolve,reject)=>wx.login({success:resolve,fail:reject}));if(!code)throw Error('微信登录未完成，请重试');const r=await request('login',{code});if(!r.session)throw Error('微信登录未完成，请重试');session=r.session;sessionAt=Date.now();return session;})().finally(()=>{loginPending=undefined});
+ return loginPending;
+}
 async function authorize(){if(!notice){const r=await wx.showModal({title:'内容安全检测',content:'本次提交的文字和图片（包括动图各帧）会经本站后端发送至微信进行内容安全检测。检测副本临时存储，通过后才能继续操作。',confirmText:'同意继续',cancelText:'暂不继续'});if(!r.confirm)throw Error('已取消内容检测');notice=true;}
- if(!session||Date.now()-sessionAt>80*60000){const {code}=await new Promise((resolve,reject)=>wx.login({success:resolve,fail:reject}));const r=await request('login',{code});session=r.session;sessionAt=Date.now();}return session;}
+ return getSession();}
 async function check(data,status=()=>{},cancelled=()=>false){const token=await authorize();const key=JSON.stringify(data);let id=pending.get(key);if(!id){status('正在提交内容检测…');const r=await request('check',data,token);id=r.id;pending.set(key,id);if(pending.size>12)pending.delete(pending.keys().next().value);}
  const until=Date.now()+180000;
  while(Date.now()<until){if(cancelled())throw Error('已取消生成');const r=await request('status',{id},token);if(r.state==='pass'&&r.receipt){pending.delete(key);return r.receipt;}if(r.state!=='pending'){pending.delete(key);throw Error(r.state==='blocked'?'内容包含违规信息，请修改后重试':'内容检测未通过，请稍后重试');}status('微信正在检测，请稍候…');await new Promise(resolve=>setTimeout(resolve,1500));}
@@ -21,4 +27,4 @@ async function checkPhoto(path,status){
  if(!type||data.length>1400000)throw Error('检测图片过大或格式不支持，请选用较小的JPG/PNG照片');
  await check({text:'',images:[{type,data}]},status);
 }
-module.exports={check,checkFrames,checkPhoto,authorize};
+module.exports={check,checkFrames,checkPhoto,authorize,getSession};

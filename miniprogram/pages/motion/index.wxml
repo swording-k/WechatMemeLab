@@ -1,8 +1,8 @@
 <view class="motion-studio">
  <mode-nav current="motion"/>
- <view class="headline"><text>把脑洞做成表情</text><button class="price-link" bindtap="prices">免费内测 · 用量说明</button></view>
+ <view class="headline"><text>把脑洞做成表情</text><button class="price-link" bindtap="prices">{{billingEnabled?'点数价格 · 用量说明':'免费内测 · 用量说明'}}</button></view>
  <view class="result-stage"><video wx:if="{{resultPath}}" src="{{resultPath}}" controls loop object-fit="contain"/><image wx:elif="{{picturePath}}" src="{{picturePath}}" mode="aspectFit"/><image wx:elif="{{photoPath}}" src="{{photoPath}}" mode="aspectFit"/><view wx:else class="empty">写一句脑洞，或上传自己、朋友、角色的照片<br/>先做出满意的图，再安排一个动作</view></view>
- <view class="service">{{service}}</view>
+ <view class="service">{{service}}</view><text wx:if="{{billingEnabled}}" class="note">{{feeText}}</text>
  <scroll-view scroll-y class="motion-form">
   <view class="tabs family-tabs"><button disabled="{{busy||pending}}" class="{{family==='image'?'selected':''}}" data-family="image" bindtap="family">做图片</button><button disabled="{{busy||pending}}" class="{{family==='motion'?'selected':''}}" data-family="motion" bindtap="family">让图动起来</button></view>
   <view class="tabs"><button wx:if="{{family==='image'}}" disabled="{{busy||pending}}" class="{{mode==='draw'?'selected':''}}" data-mode="draw" bindtap="mode">一句话生图</button><button wx:if="{{family==='image'}}" disabled="{{busy||pending}}" class="{{mode==='edit'?'selected':''}}" data-mode="edit" bindtap="mode">上传照片改图</button><button wx:if="{{family==='motion'}}" disabled="{{busy||pending}}" class="{{mode==='describe'?'selected':''}}" data-mode="describe" bindtap="mode">写一个动作</button><button wx:if="{{family==='motion'}}" disabled="{{busy||pending}}" class="{{mode==='imitate'?'selected':''}}" data-mode="imitate" bindtap="mode">学一段动作</button></view>

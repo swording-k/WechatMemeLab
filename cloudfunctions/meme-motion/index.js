@@ -38,36 +38,36 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 var require_security_core = __commonJS({
   "cloudfunctions/meme-feedback/security-core.cjs"(exports2, module2) {
     "use strict";
-    var { createHash: createHash3, createHmac: createHmac2, timingSafeEqual: timingSafeEqual2, createDecipheriv } = require("node:crypto");
-    function fail2(message, status = 503) {
+    var { createHash: createHash7, createHmac: createHmac3, timingSafeEqual: timingSafeEqual3, createDecipheriv } = require("node:crypto");
+    function fail5(message, status = 503) {
       throw Object.assign(new Error(message), { status });
     }
     function equal2(a, b) {
       const x = Buffer.from(String(a)), y = Buffer.from(String(b));
-      return x.length === y.length && timingSafeEqual2(x, y);
+      return x.length === y.length && timingSafeEqual3(x, y);
     }
     function secret(env2) {
-      if (!env2.MEME_SECURITY_SECRET || env2.MEME_SECURITY_SECRET.length < 32) fail2("\u5185\u5BB9\u5B89\u5168\u670D\u52A1\u5C1A\u672A\u914D\u7F6E");
+      if (!env2.MEME_SECURITY_SECRET || env2.MEME_SECURITY_SECRET.length < 32) fail5("\u5185\u5BB9\u5B89\u5168\u670D\u52A1\u5C1A\u672A\u914D\u7F6E");
       return env2.MEME_SECURITY_SECRET;
     }
     function sign(data, env2) {
       const text = Buffer.from(JSON.stringify(data)).toString("base64url");
-      return text + "." + createHmac2("sha256", secret(env2)).update(text).digest("base64url");
+      return text + "." + createHmac3("sha256", secret(env2)).update(text).digest("base64url");
     }
     function verify(token, env2, kind) {
       const [text, mac, ...extra] = String(token || "").split(".");
-      if (extra.length || !text || !mac || !equal2(mac, createHmac2("sha256", secret(env2)).update(text).digest("base64url"))) fail2("\u68C0\u6D4B\u51ED\u8BC1\u65E0\u6548\uFF0C\u8BF7\u91CD\u65B0\u68C0\u6D4B", 401);
+      if (extra.length || !text || !mac || !equal2(mac, createHmac3("sha256", secret(env2)).update(text).digest("base64url"))) fail5("\u68C0\u6D4B\u51ED\u8BC1\u65E0\u6548\uFF0C\u8BF7\u91CD\u65B0\u68C0\u6D4B", 401);
       let data;
       try {
         data = JSON.parse(Buffer.from(text, "base64url"));
       } catch {
-        fail2("\u68C0\u6D4B\u51ED\u8BC1\u65E0\u6548", 401);
+        fail5("\u68C0\u6D4B\u51ED\u8BC1\u65E0\u6548", 401);
       }
-      if (data.kind !== kind || !Number.isFinite(data.exp) || data.exp < Date.now()) fail2("\u68C0\u6D4B\u51ED\u8BC1\u5DF2\u8FC7\u671F\uFF0C\u8BF7\u91CD\u65B0\u68C0\u6D4B", 401);
+      if (data.kind !== kind || !Number.isFinite(data.exp) || data.exp < Date.now()) fail5("\u68C0\u6D4B\u51ED\u8BC1\u5DF2\u8FC7\u671F\uFF0C\u8BF7\u91CD\u65B0\u68C0\u6D4B", 401);
       return data;
     }
     function digest2(text, images) {
-      const h = createHash3("sha256").update(JSON.stringify(String(text)));
+      const h = createHash7("sha256").update(JSON.stringify(String(text)));
       for (const image of images) {
         const b = image.buffer || Buffer.from(image.data, "base64");
         h.update(String(b.length) + ":").update(b);
@@ -77,48 +77,48 @@ var require_security_core = __commonJS({
     async function checkText(call, uid, text) {
       if (!text.trim()) return;
       const r = await call("msg_sec_check", { openid: uid, scene: 4, version: 2, content: text });
-      if (r.errcode !== 0 || r.result?.suggest !== "pass") fail2(r.result?.suggest === "risky" || r.errcode === 87014 ? "\u5185\u5BB9\u5305\u542B\u8FDD\u89C4\u4FE1\u606F\uFF0C\u8BF7\u4FEE\u6539\u540E\u91CD\u8BD5" : "\u6587\u5B57\u672A\u901A\u8FC7\u68C0\u6D4B\uFF0C\u8BF7\u4FEE\u6539\u5185\u5BB9\u6216\u7A0D\u540E\u91CD\u8BD5", 422);
+      if (r.errcode !== 0 || r.result?.suggest !== "pass") fail5(r.result?.suggest === "risky" || r.errcode === 87014 ? "\u5185\u5BB9\u5305\u542B\u8FDD\u89C4\u4FE1\u606F\uFF0C\u8BF7\u4FEE\u6539\u540E\u91CD\u8BD5" : "\u6587\u5B57\u672A\u901A\u8FC7\u68C0\u6D4B\uFF0C\u8BF7\u4FEE\u6539\u5185\u5BB9\u6216\u7A0D\u540E\u91CD\u8BD5", 422);
     }
     function signature(q, env2, encrypted) {
-      if (!env2.WECHAT_CALLBACK_TOKEN || env2.WECHAT_CALLBACK_TOKEN.length < 3 || env2.WECHAT_CALLBACK_TOKEN.length > 32) fail2("\u56DE\u8C03Token\u987B\u4E3A3\u81F332\u4F4D");
-      if (!/^\d+$/.test(q.timestamp || "") || Math.abs(Date.now() / 1e3 - Number(q.timestamp)) > 600 || !q.nonce) fail2("\u65E0\u6548\u56DE\u8C03", 403);
+      if (!env2.WECHAT_CALLBACK_TOKEN || env2.WECHAT_CALLBACK_TOKEN.length < 3 || env2.WECHAT_CALLBACK_TOKEN.length > 32) fail5("\u56DE\u8C03Token\u987B\u4E3A3\u81F332\u4F4D");
+      if (!/^\d+$/.test(q.timestamp || "") || Math.abs(Date.now() / 1e3 - Number(q.timestamp)) > 600 || !q.nonce) fail5("\u65E0\u6548\u56DE\u8C03", 403);
       const values = [env2.WECHAT_CALLBACK_TOKEN, q.timestamp, q.nonce];
       if (encrypted) values.push(encrypted);
-      const hash2 = createHash3("sha1").update(values.sort().join("")).digest("hex");
-      if (!equal2(hash2, encrypted ? q.msg_signature : q.signature)) fail2("\u56DE\u8C03\u7B7E\u540D\u4E0D\u7B26", 403);
+      const hash3 = createHash7("sha1").update(values.sort().join("")).digest("hex");
+      if (!equal2(hash3, encrypted ? q.msg_signature : q.signature)) fail5("\u56DE\u8C03\u7B7E\u540D\u4E0D\u7B26", 403);
     }
     function callbackMessage(q, body, env2) {
       const encrypted = body.Encrypt || body.encrypt;
       signature(q, env2, encrypted);
-      if (!encrypted) fail2("\u8BF7\u4F7F\u7528\u5B89\u5168\u6A21\u5F0F\u6D88\u606F\u63A8\u9001", 403);
+      if (!encrypted) fail5("\u8BF7\u4F7F\u7528\u5B89\u5168\u6A21\u5F0F\u6D88\u606F\u63A8\u9001", 403);
       const key = Buffer.from((env2.WECHAT_CALLBACK_AES_KEY || "") + "=", "base64");
-      if (key.length !== 32) fail2("\u56DE\u8C03AES\u5BC6\u94A5\u65E0\u6548");
+      if (key.length !== 32) fail5("\u56DE\u8C03AES\u5BC6\u94A5\u65E0\u6548");
       const decipher = createDecipheriv("aes-256-cbc", key, key.subarray(0, 16));
       decipher.setAutoPadding(false);
       let data;
       try {
         data = Buffer.concat([decipher.update(Buffer.from(encrypted, "base64")), decipher.final()]);
       } catch {
-        fail2("\u56DE\u8C03\u89E3\u5BC6\u5931\u8D25", 403);
+        fail5("\u56DE\u8C03\u89E3\u5BC6\u5931\u8D25", 403);
       }
       const pad = data[data.length - 1];
-      if (pad < 1 || pad > 32 || !data.subarray(data.length - pad).every((x) => x === pad)) fail2("\u56DE\u8C03\u586B\u5145\u9519\u8BEF", 403);
+      if (pad < 1 || pad > 32 || !data.subarray(data.length - pad).every((x) => x === pad)) fail5("\u56DE\u8C03\u586B\u5145\u9519\u8BEF", 403);
       data = data.subarray(0, data.length - pad);
-      if (data.length < 20) fail2("\u56DE\u8C03\u683C\u5F0F\u9519\u8BEF", 403);
+      if (data.length < 20) fail5("\u56DE\u8C03\u683C\u5F0F\u9519\u8BEF", 403);
       const n = data.readUInt32BE(16);
-      if (n > data.length - 20 || data.subarray(20 + n).toString() !== env2.WECHAT_APP_ID) fail2("\u56DE\u8C03AppID\u4E0D\u5339\u914D", 403);
+      if (n > data.length - 20 || data.subarray(20 + n).toString() !== env2.WECHAT_APP_ID) fail5("\u56DE\u8C03AppID\u4E0D\u5339\u914D", 403);
       try {
         return JSON.parse(data.subarray(20, 20 + n).toString());
       } catch {
-        fail2("\u8BF7\u914D\u7F6EJSON\u6D88\u606F\u63A8\u9001", 400);
+        fail5("\u8BF7\u914D\u7F6EJSON\u6D88\u606F\u63A8\u9001", 400);
       }
     }
     function receiptMatches(ticket, text, images, env2) {
       const r = verify(ticket, env2, "receipt");
-      if (r.hash !== digest2(text, images)) fail2("\u63D0\u4EA4\u5185\u5BB9\u5DF2\u53D8\u5316\uFF0C\u8BF7\u91CD\u65B0\u68C0\u6D4B", 403);
+      if (r.hash !== digest2(text, images)) fail5("\u63D0\u4EA4\u5185\u5BB9\u5DF2\u53D8\u5316\uFF0C\u8BF7\u91CD\u65B0\u68C0\u6D4B", 403);
       return r;
     }
-    module2.exports = { fail: fail2, sign, verify, digest: digest2, checkText, callbackMessage, signature, receiptMatches };
+    module2.exports = { fail: fail5, sign, verify, digest: digest2, checkText, callbackMessage, signature, receiptMatches };
   }
 });
 
@@ -129,8 +129,448 @@ __export(entry_exports, {
 });
 module.exports = __toCommonJS(entry_exports);
 
-// cloudfunctions/meme-motion/service.mjs
+// cloudfunctions/meme-motion/accounts.mjs
+var import_node_crypto = require("node:crypto");
+var import_security_core = __toESM(require_security_core(), 1);
+var hash = (x) => (0, import_node_crypto.createHash)("sha256").update(x).digest("hex");
+var fail = (message, status = 422) => {
+  throw Object.assign(Error(message), { status });
+};
+var same = (a, b) => typeof a === "string" && typeof b === "string" && a.length === b.length && (0, import_node_crypto.timingSafeEqual)(Buffer.from(a), Buffer.from(b));
+var accountId = (uid) => hash("wechat:" + uid);
+function createAccounts({ store: store2, env: env2, billingEnabled: billingEnabled2 = false, now = Date.now }) {
+  async function ensure(tx, uid) {
+    if (typeof uid !== "string" || !uid || uid.startsWith("web:")) fail("\u8BF7\u4F7F\u7528\u5FAE\u4FE1\u767B\u5F55", 401);
+    const id = accountId(uid);
+    let account = await tx.get("meme_accounts", id);
+    if (!account) {
+      account = { id, createdAt: now() };
+      await tx.set("meme_accounts", id, account);
+    }
+    let wallet = await tx.get("meme_wallets", id);
+    if (!wallet) {
+      wallet = { accountId: id, available: 0, frozen: 0, spent: 0, credited: 0 };
+      await tx.set("meme_wallets", id, wallet);
+    }
+    return { account: { id, number: "GX" + id.slice(0, 12).toUpperCase(), createdAt: account.createdAt }, wallet: { available: wallet.available, frozen: wallet.frozen, spent: wallet.spent }, free: !billingEnabled2 };
+  }
+  async function rate(tx, key, limit, window) {
+    const r = await tx.get("meme_login_limits", key) || { at: now(), count: 0 };
+    if (now() - r.at >= window) {
+      r.at = now();
+      r.count = 0;
+    }
+    if (r.count >= limit) return false;
+    r.count++;
+    await tx.set("meme_login_limits", key, r);
+    return true;
+  }
+  return {
+    me: (uid) => store2.transaction((tx) => ensure(tx, uid)),
+    async start({ clientId, secret }) {
+      if (!/^[a-f0-9]{32,64}$/.test(clientId || "") || !/^[A-Za-z0-9_-]{40,100}$/.test(secret || "")) fail("\u6D4F\u89C8\u5668\u767B\u5F55\u4FE1\u606F\u65E0\u6548", 400);
+      const result = await store2.transaction(async (tx) => {
+        if (!await rate(tx, "start:" + hash(clientId), 1, 3e4)) return { error: "\u767B\u5F55\u7801\u7533\u8BF7\u8FC7\u4E8E\u9891\u7E41\uFF0C\u8BF7\u7A0D\u540E\u518D\u8BD5" };
+        let code;
+        for (let i = 0; i < 5; i++) {
+          code = String((0, import_node_crypto.randomInt)(1e7, 1e8));
+          const old = await tx.get("meme_login_challenges", code);
+          if (!old || old.expires < now()) break;
+          code = null;
+        }
+        if (!code) return { error: "\u767B\u5F55\u7E41\u5FD9\uFF0C\u8BF7\u7A0D\u540E\u91CD\u8BD5" };
+        const row = { code, secret: hash(secret), expires: now() + 3e5, state: "pending", sid: (0, import_node_crypto.randomUUID)() };
+        await tx.set("meme_login_challenges", code, row);
+        return { code, expires: row.expires };
+      });
+      if (result.error) fail(result.error, 429);
+      return result;
+    },
+    async confirm(uid, { code }) {
+      if (!/^\d{8}$/.test(code || "")) fail("\u8BF7\u8F93\u51658\u4F4D\u7F51\u9875\u767B\u5F55\u7801", 400);
+      const result = await store2.transaction(async (tx) => {
+        if (!await rate(tx, "confirm:" + hash(uid), 10, 6e4)) return { error: "\u786E\u8BA4\u8FC7\u4E8E\u9891\u7E41\uFF0C\u8BF7\u7A0D\u540E\u91CD\u8BD5" };
+        const r = await tx.get("meme_login_challenges", code);
+        if (!r || r.expires < now()) return { error: "\u767B\u5F55\u7801\u4E0D\u5B58\u5728\u6216\u5DF2\u8FC7\u671F\uFF0C\u8BF7\u5237\u65B0\u7F51\u9875" };
+        if (r.uid && r.uid !== uid) return { error: "\u6B64\u767B\u5F55\u7801\u5DF2\u786E\u8BA4\uFF0C\u8BF7\u91CD\u65B0\u7533\u8BF7" };
+        await ensure(tx, uid);
+        r.uid = uid;
+        r.state = "confirmed";
+        await tx.set("meme_login_challenges", code, r);
+        return { confirmed: true };
+      });
+      if (result.error) fail(result.error);
+      return result;
+    },
+    async poll({ code, secret }) {
+      if (!/^\d{8}$/.test(code || "") || typeof secret !== "string") fail("\u767B\u5F55\u4FE1\u606F\u65E0\u6548", 400);
+      return store2.transaction(async (tx) => {
+        const r = await tx.get("meme_login_challenges", code);
+        if (!r || r.expires < now() || !same(r.secret, hash(secret))) fail("\u767B\u5F55\u7801\u5DF2\u8FC7\u671F\uFF0C\u8BF7\u91CD\u65B0\u7533\u8BF7", 401);
+        if (r.state === "pending") return { status: "pending" };
+        let s = await tx.get("meme_account_sessions", r.sid);
+        if (s?.revoked) fail("\u767B\u5F55\u5DF2\u9000\u51FA\uFF0C\u8BF7\u91CD\u65B0\u7533\u8BF7", 401);
+        if (!s) {
+          s = { uid: r.uid, exp: now() + 30 * 864e5, revoked: false };
+          await tx.set("meme_account_sessions", r.sid, s);
+        }
+        return { status: "confirmed", session: import_security_core.default.sign({ kind: "account-session", sid: r.sid, exp: s.exp }, env2) };
+      });
+    },
+    async resolve(token) {
+      const s = import_security_core.default.verify(token, env2, "account-session");
+      return store2.transaction(async (tx) => {
+        const row = await tx.get("meme_account_sessions", s.sid);
+        if (!row || row.revoked || row.exp < now()) fail("\u767B\u5F55\u5DF2\u8FC7\u671F\uFF0C\u8BF7\u91CD\u65B0\u767B\u5F55", 401);
+        return row.uid;
+      });
+    },
+    async webMe(token) {
+      return this.me(await this.resolve(token));
+    },
+    async logout(token) {
+      const s = import_security_core.default.verify(token, env2, "account-session");
+      await store2.transaction(async (tx) => {
+        const row = await tx.get("meme_account_sessions", s.sid);
+        if (row) {
+          row.revoked = true;
+          await tx.set("meme_account_sessions", s.sid, row);
+        }
+      });
+      return { loggedOut: true };
+    }
+  };
+}
+
+// cloudfunctions/meme-motion/payments.mjs
 var import_node_crypto2 = require("node:crypto");
+var import_security_core2 = __toESM(require_security_core(), 1);
+var paymentAccountId = (uid) => (0, import_node_crypto2.createHash)("sha256").update("wechat:" + uid).digest("hex");
+var hmac = (key, value) => (0, import_node_crypto2.createHmac)("sha256", key).update(value, "utf8").digest("hex");
+var fail2 = (message, status = 400) => {
+  const e = new Error(message);
+  e.status = status;
+  return e;
+};
+var publicOrder = (r) => ({ id: r.id, productId: r.productId, priceFen: r.priceFen, points: r.points, status: r.status, createdAt: r.createdAt, updatedAt: r.updatedAt, creditedAt: r.creditedAt ?? null, deliveryPending: r.deliveryPending === true });
+var validUid = (uid) => typeof uid === "string" && uid.length > 0 && uid.length <= 128 && !uid.startsWith("web:");
+var validCode = (code) => typeof code === "string" && code.length > 0 && code.length <= 256;
+function createPayments({ store: store2, env: env2 = process.env, fetcher = fetch, now = Date.now, wxSession, accessToken }) {
+  let products = [];
+  try {
+    const parsed = JSON.parse(env2.MEME_PAY_PRODUCTS_JSON || "[]");
+    if (!Array.isArray(parsed) || !parsed.length || parsed.length > 30) throw Error("catalog");
+    const ids = /* @__PURE__ */ new Set(), providerIds = /* @__PURE__ */ new Set();
+    products = parsed.map((p) => {
+      if (!p || typeof p.id !== "string" || !/^[A-Za-z0-9_-]{1,64}$/.test(p.id) || typeof p.productId !== "string" || !/^[A-Za-z0-9_-]{1,64}$/.test(p.productId) || !Number.isSafeInteger(p.priceFen) || p.priceFen < 100 || p.priceFen > 1e6 || !Number.isSafeInteger(p.points) || p.points < 1 || p.points > 1e9 || ids.has(p.id) || providerIds.has(p.productId)) throw Error("catalog");
+      ids.add(p.id);
+      providerIds.add(p.productId);
+      return { id: p.id, productId: p.productId, priceFen: p.priceFen, points: p.points };
+    });
+  } catch {
+    products = [];
+  }
+  const enabled = env2.MEME_PAY_ENABLED === "true" && env2.MEME_PAY_VERIFIED === "true" && Boolean(env2.MEME_PAY_OFFER_ID?.trim()) && Boolean(env2.MEME_PAY_APP_KEY?.trim()) && products.length > 0;
+  const guard = () => {
+    if (!enabled) throw fail2("\u5145\u503C\u5C1A\u672A\u5F00\u901A\uFF0C\u5F53\u524D\u4FDD\u6301\u514D\u8D39\u4F7F\u7528", 503);
+  };
+  const auth = async (uid, code) => {
+    if (!validUid(uid)) throw fail2("\u8BF7\u5148\u4F7F\u7528\u5FAE\u4FE1\u767B\u5F55", 401);
+    if (!validCode(code)) throw fail2("\u8BF7\u91CD\u65B0\u767B\u5F55\u540E\u652F\u4ED8", 401);
+    const s = await wxSession(code);
+    if (s?.openid !== uid || typeof s.session_key !== "string" || !s.session_key) throw fail2("\u5FAE\u4FE1\u767B\u5F55\u8EAB\u4EFD\u4E0D\u4E00\u81F4\uFF0C\u8BF7\u91CD\u65B0\u767B\u5F55", 401);
+    return s;
+  };
+  const owned = async (tx, uid, id) => {
+    const r = await tx.get("meme_orders", id);
+    if (!r || r.accountId !== paymentAccountId(uid) || r.openid !== uid) throw fail2("\u8BA2\u5355\u4E0D\u5B58\u5728", 404);
+    return r;
+  };
+  const query = async (uid, id, sessionKey) => {
+    const body = JSON.stringify({ openid: uid, env: 0, order_id: id });
+    const params = new URLSearchParams({ access_token: await accessToken(), pay_sig: hmac(env2.MEME_PAY_APP_KEY, "/xpay/query_order&" + body), signature: hmac(sessionKey, body) });
+    let response2, data;
+    try {
+      response2 = await fetcher("https://api.weixin.qq.com/xpay/query_order?" + params, { method: "POST", headers: { "Content-Type": "application/json" }, body, redirect: "error", signal: AbortSignal.timeout(15e3) });
+      data = await response2.json();
+    } catch {
+      throw fail2("\u652F\u4ED8\u72B6\u6001\u67E5\u8BE2\u6682\u4E0D\u53EF\u7528\uFF0C\u8BF7\u7A0D\u540E\u67E5\u8BE2\u539F\u8BA2\u5355", 502);
+    }
+    if (!response2.ok || data?.errcode !== 0 || !data.order || typeof data.order !== "object") throw fail2("\u652F\u4ED8\u72B6\u6001\u67E5\u8BE2\u5931\u8D25\uFF0C\u8BF7\u7A0D\u540E\u67E5\u8BE2\u539F\u8BA2\u5355", 502);
+    return data.order;
+  };
+  const hash3 = (value) => (0, import_node_crypto2.createHash)("sha256").update(value).digest("hex");
+  const credit = async (tx, row, providerId, providerType) => {
+    const eventId = "xpay:" + hash3(row.id), event = await tx.get("meme_wallet_events", eventId);
+    if (event) {
+      if (event.orderId !== row.id || event.accountId !== row.accountId || event.points !== row.points || row.status !== "credited") throw fail2("\u8BA2\u5355\u5165\u8D26\u8BB0\u5F55\u4E0D\u4E00\u81F4\uFF0C\u8BF7\u8054\u7CFB\u4F5C\u8005\u6838\u5BF9", 409);
+      return publicOrder(row);
+    }
+    if (row.status === "refund_review" || row.status === "refunded" || row.status === "closed") throw fail2("\u8BA2\u5355\u72B6\u6001\u5F02\u5E38\uFF0C\u8BF7\u8054\u7CFB\u4F5C\u8005\u6838\u5BF9", 409);
+    if (providerId) {
+      const providerKey = "platform:" + providerType + ":" + hash3(providerId), existing = await tx.get("meme_orders", providerKey);
+      if (existing && existing.orderId !== row.id) throw fail2("\u5E73\u53F0\u4EA4\u6613\u53F7\u91CD\u590D\uFF0C\u8BF7\u8054\u7CFB\u4F5C\u8005\u6838\u5BF9", 409);
+      await tx.set("meme_orders", providerKey, { orderId: row.id, accountId: row.accountId });
+    }
+    const updatedAt = now(), wallet = await tx.get("meme_wallets", row.accountId) || { accountId: row.accountId, available: 0, frozen: 0, spent: 0, credited: 0 };
+    for (const field of ["available", "frozen", "spent", "credited"]) if (!Number.isSafeInteger(wallet[field]) || field !== "available" && wallet[field] < 0) throw fail2("\u8D26\u6237\u70B9\u6570\u8BB0\u5F55\u5F02\u5E38\uFF0C\u8BF7\u8054\u7CFB\u4F5C\u8005", 409);
+    if (!Number.isSafeInteger(wallet.available + row.points) || !Number.isSafeInteger(wallet.credited + row.points)) throw fail2("\u8D26\u6237\u70B9\u6570\u8D85\u51FA\u8303\u56F4", 409);
+    wallet.available += row.points;
+    wallet.credited += row.points;
+    wallet.updatedAt = updatedAt;
+    row.status = "credited";
+    row.creditedAt = updatedAt;
+    row.updatedAt = updatedAt;
+    if (providerType === "wx") row.wxOrderId = providerId;
+    else if (providerId) row.channelOrderId = providerId;
+    await tx.set("meme_wallets", row.accountId, wallet);
+    await tx.set("meme_wallet_events", eventId, { id: eventId, accountId: row.accountId, orderId: row.id, type: "topup", points: row.points, priceFen: row.priceFen, providerId: providerId || null, providerType, createdAt: updatedAt });
+    await tx.set("meme_orders", row.id, row);
+    return publicOrder(row);
+  };
+  const notifyDelivery = async (uid, id) => {
+    const before = await store2.transaction((tx) => owned(tx, uid, id));
+    if (before.status !== "credited" || before.deliveryPending !== true) return publicOrder(before);
+    let delivered = false;
+    try {
+      const response2 = await fetcher("https://api.weixin.qq.com/xpay/notify_provide_goods?" + new URLSearchParams({ access_token: await accessToken() }), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ order_id: id, env: 0 }), redirect: "error", signal: AbortSignal.timeout(15e3) });
+      const result = await response2.json();
+      delivered = response2.ok && result?.errcode === 0;
+    } catch {
+    }
+    return store2.transaction(async (tx) => {
+      const row = await owned(tx, uid, id);
+      if (row.status === "credited" && row.deliveryPending === true) {
+        row.deliveryLastAttempt = now();
+        if (delivered) {
+          row.deliveryPending = false;
+          row.deliveryNotifiedAt = now();
+        }
+        await tx.set("meme_orders", id, row);
+      }
+      return publicOrder(row);
+    });
+  };
+  const response = (statusCode, value, plain = false) => ({ statusCode, headers: { "Content-Type": plain ? "text/plain; charset=utf-8" : "application/json; charset=utf-8", "Cache-Control": "no-store" }, body: plain ? value : JSON.stringify(value) });
+  return {
+    catalog() {
+      return { enabled, currency: "CNY", products: products.map((p) => ({ ...p })) };
+    },
+    async prepare(uid, { productId, code } = {}) {
+      guard();
+      const p = products.find((p2) => p2.id === productId);
+      if (!p) throw fail2("\u5145\u503C\u5546\u54C1\u4E0D\u5B58\u5728");
+      const s = await auth(uid, code), accountId2 = paymentAccountId(uid);
+      const id = "M" + (0, import_node_crypto2.randomBytes)(15).toString("hex");
+      const createdAt = now();
+      const row = { id, accountId: accountId2, openid: uid, productId: p.productId, catalogId: p.id, priceFen: p.priceFen, points: p.points, status: "pending", createdAt, updatedAt: createdAt };
+      const signData = JSON.stringify({ offerId: env2.MEME_PAY_OFFER_ID, buyQuantity: 1, env: 0, currencyType: "CNY", productId: p.productId, goodsPrice: p.priceFen, outTradeNo: id, attach: id });
+      await store2.transaction(async (tx) => {
+        const account = await tx.get("meme_accounts", accountId2);
+        if (!account || account.deletedAt || account.status === "deleted") throw fail2("\u8D26\u6237\u4E0D\u5B58\u5728\uFF0C\u8BF7\u91CD\u65B0\u767B\u5F55", 401);
+        if (await tx.get("meme_orders", id)) throw fail2("\u8BA2\u5355\u521B\u5EFA\u51B2\u7A81\uFF0C\u8BF7\u91CD\u8BD5", 409);
+        const indexId = "index:" + accountId2, index = await tx.get("meme_orders", indexId) || { ids: [] };
+        await tx.set("meme_orders", id, row);
+        await tx.set("meme_orders", indexId, { ids: [id, ...index.ids].slice(0, 50) });
+      });
+      return { ...publicOrder(row), payData: { signData, mode: "short_series_goods", paySig: hmac(env2.MEME_PAY_APP_KEY, "requestVirtualPayment&" + signData), signature: hmac(s.session_key, signData) } };
+    },
+    async reconcile(uid, { id, code } = {}) {
+      guard();
+      if (!validUid(uid)) throw fail2("\u8BF7\u5148\u4F7F\u7528\u5FAE\u4FE1\u767B\u5F55", 401);
+      if (typeof id !== "string" || !/^M[0-9a-f]{30}$/.test(id)) throw fail2("\u8BA2\u5355\u4E0D\u5B58\u5728", 404);
+      const before = await store2.transaction((tx) => owned(tx, uid, id));
+      if (before.status === "credited") return notifyDelivery(uid, id);
+      if (["refund_review", "refunded", "closed"].includes(before.status)) return publicOrder(before);
+      const s = await auth(uid, code), remote2 = await query(uid, id, s.session_key);
+      const paid = remote2.status === 2 || remote2.status === 4;
+      if (paid) {
+        if (remote2.order_id !== id || remote2.order_fee !== before.priceFen || remote2.openid !== void 0 && remote2.openid !== uid || remote2.order_type !== void 0 && remote2.order_type !== 0 && remote2.order_type !== 7) throw fail2("\u5FAE\u4FE1\u652F\u4ED8\u8BA2\u5355\u4FE1\u606F\u4E0D\u4E00\u81F4\uFF0C\u8BF7\u8054\u7CFB\u4F5C\u8005\u6838\u5BF9", 502);
+        if (typeof remote2.wx_order_id !== "string" || !remote2.wx_order_id || remote2.wx_order_id.length > 128) throw fail2("\u5FAE\u4FE1\u652F\u4ED8\u8BA2\u5355\u7F3A\u5C11\u5E73\u53F0\u4EA4\u6613\u53F7\uFF0C\u8BF7\u7A0D\u540E\u67E5\u8BE2", 502);
+      }
+      const reconciled = await store2.transaction(async (tx) => {
+        const row = await owned(tx, uid, id);
+        if (row.status === "credited" || row.status === "refund_review") return publicOrder(row);
+        const updatedAt = now();
+        if (!paid) {
+          row.updatedAt = updatedAt;
+          row.providerStatus = Number.isSafeInteger(remote2.status) ? remote2.status : null;
+          if (remote2.status === 5 || remote2.status === 8) row.status = "refunded";
+          else if (remote2.status === 6) row.status = "closed";
+          await tx.set("meme_orders", id, row);
+          return publicOrder(row);
+        }
+        row.providerStatus = remote2.status;
+        row.deliveryPending = remote2.status === 2;
+        if (remote2.status === 4) row.deliveryNotifiedAt = now();
+        return credit(tx, row, remote2.wx_order_id, "wx");
+      });
+      return reconciled.status === "credited" ? notifyDelivery(uid, id) : reconciled;
+    },
+    async callback(event = {}) {
+      try {
+        const callbackEnv = { WECHAT_APP_ID: env2.WECHAT_APP_ID, WECHAT_CALLBACK_TOKEN: env2.MEME_PAY_CALLBACK_TOKEN, WECHAT_CALLBACK_AES_KEY: env2.MEME_PAY_CALLBACK_AES_KEY };
+        if (!callbackEnv.WECHAT_APP_ID || typeof callbackEnv.WECHAT_CALLBACK_TOKEN !== "string" || !/^[A-Za-z0-9]{3,32}$/.test(callbackEnv.WECHAT_CALLBACK_TOKEN) || typeof callbackEnv.WECHAT_CALLBACK_AES_KEY !== "string" || callbackEnv.WECHAT_CALLBACK_AES_KEY.length !== 43 || Buffer.from(callbackEnv.WECHAT_CALLBACK_AES_KEY + "=", "base64").length !== 32) throw fail2("\u652F\u4ED8\u6D88\u606F\u63A8\u9001\u5C1A\u672A\u914D\u7F6E", 503);
+        const q = event.queryStringParameters || event.queryString || {}, method = String(event.httpMethod || "").toUpperCase();
+        if (method === "GET") {
+          import_security_core2.default.signature(q, callbackEnv);
+          if (typeof q.echostr !== "string" || q.echostr.length > 1e3) throw fail2("\u56DE\u8C03\u53C2\u6570\u65E0\u6548", 400);
+          return response(200, q.echostr, true);
+        }
+        if (method !== "POST") throw fail2("\u8BF7\u6C42\u65B9\u5F0F\u4E0D\u652F\u6301", 405);
+        const raw = event.isBase64Encoded ? Buffer.from(event.body || "", "base64").toString() : event.body || "{}";
+        if (typeof raw !== "string" || Buffer.byteLength(raw) > 3e4) throw fail2("\u56DE\u8C03\u5185\u5BB9\u8FC7\u5927", 413);
+        let envelope;
+        try {
+          envelope = JSON.parse(raw);
+        } catch {
+          throw fail2("\u8BF7\u914D\u7F6EJSON\u6D88\u606F\u63A8\u9001", 400);
+        }
+        const message = import_security_core2.default.callbackMessage(q, envelope, callbackEnv);
+        if (message.Event === "xpay_goods_deliver_notify") {
+          if (!validUid(message.OpenId) || message.Env !== 0 || typeof message.OutTradeNo !== "string") throw fail2("\u652F\u4ED8\u56DE\u8C03\u8EAB\u4EFD\u6216\u73AF\u5883\u4E0D\u4E00\u81F4", 403);
+          await store2.transaction(async (tx) => {
+            const row = await owned(tx, message.OpenId, message.OutTradeNo), goods = message.GoodsInfo;
+            if (!goods || goods.ProductId !== row.productId || goods.Quantity !== 1 || goods.OrigPrice !== row.priceFen || goods.ActualPrice !== row.priceFen || goods.Attach !== row.id) throw fail2("\u652F\u4ED8\u56DE\u8C03\u5546\u54C1\u4FE1\u606F\u4E0D\u4E00\u81F4", 409);
+            const providerId = message.WeChatPayInfo?.MchOrderNo;
+            if (providerId !== void 0 && (typeof providerId !== "string" || !providerId || providerId.length > 128)) throw fail2("\u652F\u4ED8\u56DE\u8C03\u4EA4\u6613\u53F7\u4E0D\u4E00\u81F4", 409);
+            row.deliveryPending = false;
+            row.deliveryNotifiedAt = now();
+            await credit(tx, row, providerId, "mch");
+            await tx.set("meme_orders", row.id, row);
+          });
+        } else if (message.Event === "xpay_refund_notify") {
+          if (!validUid(message.OpenId) || typeof message.MchOrderId !== "string" || typeof message.WxRefundId !== "string" || !message.WxRefundId || message.WxRefundId.length > 128 || !Number.isSafeInteger(message.RefundFee) || message.RefundFee <= 0 || !Number.isSafeInteger(message.RetCode)) throw fail2("\u9000\u6B3E\u56DE\u8C03\u4FE1\u606F\u4E0D\u4E00\u81F4", 409);
+          await store2.transaction(async (tx) => {
+            const row = await owned(tx, message.OpenId, message.MchOrderId);
+            if (message.RefundFee > row.priceFen) throw fail2("\u9000\u6B3E\u91D1\u989D\u4E0D\u4E00\u81F4", 409);
+            const refundId = "refund:" + hash3(message.WxRefundId), existing = await tx.get("meme_orders", refundId);
+            if (existing && (existing.orderId !== row.id || existing.accountId !== row.accountId || existing.refundFen !== message.RefundFee)) throw fail2("\u9000\u6B3E\u5355\u53F7\u91CD\u590D\u6216\u91D1\u989D\u4E0D\u4E00\u81F4", 409);
+            if (message.WxOrderId !== void 0 && row.wxOrderId && message.WxOrderId !== row.wxOrderId) throw fail2("\u9000\u6B3E\u5BF9\u5E94\u652F\u4ED8\u5355\u4E0D\u4E00\u81F4", 409);
+            if (existing?.result === 0) return;
+            await tx.set("meme_orders", refundId, { orderId: row.id, accountId: row.accountId, refundId: message.WxRefundId, refundFen: message.RefundFee, result: message.RetCode, createdAt: now() });
+            if (message.RetCode !== 0) return;
+            if (message.RefundFee !== row.priceFen) {
+              row.status = "refund_review";
+              row.updatedAt = now();
+              row.refundNeedsReview = true;
+              await tx.set("meme_orders", row.id, row);
+              return;
+            }
+            if (row.refundedAt) throw fail2("\u8BA2\u5355\u5DF2\u7ECF\u5B8C\u6210\u9000\u6B3E\uFF0C\u8BF7\u6838\u5BF9\u91CD\u590D\u9000\u6B3E\u5355", 409);
+            const creditEvent = await tx.get("meme_wallet_events", "xpay:" + hash3(row.id));
+            if (creditEvent) {
+              if (creditEvent.orderId !== row.id || creditEvent.accountId !== row.accountId || creditEvent.points !== row.points || creditEvent.priceFen !== row.priceFen || creditEvent.type !== "topup") throw fail2("\u9000\u6B3E\u539F\u5165\u8D26\u51ED\u8BC1\u4E0D\u4E00\u81F4", 409);
+              const reversalId = "refund:" + hash3(message.WxRefundId), reversal = await tx.get("meme_wallet_events", reversalId);
+              if (reversal) throw fail2("\u9000\u6B3E\u56DE\u6536\u8BB0\u5F55\u4E0D\u4E00\u81F4", 409);
+              const wallet = await tx.get("meme_wallets", row.accountId);
+              if (!wallet || wallet.accountId !== row.accountId || !Number.isSafeInteger(wallet.available) || !Number.isSafeInteger(wallet.available - row.points) || !Number.isSafeInteger(wallet.refunded ?? 0) || !Number.isSafeInteger((wallet.refunded ?? 0) + row.points)) throw fail2("\u9000\u6B3E\u8D26\u6237\u70B9\u6570\u8BB0\u5F55\u5F02\u5E38", 409);
+              wallet.available -= row.points;
+              wallet.refunded = (wallet.refunded ?? 0) + row.points;
+              wallet.updatedAt = now();
+              await tx.set("meme_wallets", row.accountId, wallet);
+              await tx.set("meme_wallet_events", reversalId, { id: reversalId, accountId: row.accountId, orderId: row.id, type: "refund", points: -row.points, refundFen: message.RefundFee, wxRefundId: message.WxRefundId, createdAt: now() });
+            }
+            row.status = "refunded";
+            row.refundedAt = now();
+            row.refundFen = message.RefundFee;
+            row.refundNeedsReview = false;
+            row.deliveryPending = false;
+            row.updatedAt = now();
+            await tx.set("meme_orders", row.id, row);
+          });
+        }
+        return response(200, { ErrCode: 0, ErrMsg: "success" });
+      } catch (e) {
+        return response(e.status || 503, { ErrCode: -1, ErrMsg: e.status ? e.message : "\u652F\u4ED8\u56DE\u8C03\u5904\u7406\u5931\u8D25\uFF0C\u8BF7\u91CD\u8BD5" });
+      }
+    },
+    async orders(uid) {
+      if (!validUid(uid)) throw fail2("\u8BF7\u5148\u4F7F\u7528\u5FAE\u4FE1\u767B\u5F55", 401);
+      return store2.transaction(async (tx) => {
+        const index = await tx.get("meme_orders", "index:" + paymentAccountId(uid));
+        const rows = await Promise.all((index?.ids || []).slice(0, 50).map((id) => owned(tx, uid, id)));
+        return rows.map(publicOrder);
+      });
+    }
+  };
+}
+
+// cloudfunctions/meme-motion/account-handler.mjs
+var import_security_core3 = __toESM(require_security_core(), 1);
+function createAccountHandler({ accounts: accounts2, payments: payments2, env: env2 }) {
+  return async (event, op) => {
+    const headers = Object.fromEntries(Object.entries(event.headers || {}).map(([k, v]) => [k.toLowerCase(), String(v)]));
+    const origin = headers.origin, allowed = (env2.MEME_WEB_ORIGINS || "").split(",").map((x) => x.trim());
+    const cors = origin && allowed.includes(origin) ? { "Access-Control-Allow-Origin": origin, Vary: "Origin" } : {};
+    const json = (statusCode, body) => ({ statusCode, headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store", ...cors }, body: JSON.stringify(body) });
+    try {
+      if (origin && !allowed.includes(origin)) throw Object.assign(Error("\u6B64\u7F51\u9875\u5C1A\u672A\u914D\u7F6E\u767B\u5F55\u670D\u52A1"), { status: 403 });
+      if (event.httpMethod !== "POST") return json(405, { error: "\u8BF7\u6C42\u65B9\u5F0F\u4E0D\u652F\u6301" });
+      const raw = event.isBase64Encoded ? Buffer.from(event.body || "", "base64").toString() : event.body || "{}";
+      if (Buffer.byteLength(raw) > 4096) return json(413, { error: "\u767B\u5F55\u53C2\u6570\u8FC7\u5927" });
+      const data = JSON.parse(raw);
+      if (!data || typeof data !== "object" || Array.isArray(data)) return json(400, { error: "\u53C2\u6570\u683C\u5F0F\u9519\u8BEF" });
+      const token = (headers.authorization || "").replace(/^Bearer /, "");
+      if (op === "account-web-start") return json(200, await accounts2.start(data));
+      if (op === "account-web-poll") return json(200, await accounts2.poll(data));
+      if (op === "account-web-logout") return json(200, await accounts2.logout(token));
+      const web = op.startsWith("account-web-"), uid = web ? await accounts2.resolve(token) : import_security_core3.default.verify(token, env2, "session").uid;
+      const action = op.slice(web ? "account-web-".length : "account-".length);
+      if (action === "me") return json(200, { ...await accounts2.me(uid), payments: payments2.catalog() });
+      if (action === "orders") return json(200, { orders: await payments2.orders(uid) });
+      if (!web && action === "confirm-login") return json(200, await accounts2.confirm(uid, data));
+      if (!web && action === "pay-prepare") {
+        await accounts2.me(uid);
+        const r = await payments2.prepare(uid, data);
+        return json(200, { id: r.id, payment: r.payData });
+      }
+      if (!web && action === "pay-query") {
+        const order = await payments2.reconcile(uid, data);
+        return json(200, { order, wallet: (await accounts2.me(uid)).wallet });
+      }
+      return json(404, { error: "\u64CD\u4F5C\u4E0D\u5B58\u5728" });
+    } catch (e) {
+      return json(e.status || 422, { error: e instanceof SyntaxError ? "\u53C2\u6570\u683C\u5F0F\u9519\u8BEF" : e.message || "\u8D26\u6237\u670D\u52A1\u6682\u4E0D\u53EF\u7528\uFF0C\u8BF7\u7A0D\u540E\u91CD\u8BD5" });
+    }
+  };
+}
+
+// cloudfunctions/meme-motion/account-wechat.mjs
+function accountWechat(env2, fetcher = fetch) {
+  let cached, pending;
+  const json = async (url, options) => {
+    try {
+      const r = await fetcher(url, { ...options, redirect: "error", signal: AbortSignal.timeout(15e3) });
+      if (!r.ok) throw Error();
+      return await r.json();
+    } catch {
+      throw Error("\u5FAE\u4FE1\u8D26\u6237\u670D\u52A1\u8FDE\u63A5\u5931\u8D25\uFF0C\u8BF7\u7A0D\u540E\u91CD\u8BD5");
+    }
+  };
+  return {
+    async session(code) {
+      if (typeof code !== "string" || !code || code.length > 256) throw Error("\u5FAE\u4FE1\u767B\u5F55\u51ED\u8BC1\u65E0\u6548");
+      const q = new URLSearchParams({ appid: env2.WECHAT_APP_ID, secret: env2.WECHAT_APP_SECRET, js_code: code, grant_type: "authorization_code" });
+      const r = await json("https://api.weixin.qq.com/sns/jscode2session?" + q);
+      if (!r.openid || !r.session_key) throw Error("\u5FAE\u4FE1\u767B\u5F55\u5DF2\u8FC7\u671F\uFF0C\u8BF7\u91CD\u65B0\u767B\u5F55");
+      return { openid: r.openid, session_key: r.session_key };
+    },
+    async token() {
+      if (cached?.expires > Date.now()) return cached.value;
+      if (pending) return pending;
+      return pending = (async () => {
+        const r = await json("https://api.weixin.qq.com/cgi-bin/stable_token", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ grant_type: "client_credential", appid: env2.WECHAT_APP_ID, secret: env2.WECHAT_APP_SECRET, force_refresh: false }) });
+        if (!r.access_token) throw Error("\u5FAE\u4FE1\u8D26\u6237\u670D\u52A1\u5C1A\u672A\u5C31\u7EEA");
+        cached = { value: r.access_token, expires: Date.now() + Math.max(1, Number(r.expires_in) - 120) * 1e3 };
+        return cached.value;
+      })().finally(() => pending = null);
+    }
+  };
+}
+
+// cloudfunctions/meme-motion/service.mjs
+var import_node_crypto5 = require("node:crypto");
 
 // server/motion/pricing.mjs
 var PRICE_VERSION = "2026-10-27";
@@ -153,8 +593,63 @@ function catalog() {
   ] };
 }
 
+// cloudfunctions/meme-motion/usage.mjs
+var import_node_crypto3 = require("node:crypto");
+var fail3 = (message, status = 409) => {
+  throw Object.assign(Error(message), { status });
+};
+var integer = (value, min = Number.MIN_SAFE_INTEGER) => Number.isSafeInteger(value) && value >= min;
+var accountFor = (uid) => (0, import_node_crypto3.createHash)("sha256").update("wechat:" + uid).digest("hex");
+function validateWallet(wallet, accountId2) {
+  if (!wallet || wallet.accountId !== accountId2 || !integer(wallet.available) || !integer(wallet.frozen, 0) || !integer(wallet.spent, 0)) fail3("\u8D26\u6237\u70B9\u6570\u8BB0\u5F55\u5F02\u5E38\uFF0C\u8BF7\u8054\u7CFB\u4F5C\u8005");
+}
+function validateUsage(usage) {
+  if (!usage || typeof usage.id !== "string" || !usage.id || !/^[a-f0-9]{64}$/.test(usage.accountId || "") || !integer(usage.points, 1) || !["held", "spent", "refunded", "free", "exempt"].includes(usage.state)) fail3("\u4EFB\u52A1\u6263\u8D39\u8BB0\u5F55\u5F02\u5E38\uFF0C\u8BF7\u8054\u7CFB\u4F5C\u8005");
+}
+function reserveUsage(state, { id, uid, points, enabled, exempt: exempt2 = false, now = Date.now() }) {
+  if (typeof id !== "string" || !id || typeof uid !== "string" || !uid || uid.startsWith("web:") || !integer(points, 1) || !integer(now, 0)) fail3("\u4EFB\u52A1\u6263\u8D39\u53C2\u6570\u65E0\u6548", 422);
+  const accountId2 = accountFor(uid);
+  if (state.usage) {
+    validateUsage(state.usage);
+    if (state.usage.id !== id || state.usage.accountId !== accountId2 || state.usage.points !== points) fail3("\u4EFB\u52A1\u6263\u8D39\u53C2\u6570\u4E0E\u539F\u8BB0\u5F55\u4E0D\u4E00\u81F4");
+    if (!["free", "exempt"].includes(state.usage.state)) validateWallet(state.wallet, accountId2);
+    return state;
+  }
+  const usage = { id, accountId: accountId2, points, state: exempt2 ? "exempt" : enabled === true ? "held" : "free", createdAt: now };
+  if (usage.state !== "held") return { ...state, usage };
+  validateWallet(state.wallet, accountId2);
+  const wallet = { ...state.wallet };
+  if (wallet.available < points) fail3("\u70B9\u6570\u4E0D\u8DB3\uFF0C\u8BF7\u5145\u503C\u540E\u518D\u8BD5", 402);
+  if (!integer(wallet.frozen + points, 0)) fail3("\u8D26\u6237\u70B9\u6570\u8D85\u51FA\u8303\u56F4");
+  wallet.available -= points;
+  wallet.frozen += points;
+  wallet.updatedAt = now;
+  return { ...state, wallet, usage };
+}
+function settleUsage(state, { success, now = Date.now() }) {
+  if (typeof success !== "boolean" || !integer(now, 0)) fail3("\u4EFB\u52A1\u7ED3\u679C\u5C1A\u672A\u786E\u8BA4\uFF0C\u4E0D\u80FD\u7ED3\u7B97");
+  validateUsage(state.usage);
+  const usage = state.usage;
+  if (usage.state === "free" || usage.state === "exempt") return state;
+  validateWallet(state.wallet, usage.accountId);
+  const result = success ? "spent" : "refunded";
+  if (usage.state !== "held") {
+    if (usage.state !== result) fail3("\u4EFB\u52A1\u7ED3\u7B97\u7ED3\u679C\u4E0E\u539F\u8BB0\u5F55\u4E0D\u4E00\u81F4");
+    return state;
+  }
+  const wallet = { ...state.wallet };
+  if (wallet.frozen < usage.points) fail3("\u4EFB\u52A1\u51BB\u7ED3\u70B9\u6570\u8BB0\u5F55\u5F02\u5E38");
+  const next = success ? wallet.spent + usage.points : wallet.available + usage.points;
+  if (!integer(next, success ? 0 : Number.MIN_SAFE_INTEGER)) fail3("\u8D26\u6237\u70B9\u6570\u8D85\u51FA\u8303\u56F4");
+  wallet.frozen -= usage.points;
+  if (success) wallet.spent = next;
+  else wallet.available = next;
+  wallet.updatedAt = now;
+  return { ...state, wallet, usage: { ...usage, state: result, settledAt: now } };
+}
+
 // server/motion/provider.mjs
-var import_node_crypto = require("node:crypto");
+var import_node_crypto4 = require("node:crypto");
 var MODELS = { draw: "wan2.6-t2i", edit: "wan2.6-image", describe: "wan2.6-i2v-flash", imitate: "wan2.2-animate-move" };
 function buildRequest({ mode, prompt = "", image, reference }) {
   if (!MODELS[mode]) throw Error("\u8BF7\u9009\u62E9\u5199\u52A8\u4F5C\u6216\u5B66\u52A8\u4F5C");
@@ -196,7 +691,7 @@ function createProvider({ key, base = "https://dashscope.aliyuncs.com", fetcher 
       if (!ext) throw Error("\u7D20\u6750\u683C\u5F0F\u4E0D\u652F\u6301");
       const p = (await api("/uploads?action=getPolicy&model=" + encodeURIComponent(model))).data;
       remote(p.upload_host);
-      const filename = (0, import_node_crypto.randomUUID)() + "." + ext, keyname = p.upload_dir + "/" + filename, f = new FormData();
+      const filename = (0, import_node_crypto4.randomUUID)() + "." + ext, keyname = p.upload_dir + "/" + filename, f = new FormData();
       for (const [k, v] of Object.entries({ OSSAccessKeyId: p.oss_access_key_id, Signature: p.signature, policy: p.policy, "x-oss-object-acl": p.x_oss_object_acl, "x-oss-forbid-overwrite": p.x_oss_forbid_overwrite, key: keyname, success_action_status: "200" })) {
         if (typeof v !== "string") throw Error("\u4E34\u65F6\u4E0A\u4F20\u51ED\u8BC1\u65E0\u6548");
         f.append(k, v);
@@ -251,10 +746,10 @@ function createProvider({ key, base = "https://dashscope.aliyuncs.com", fetcher 
 }
 
 // cloudfunctions/meme-motion/service.mjs
-var hash = (s) => (0, import_node_crypto2.createHash)("sha256").update(s).digest("hex");
+var hash2 = (s) => (0, import_node_crypto5.createHash)("sha256").update(s).digest("hex");
 var uuid = (s) => /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(s || "");
-function createMotion({ store: store2, storage: storage2, provider, validate, verifyInput, inspectResult, inspectImage, budget = 3, maxJobs = 4, budgetEnforced = true, activeScope = "global", now = Date.now }) {
-  const activeKey = (uid) => activeScope === "user" ? "active_" + hash(uid) : "active";
+function createMotion({ store: store2, storage: storage2, provider, validate, verifyInput, inspectResult, inspectImage, budget = 3, maxJobs = 4, budgetEnforced = true, activeScope = "global", billingEnabled: billingEnabled2 = false, billingExempt = () => false, now = Date.now }) {
+  const activeKey = (uid) => activeScope === "user" ? "active_" + hash2(uid) : "active";
   const publicRow = (r) => ({ id: r.id, mode: r.mode, status: r.status, error: r.error, created: r.created });
   async function owned(uid, id) {
     if (!uuid(id)) throw Object.assign(Error("\u4EFB\u52A1\u4E0D\u5B58\u5728"), { status: 404 });
@@ -266,6 +761,7 @@ function createMotion({ store: store2, storage: storage2, provider, validate, ve
   async function finish(id, changes) {
     return store2.atomic(id, (s) => {
       Object.assign(s.row, changes);
+      if (s.usage && ["success", "failed"].includes(s.row.status)) Object.assign(s, settleUsage(s, { success: s.row.status === "success", now: now() }));
       const key = activeKey(s.row.uid);
       if (["success", "failed"].includes(s.row.status) && s.quota[key] === id) delete s.quota[key];
       return publicRow(s.row);
@@ -287,7 +783,7 @@ function createMotion({ store: store2, storage: storage2, provider, validate, ve
     reconcile,
     async info() {
       const q = await store2.info();
-      return { budgetEnforced, available: !budgetEnforced || Number.isFinite(budget) && budget > 0 && q.count < maxJobs && q.cost + 0.2 <= budget + 1e-6, remaining: budgetEnforced ? Math.max(0, Math.min(maxJobs - q.count, Math.floor((budget - q.cost + 1e-6) / 0.2))) : null, models: MODELS, pricing: catalog() };
+      return { billingEnabled: billingEnabled2, budgetEnforced, available: !budgetEnforced || Number.isFinite(budget) && budget > 0 && q.count < maxJobs && q.cost + 0.2 <= budget + 1e-6, remaining: budgetEnforced ? Math.max(0, Math.min(maxJobs - q.count, Math.floor((budget - q.cost + 1e-6) / 0.2))) : null, models: MODELS, pricing: catalog() };
     },
     async prepare(uid, { id, mode }) {
       if (!uuid(id) || !Object.hasOwn(MODELS, mode)) throw Error("\u5236\u4F5C\u53C2\u6570\u65E0\u6548");
@@ -301,7 +797,7 @@ function createMotion({ store: store2, storage: storage2, provider, validate, ve
       });
       const row = await owned(uid, id);
       if (row.status !== "draft") return publicRow(row);
-      const prefix = `meme-motion/${hash(uid).slice(0, 24)}/${id}`;
+      const prefix = `meme-motion/${hash2(uid).slice(0, 24)}/${id}`;
       const image = mode === "draw" ? void 0 : await storage2.ticket(prefix + "/input.jpg");
       const reference = mode === "imitate" ? await storage2.ticket(prefix + "/reference.mp4") : void 0;
       await store2.atomic(id, (s) => {
@@ -314,11 +810,12 @@ function createMotion({ store: store2, storage: storage2, provider, validate, ve
       return { ...publicRow(row), uploads: { ...image ? { image } : {}, ...reference ? { reference } : {} } };
     },
     async create(uid, data) {
+      if (billingEnabled2 && (typeof uid !== "string" || !uid || uid.startsWith("web:"))) throw Object.assign(Error("\u8BF7\u5148\u4F7F\u7528\u5FAE\u4FE1\u767B\u5F55\u540E\u5236\u4F5C"), { status: 401 });
       const row = await owned(uid, data.id);
       const prompt = typeof data.prompt === "string" ? data.prompt.trim() : "";
       if (prompt.length > 800 || row.mode !== "imitate" && !prompt) throw Error("\u8BF7\u7528800\u5B57\u4EE5\u5185\u63CF\u8FF0\u521B\u610F");
       if (row.status !== "draft") {
-        if (row.promptHash !== hash(prompt)) throw Error("\u4EFB\u52A1\u5185\u5BB9\u5DF2\u53D8\u5316\uFF0C\u8BF7\u65B0\u5EFA\u4EFB\u52A1");
+        if (row.promptHash !== hash2(prompt)) throw Error("\u4EFB\u52A1\u5185\u5BB9\u5DF2\u53D8\u5316\uFF0C\u8BF7\u65B0\u5EFA\u4EFB\u52A1");
         return publicRow(row);
       }
       await reconcile(uid);
@@ -326,17 +823,20 @@ function createMotion({ store: store2, storage: storage2, provider, validate, ve
       const imageBytes = row.mode === "draw" ? void 0 : await storage2.read(row.imageFile, 1024 * 1024);
       await verifyInput(uid, { ...data, prompt, imageBytes });
       const input = await validate({ mode: row.mode, prompt, imageBytes, ...row.mode === "imitate" ? { referenceBytes: await storage2.read(row.referenceFile, 20 * 1024 * 1024) } : {} });
+      const priceFen = quote(row.mode, input.duration).priceFen, exempt2 = billingExempt(uid) === true;
+      if (billingEnabled2 && !exempt2 && (data.acceptedPriceFen !== priceFen || data.priceVersion !== PRICE_VERSION)) throw Object.assign(Error("\u4EF7\u683C\u5DF2\u66F4\u65B0\uFF0C\u8BF7\u91CD\u65B0\u786E\u8BA4\u672C\u6B21\u70B9\u6570"), { status: 422 });
       const claimed = await store2.atomic(row.id, (s) => {
         if (s.row.status !== "draft") {
-          if (s.row.promptHash !== hash(prompt)) throw Error("\u4EFB\u52A1\u5185\u5BB9\u5DF2\u53D8\u5316");
+          if (s.row.promptHash !== hash2(prompt)) throw Error("\u4EFB\u52A1\u5185\u5BB9\u5DF2\u53D8\u5316");
           return false;
         }
         if (s.quota[activeKey(uid)]) throw Error("\u5DF2\u6709\u52A8\u4F5C\u4EFB\u52A1\u8FDB\u884C\u4E2D\uFF0C\u8BF7\u5148\u67E5\u8BE2\u539F\u4EFB\u52A1");
         if (!Number.isFinite(input.cost) || input.cost < 0 || budgetEnforced && (!Number.isFinite(budget) || !Number.isSafeInteger(maxJobs) || maxJobs < 1 || s.quota.count >= maxJobs || s.quota.cost + input.cost > budget + 1e-6)) throw Error("\u514D\u8D39\u4F53\u9A8C\u989D\u5EA6\u6682\u65F6\u7528\u5B8C\uFF0C\u8BF7\u7A0D\u540E\u518D\u6765");
+        if (billingEnabled2) Object.assign(s, reserveUsage(s, { id: row.id, uid, points: priceFen, enabled: true, exempt: exempt2, now: now() }));
         s.quota.count++;
         s.quota.cost += input.cost;
         s.quota[activeKey(uid)] = row.id;
-        Object.assign(s.row, { status: "submitting", cost: input.cost, model: MODELS[row.mode], priceVersion: PRICE_VERSION, priceFen: quote(row.mode, input.duration).priceFen, promptHash: hash(prompt), submitted: now() });
+        Object.assign(s.row, { status: "submitting", cost: input.cost, model: MODELS[row.mode], priceVersion: PRICE_VERSION, priceFen, promptHash: hash2(prompt), submitted: now() });
         return true;
       });
       if (!claimed) return publicRow(await owned(uid, row.id));
@@ -346,6 +846,7 @@ function createMotion({ store: store2, storage: storage2, provider, validate, ve
       } catch (e) {
         await store2.atomic(row.id, (s) => {
           if (e.rejected) {
+            if (s.usage) Object.assign(s, settleUsage(s, { success: false, now: now() }));
             s.quota.cost -= s.row.cost;
             s.row.cost = 0;
             const key = activeKey(uid);
@@ -391,45 +892,54 @@ function createMotion({ store: store2, storage: storage2, provider, validate, ve
 }
 
 // cloudfunctions/meme-motion/web.mjs
-var import_node_crypto3 = require("node:crypto");
-var import_security_core = __toESM(require_security_core(), 1);
-var digest = (x) => (0, import_node_crypto3.createHash)("sha256").update(x).digest("hex");
+var import_node_crypto6 = require("node:crypto");
+var import_security_core4 = __toESM(require_security_core(), 1);
+var digest = (x) => (0, import_node_crypto6.createHash)("sha256").update(x).digest("hex");
 var equal = (a, b) => {
   const x = Buffer.from(a), y = Buffer.from(b);
-  return x.length === y.length && (0, import_node_crypto3.timingSafeEqual)(x, y);
+  return x.length === y.length && (0, import_node_crypto6.timingSafeEqual)(x, y);
 };
-var fail = (message, status) => {
+var fail4 = (message, status) => {
   throw Object.assign(Error(message), { status });
 };
-function createWebMotionHandler({ service: service2, env: env2 }) {
+function createWebMotionHandler({ service: service2, env: env2, resolveAccount }) {
   return async (event, op) => {
     const headers = Object.fromEntries(Object.entries(event.headers || {}).map(([k, v]) => [k.toLowerCase(), String(v)])), origin = headers.origin;
     const allowed = (env2.MEME_WEB_ORIGINS || "").split(",").map((x) => x.trim()).filter(Boolean), cors = origin && allowed.includes(origin) ? { "Access-Control-Allow-Origin": origin, Vary: "Origin" } : {};
     const json = (statusCode, body) => ({ statusCode, headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", ...cors }, body: JSON.stringify(body) });
     try {
-      if (origin && !allowed.includes(origin)) fail("\u6B64\u9875\u9762\u672A\u83B7\u51C6\u8C03\u7528\u6D4B\u8BD5\u670D\u52A1", 403);
-      if ((event.httpMethod || "").toUpperCase() !== "POST") fail("\u8BF7\u6C42\u65B9\u5F0F\u4E0D\u652F\u6301", 405);
+      if (origin && !allowed.includes(origin)) fail4("\u6B64\u9875\u9762\u672A\u83B7\u51C6\u8C03\u7528\u6D4B\u8BD5\u670D\u52A1", 403);
+      if ((event.httpMethod || "").toUpperCase() !== "POST") fail4("\u8BF7\u6C42\u65B9\u5F0F\u4E0D\u652F\u6301", 405);
       const invite = env2.MEME_WEB_INVITE_CODE;
-      if (!invite || invite.length < 24) fail("\u7F51\u9875\u6D4B\u8BD5\u670D\u52A1\u5C1A\u672A\u542F\u7528", 503);
+      if ((!invite || invite.length < 24) && !resolveAccount) fail4("\u7F51\u9875\u6D4B\u8BD5\u670D\u52A1\u5C1A\u672A\u542F\u7528", 503);
       const raw = event.isBase64Encoded ? Buffer.from(event.body || "", "base64").toString() : event.body || "{}";
-      if (Buffer.byteLength(raw) > 3e4) fail("\u53C2\u6570\u8FC7\u5927\uFF0C\u8BF7\u91CD\u65B0\u9009\u62E9\u7D20\u6750", 413);
+      if (Buffer.byteLength(raw) > 3e4) fail4("\u53C2\u6570\u8FC7\u5927\uFF0C\u8BF7\u91CD\u65B0\u9009\u62E9\u7D20\u6750", 413);
       let data;
       try {
         data = JSON.parse(raw);
       } catch {
-        fail("\u53C2\u6570\u683C\u5F0F\u65E0\u6548", 400);
+        fail4("\u53C2\u6570\u683C\u5F0F\u65E0\u6548", 400);
       }
-      if (!data || Array.isArray(data) || typeof data !== "object") fail("\u53C2\u6570\u683C\u5F0F\u65E0\u6548", 400);
+      if (!data || Array.isArray(data) || typeof data !== "object") fail4("\u53C2\u6570\u683C\u5F0F\u65E0\u6548", 400);
       const token = (headers.authorization || "").replace(/^Bearer /, "");
       if (op === "web-login") {
-        if (!equal(token, invite)) fail("\u9080\u8BF7\u7801\u4E0D\u6B63\u786E\uFF0C\u8BF7\u68C0\u67E5\u5B8C\u6574\u6D4B\u8BD5\u94FE\u63A5", 401);
-        if (!/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(data.clientId || "")) fail("\u6D4F\u89C8\u5668\u6807\u8BC6\u65E0\u6548\uFF0C\u8BF7\u91CD\u65B0\u6253\u5F00\u9875\u9762", 400);
-        const uid = "web:" + (0, import_node_crypto3.createHmac)("sha256", env2.MEME_SECURITY_SECRET).update(invite + ":" + data.clientId).digest("hex").slice(0, 40);
-        const session2 = import_security_core.default.sign({ kind: "web-motion-session", uid, invite: digest(invite), exp: Date.now() + 30 * 24 * 36e5 }, env2);
+        if (!invite || !equal(token, invite)) fail4("\u9080\u8BF7\u7801\u4E0D\u6B63\u786E\uFF0C\u8BF7\u68C0\u67E5\u5B8C\u6574\u6D4B\u8BD5\u94FE\u63A5", 401);
+        if (!/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(data.clientId || "")) fail4("\u6D4F\u89C8\u5668\u6807\u8BC6\u65E0\u6548\uFF0C\u8BF7\u91CD\u65B0\u6253\u5F00\u9875\u9762", 400);
+        const uid = "web:" + (0, import_node_crypto6.createHmac)("sha256", env2.MEME_SECURITY_SECRET).update(invite + ":" + data.clientId).digest("hex").slice(0, 40);
+        const session2 = import_security_core4.default.sign({ kind: "web-motion-session", uid, invite: digest(invite), exp: Date.now() + 30 * 24 * 36e5 }, env2);
         return json(200, { session: session2 });
       }
-      const session = import_security_core.default.verify(token, env2, "web-motion-session");
-      if (session.invite !== digest(invite) || !session.uid?.startsWith("web:")) fail("\u6D4B\u8BD5\u767B\u5F55\u5DF2\u5931\u6548\uFF0C\u8BF7\u91CD\u65B0\u6253\u5F00\u9080\u8BF7\u94FE\u63A5", 401);
+      let session;
+      let kind;
+      try {
+        kind = JSON.parse(Buffer.from(token.split(".")[0], "base64url")).kind;
+      } catch {
+      }
+      if (kind === "account-session" && resolveAccount) session = { uid: await resolveAccount(token) };
+      else {
+        session = import_security_core4.default.verify(token, env2, "web-motion-session");
+        if (session.invite !== digest(invite) || !session.uid?.startsWith("web:")) fail4("\u6D4B\u8BD5\u767B\u5F55\u5DF2\u5931\u6548\uFF0C\u8BF7\u91CD\u65B0\u6253\u5F00\u9080\u8BF7\u94FE\u63A5", 401);
+      }
       if (op === "web-config") return json(200, { ...await service2.info(), configured: true });
       if (op === "web-prepare") return json(200, await service2.prepare(session.uid, data));
       if (op === "web-create") return json(200, await service2.create(session.uid, data));
@@ -443,13 +953,14 @@ function createWebMotionHandler({ service: service2, env: env2 }) {
 }
 
 // cloudfunctions/meme-motion/store.mjs
+var import_node_crypto7 = require("node:crypto");
 var import_node_sdk = __toESM(require("@cloudbase/node-sdk"), 1);
 function cloudStore(env2 = process.env) {
   const app = import_node_sdk.default.init({ env: env2.TCB_ENV || env2.CLOUDBASE_ENV_ID }), db = app.database();
   let initialized;
   const base = () => ({ count: Number(env2.MOTION_BASE_COUNT || 0), cost: Number(env2.MOTION_BASE_COST || 0) });
   const ready = () => initialized ??= (async () => {
-    for (const n of ["meme_motion_jobs", "meme_motion_quota"]) try {
+    for (const n of ["meme_motion_jobs", "meme_motion_quota", "meme_accounts", "meme_wallets", "meme_orders", "meme_wallet_events", "meme_login_challenges", "meme_login_limits", "meme_account_sessions"]) try {
       await db.createCollection(n);
     } catch (e) {
       if (!/exist|已存在/i.test(e.message || "")) throw e;
@@ -459,7 +970,22 @@ function cloudStore(env2 = process.env) {
     throw e;
   });
   const get = async (c, id) => (await c.where({ _id: id }).get()).data[0];
+  const accountCollections = /* @__PURE__ */ new Set(["meme_accounts", "meme_wallets", "meme_orders", "meme_wallet_events", "meme_login_challenges", "meme_login_limits", "meme_account_sessions"]);
   const store2 = {
+    async transaction(fn) {
+      await ready();
+      return db.runTransaction(async (tx) => fn({
+        async get(c, id) {
+          if (!accountCollections.has(c)) throw Error("\u8D26\u6237\u96C6\u5408\u65E0\u6548");
+          return get(tx.collection(c), id);
+        },
+        async set(c, id, row) {
+          if (!accountCollections.has(c)) throw Error("\u8D26\u6237\u96C6\u5408\u65E0\u6548");
+          const { _id, ...safe } = row;
+          return tx.collection(c).doc(id).set(safe);
+        }
+      }));
+    },
     async read(id) {
       await ready();
       return get(db.collection("meme_motion_jobs"), id);
@@ -472,11 +998,24 @@ function cloudStore(env2 = process.env) {
       await ready();
       return db.runTransaction(async (tx) => {
         const jobs = tx.collection("meme_motion_jobs"), quotas = tx.collection("meme_motion_quota");
-        const data = { row: await get(jobs, id), quota: await get(quotas, "global") || base() };
+        const row = await get(jobs, id), accountId2 = row?.uid ? (0, import_node_crypto7.createHash)("sha256").update("wechat:" + row.uid).digest("hex") : null;
+        const wallets = tx.collection("meme_wallets"), events = tx.collection("meme_wallet_events");
+        const wallet = accountId2 ? await get(wallets, accountId2) : void 0, usage = await get(events, "usage:" + id);
+        const data = { row, quota: await get(quotas, "global") || base(), wallet, usage };
         const result = fn(data);
+        if (data.wallet && data.wallet !== wallet) {
+          if (data.wallet.accountId !== accountId2) throw Error("\u4EFB\u52A1\u8D26\u6237\u70B9\u6570\u5F52\u5C5E\u5F02\u5E38");
+          const { _id: _id2, ...safe } = data.wallet;
+          await wallets.doc(accountId2).set(safe);
+        }
+        if (data.usage && data.usage !== usage) {
+          if (data.usage.id !== id || data.usage.accountId !== accountId2) throw Error("\u4EFB\u52A1\u6263\u8D39\u5F52\u5C5E\u5F02\u5E38");
+          const { _id: _id2, ...safe } = data.usage;
+          await events.doc("usage:" + id).set(safe);
+        }
         if (data.row) {
-          const { _id: _id2, ...row } = data.row;
-          await jobs.doc(id).set(row);
+          const { _id: _id2, ...row2 } = data.row;
+          await jobs.doc(id).set(row2);
         }
         const { _id, ...quota } = data.quota;
         await quotas.doc("global").set(quota);
@@ -601,16 +1140,22 @@ async function validateMedia({ mode, prompt, imageBytes, referenceBytes }) {
 }
 
 // cloudfunctions/meme-motion/entry.mjs
-var import_security_core2 = __toESM(require_security_core(), 1);
+var import_security_core5 = __toESM(require_security_core(), 1);
 var env = process.env;
 var { store, storage } = cloudStore(env);
-var shared = { store, storage, provider: createProvider({ key: env.DASHSCOPE_API_KEY, base: env.DASHSCOPE_BASE_URL || "https://dashscope.aliyuncs.com" }), budgetEnforced: env.MOTION_TEST_UNLIMITED !== "true", budget: Number(env.MOTION_BUDGET_CNY || 3), maxJobs: Number(env.MOTION_MAX_JOBS || 4), validate: validateMedia, inspectResult: videoInfo, inspectImage: imageInfo };
+var wechat = accountWechat(env);
+var payments = createPayments({ store, env, wxSession: (code) => wechat.session(code), accessToken: () => wechat.token() });
+var billingEnabled = env.MEME_BILLING_ENABLED === "true" && payments.catalog().enabled;
+var accounts = createAccounts({ store, env, billingEnabled });
+var accountHandler = createAccountHandler({ accounts, payments, env });
+var exempt = new Set((env.MEME_DEVELOPER_ACCOUNT_IDS || "").split(",").map((x) => x.trim()).filter(Boolean));
+var shared = { store, storage, billingEnabled, billingExempt: (uid) => exempt.has(accountId(uid)), provider: createProvider({ key: env.DASHSCOPE_API_KEY, base: env.DASHSCOPE_BASE_URL || "https://dashscope.aliyuncs.com" }), budgetEnforced: env.MOTION_TEST_UNLIMITED !== "true", budget: Number(env.MOTION_BUDGET_CNY || 3), maxJobs: Number(env.MOTION_MAX_JOBS || 4), validate: validateMedia, inspectResult: videoInfo, inspectImage: imageInfo };
 var webService = createMotion({ ...shared, activeScope: "user", verifyInput: async (uid) => {
-  if (!uid?.startsWith("web:")) throw Error("\u7F51\u9875\u6D4B\u8BD5\u8EAB\u4EFD\u65E0\u6548");
+  if (!uid) throw Error("\u7F51\u9875\u767B\u5F55\u65E0\u6548");
 } });
-var webHandler = createWebMotionHandler({ service: webService, env });
+var webHandler = createWebMotionHandler({ service: webService, env, resolveAccount: (token) => accounts.resolve(token) });
 var service = createMotion({ ...shared, verifyInput: async (uid, { receipt, prompt, imageBytes }) => {
-  const checked = import_security_core2.default.receiptMatches(receipt, prompt, imageBytes ? [{ buffer: imageBytes }] : [], env);
+  const checked = import_security_core5.default.receiptMatches(receipt, prompt, imageBytes ? [{ buffer: imageBytes }] : [], env);
   if (checked.uid !== uid) throw Error("\u68C0\u6D4B\u51ED\u8BC1\u4E0D\u5C5E\u4E8E\u5F53\u524D\u7528\u6237\uFF0C\u8BF7\u91CD\u65B0\u68C0\u6D4B");
 } });
 async function main(event) {
@@ -621,16 +1166,21 @@ async function main(event) {
   const json = (statusCode, body) => ({ statusCode, headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" }, body: JSON.stringify(body) });
   const op = (event.queryStringParameters || event.queryString || {}).op;
   if (op === "health") return json(200, { configured: Boolean(env.DASHSCOPE_API_KEY), service: "meme-motion", version: "0.3.0" });
+  if (op === "pay-callback") return payments.callback(event);
+  if (typeof op === "string" && op.startsWith("account-")) return accountHandler(event, op);
   if (!env.DASHSCOPE_API_KEY) return json(503, { error: "AI\u52A8\u4F5C\u670D\u52A1\u5C1A\u672A\u914D\u7F6E" });
   if (typeof op === "string" && op.startsWith("web-")) return webHandler(event, op);
   try {
     if ((event.httpMethod || "").toUpperCase() !== "POST") return json(405, { error: "\u8BF7\u6C42\u65B9\u5F0F\u4E0D\u652F\u6301" });
     const headers = Object.fromEntries(Object.entries(event.headers || {}).map(([k, v]) => [k.toLowerCase(), v]));
-    const session = import_security_core2.default.verify(String(headers.authorization || "").replace(/^Bearer /, ""), env, "session");
+    const session = import_security_core5.default.verify(String(headers.authorization || "").replace(/^Bearer /, ""), env, "session");
     const raw = event.isBase64Encoded ? Buffer.from(event.body || "", "base64").toString() : event.body || "{}";
     if (Buffer.byteLength(raw) > 3e4) return json(413, { error: "\u53C2\u6570\u8FC7\u5927\uFF0C\u8BF7\u91CD\u65B0\u9009\u62E9\u7D20\u6750" });
     const data = JSON.parse(raw);
-    if (op === "config") return json(200, await service.info());
+    if (op === "config") {
+      await accounts.me(session.uid);
+      return json(200, await service.info());
+    }
     if (op === "prepare") return json(200, await service.prepare(session.uid, data));
     if (op === "create") return json(200, await service.create(session.uid, data));
     if (op === "query") return json(200, await service.query(session.uid, data.id));

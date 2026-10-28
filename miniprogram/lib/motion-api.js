@@ -1,7 +1,7 @@
-const {authorize}=require('./security');
+const {authorize,getSession}=require('./security');
 const ENDPOINT='https://fitgenius-d0ghm1rz21cef6594-1441969311.ap-shanghai.app.tcloudbase.com/meme-motion-api';
 function request(op,data={}){
- return authorize().then(token=>new Promise((resolve,reject)=>wx.request({url:ENDPOINT+'?op='+op,method:'POST',header:{'content-type':'application/octet-stream',Authorization:'Bearer '+token},data:JSON.stringify(data),timeout:120000,success:r=>r.statusCode===200?resolve(r.data):reject(Object.assign(Error(r.data?.error||'动作服务暂时不可用，请稍后查询原任务'),{status:r.statusCode})),fail:()=>reject(Error('网络连接未完成，请保留任务记录并继续查询，勿重复生成'))})));
+ return (getSession||authorize)().then(token=>new Promise((resolve,reject)=>wx.request({url:ENDPOINT+'?op='+op,method:'POST',header:{'content-type':'application/octet-stream',Authorization:'Bearer '+token},data:JSON.stringify(data),timeout:120000,success:r=>r.statusCode===200?resolve(r.data):reject(Object.assign(Error(r.data?.error||'动作服务暂时不可用，请稍后查询原任务'),{status:r.statusCode})),fail:()=>reject(Error('网络连接未完成，请保留任务记录并继续查询，勿重复生成'))})));
 }
 function upload(ticket,filePath){
  return new Promise((resolve,reject)=>wx.getFileSystemManager().readFile({filePath,success:file=>wx.request({url:ticket.url,method:'PUT',data:file.data,header:{'content-type':'application/octet-stream',...ticket.headers},timeout:120000,success:r=>r.statusCode>=200&&r.statusCode<300?resolve():reject(Error('素材上传未完成，请重试')),fail:e=>reject(Error(/domain|合法/i.test(e.errMsg||'')?'素材上传域名尚未配置，请联系开发者':'素材上传失败，请检查网络后重试'))}),fail:()=>reject(Error('素材文件无法读取，请重新选择'))}));

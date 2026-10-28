@@ -35,7 +35,7 @@ export async function main(event){
   const headers=Object.fromEntries(Object.entries(event.headers||{}).map(([k,v])=>[k.toLowerCase(),v]));
   const session=security.verify(String(headers.authorization||'').replace(/^Bearer /,''),env,'session');
   const raw=event.isBase64Encoded?Buffer.from(event.body||'','base64').toString():event.body||'{}';if(Buffer.byteLength(raw)>30000)return json(413,{error:'参数过大，请重新选择素材'});const data=JSON.parse(raw);
-  if(op==='config'){await accounts.me(session.uid);return json(200,await service.info());}
+  if(op==='config'){const account=await accounts.me(session.uid);return json(200,{...await service.info(),developer:account.developer,billingEnabled:billingEnabled&&!account.developer});}
   if(op==='prepare')return json(200,await service.prepare(session.uid,data));
   if(op==='create')return json(200,await service.create(session.uid,data));
   if(op==='query')return json(200,await service.query(session.uid,data.id));

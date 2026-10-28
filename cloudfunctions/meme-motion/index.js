@@ -1201,8 +1201,8 @@ async function main(event) {
     if (Buffer.byteLength(raw) > 3e4) return json(413, { error: "\u53C2\u6570\u8FC7\u5927\uFF0C\u8BF7\u91CD\u65B0\u9009\u62E9\u7D20\u6750" });
     const data = JSON.parse(raw);
     if (op === "config") {
-      await accounts.me(session.uid);
-      return json(200, await service.info());
+      const account = await accounts.me(session.uid);
+      return json(200, { ...await service.info(), developer: account.developer, billingEnabled: billingEnabled && !account.developer });
     }
     if (op === "prepare") return json(200, await service.prepare(session.uid, data));
     if (op === "create") return json(200, await service.create(session.uid, data));

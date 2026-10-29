@@ -1,5 +1,5 @@
 const {randomUUID,createHash}=require('node:crypto');const {fail,sign,verify,digest,checkText,callbackMessage,signature}=require('./security-core.cjs');const {validateFeedback}=require('./core.cjs');
-function createSecurity({store,wechat,env=process.env}){
+function createSecurity({store,wechat,env=process.env,fetcher=fetch}){
  return async(req,res,url,body)=>{
   const op=url.searchParams.get('op');if(!op?.startsWith('security-'))return false;
   const json=(status,data)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify(data));};
@@ -9,7 +9,14 @@ function createSecurity({store,wechat,env=process.env}){
     const q=Object.fromEntries(url.searchParams);
     if(req.method==='GET'){signature(q,env);plain(q.echostr||'');return true;}
     if(req.method!=='POST')fail('Method not allowed',405);
-    const event=callbackMessage(q,await body(),env);
+    const envelope=await body(),event=callbackMessage(q,envelope,env);
+    if(typeof event.Event==='string'&&event.Event.startsWith('xpay_')){
+     if(!env.MEME_PAYMENT_CALLBACK_URL)fail('支付通知转发尚未配置',503);
+     const target=new URL(env.MEME_PAYMENT_CALLBACK_URL);if(target.protocol!=='https:')fail('支付通知地址无效',503);
+     for(const [key,value] of Object.entries(q))if(key!=='op')target.searchParams.set(key,value);
+     const forwarded=await fetcher(target,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(envelope),redirect:'error',signal:AbortSignal.timeout(10000)});
+     const response=await forwarded.text();res.writeHead(forwarded.status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(response);return true;
+    }
     if((event.Event||event.event)==='wxa_media_check'){
      const trace=event.trace_id;if(typeof trace!=='string'||trace.length>128||!trace)fail('Invalid trace',400);
      await store.event(trace,Number(event.errcode)===0&&event.result?.suggest==='pass');

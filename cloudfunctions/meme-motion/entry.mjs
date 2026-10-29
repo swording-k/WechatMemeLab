@@ -50,5 +50,5 @@ export async function main(event){
   if(op==='query')return json(200,await service.query(session.uid,data.id));
   if(op==='result')return json(200,await service.result(session.uid,data.id));
   return json(404,{error:'操作不存在'});
- }catch(e){const known=/任务|额度|照片|视频|素材|描述|凭证|内容|MP4|JPG|生成|参数/.test(e.message||'');return json(e.status||422,{error:known?e.message:'动作服务暂时不可用，请保留任务记录稍后重试'});}
+ }catch(e){const known=/点数|价格|账户|任务|额度|照片|视频|素材|描述|凭证|内容|MP4|JPG|生成|参数/.test(e.message||'');return json(e.status||422,{error:known?e.message:'动作服务暂时不可用，请保留任务记录稍后重试'});}
 }

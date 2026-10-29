@@ -1242,7 +1242,7 @@ async function main(event) {
     if (op === "result") return json(200, await service.result(session.uid, data.id));
     return json(404, { error: "\u64CD\u4F5C\u4E0D\u5B58\u5728" });
   } catch (e) {
-    const known = /任务|额度|照片|视频|素材|描述|凭证|内容|MP4|JPG|生成|参数/.test(e.message || "");
+    const known = /点数|价格|账户|任务|额度|照片|视频|素材|描述|凭证|内容|MP4|JPG|生成|参数/.test(e.message || "");
     return json(e.status || 422, { error: known ? e.message : "\u52A8\u4F5C\u670D\u52A1\u6682\u65F6\u4E0D\u53EF\u7528\uFF0C\u8BF7\u4FDD\u7559\u4EFB\u52A1\u8BB0\u5F55\u7A0D\u540E\u91CD\u8BD5" });
   }
 }

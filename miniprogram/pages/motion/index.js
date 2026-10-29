@@ -42,7 +42,7 @@ Page({
    if(this.closed)return;
    this.setData({status:'正在提交创意，请勿重复点击…'});
    await api.request('create',{id,prompt,receipt,...(this.data.billingEnabled?{acceptedPriceFen,priceVersion:this.data.pricing.version}:{})});await this.query();
-  }catch(e){this.setData({status:e.message+(prepared?'。保留任务记录，先继续查询。':''),pending:Boolean(this.data.jobId)});}
+  }catch(e){if(e.status===402){this.clearJob();this.setData({status:e.message,pending:false});}else this.setData({status:e.message+(prepared?'。保留任务记录，先继续查询。':''),pending:Boolean(this.data.jobId)});}
   finally{if(!this.closed)this.setData({busy:false});}
  },
  async query(){

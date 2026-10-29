@@ -236,7 +236,7 @@ export function createPayments({store,env=process.env,fetcher=fetch,now=Date.now
   },
   async orders(uid){
    if(!validUid(uid))throw fail('请先使用微信登录',401);
-   return store.transaction(async tx=>{
+   return (store.readOnly?store.readOnly.bind(store):store.transaction.bind(store))(async tx=>{
     const index=await tx.get('meme_orders','index:'+paymentAccountId(uid));
     const rows=await Promise.all((index?.ids||[]).slice(0,50).map(id=>owned(tx,uid,id)));
     return rows.map(publicOrder);

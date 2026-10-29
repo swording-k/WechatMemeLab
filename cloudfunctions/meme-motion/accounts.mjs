@@ -5,16 +5,17 @@ const fail=(message,status=422)=>{throw Object.assign(Error(message),{status});}
 const same=(a,b)=>typeof a==='string'&&typeof b==='string'&&a.length===b.length&&timingSafeEqual(Buffer.from(a),Buffer.from(b));
 export const accountId=uid=>hash('wechat:'+uid);
 export function createAccounts({store,env,billingEnabled=false,now=Date.now}){
- async function ensure(tx,uid){
+ async function ensure(tx,uid,create=true){
   if(typeof uid!=='string'||!uid||uid.startsWith('web:'))fail('请使用微信登录',401);
   const id=accountId(uid);let account=await tx.get('meme_accounts',id);
+  if(!account&&!create)return null;
   if(!account){account={id,createdAt:now()};await tx.set('meme_accounts',id,account);}
-  let wallet=await tx.get('meme_wallets',id);if(!wallet){wallet={accountId:id,available:0,frozen:0,spent:0,credited:0};await tx.set('meme_wallets',id,wallet);}
+  let wallet=await tx.get('meme_wallets',id);if(!wallet&&!create)return null;if(!wallet){wallet={accountId:id,available:0,frozen:0,spent:0,credited:0};await tx.set('meme_wallets',id,wallet);}
   return {account:{id,number:'GX'+id.slice(0,12).toUpperCase(),createdAt:account.createdAt},wallet:{available:wallet.available,frozen:wallet.frozen,spent:wallet.spent},developer:(env.MEME_DEVELOPER_ACCOUNT_IDS||'').split(',').map(x=>x.trim()).includes(id),free:!billingEnabled||(env.MEME_DEVELOPER_ACCOUNT_IDS||'').split(',').map(x=>x.trim()).includes(id)};
  }
  async function rate(tx,key,limit,window){const r=await tx.get('meme_login_limits',key)||{at:now(),count:0};if(now()-r.at>=window){r.at=now();r.count=0;}if(r.count>=limit)return false;r.count++;await tx.set('meme_login_limits',key,r);return true;}
  return {
-  me:uid=>store.transaction(tx=>ensure(tx,uid)),
+  async me(uid){if(store.readOnly){const found=await store.readOnly(tx=>ensure(tx,uid,false));if(found)return found;}return store.transaction(tx=>ensure(tx,uid));},
   async start({clientId,secret}){
    if(!/^[a-f0-9]{32,64}$/.test(clientId||'')||!/^[A-Za-z0-9_-]{40,100}$/.test(secret||''))fail('浏览器登录信息无效',400);
    const result=await store.transaction(async tx=>{

@@ -9,6 +9,7 @@ export function cloudStore(env=process.env){
  const get=async(c,id)=>(await c.where({_id:id}).get()).data[0];
  const accountCollections=new Set(['meme_accounts','meme_wallets','meme_orders','meme_wallet_events','meme_login_challenges','meme_login_limits','meme_account_sessions']);
  const store={
+  async readOnly(fn){await ready();return fn({async get(c,id){if(!accountCollections.has(c))throw Error('账户集合无效');return get(db.collection(c),id);}});},
   async transaction(fn){await ready();return runTransaction(async tx=>fn({
    async get(c,id){if(!accountCollections.has(c))throw Error('账户集合无效');return get(tx.collection(c),id);},
    async set(c,id,row){if(!accountCollections.has(c))throw Error('账户集合无效');const{_id,...safe}=row;return tx.collection(c).doc(id).set(safe);}

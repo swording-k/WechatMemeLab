@@ -139,15 +139,17 @@ var fail = (message, status = 422) => {
 var same = (a, b) => typeof a === "string" && typeof b === "string" && a.length === b.length && (0, import_node_crypto.timingSafeEqual)(Buffer.from(a), Buffer.from(b));
 var accountId = (uid) => hash("wechat:" + uid);
 function createAccounts({ store: store2, env: env2, billingEnabled: billingEnabled2 = false, now = Date.now }) {
-  async function ensure(tx, uid) {
+  async function ensure(tx, uid, create = true) {
     if (typeof uid !== "string" || !uid || uid.startsWith("web:")) fail("\u8BF7\u4F7F\u7528\u5FAE\u4FE1\u767B\u5F55", 401);
     const id = accountId(uid);
     let account = await tx.get("meme_accounts", id);
+    if (!account && !create) return null;
     if (!account) {
       account = { id, createdAt: now() };
       await tx.set("meme_accounts", id, account);
     }
     let wallet = await tx.get("meme_wallets", id);
+    if (!wallet && !create) return null;
     if (!wallet) {
       wallet = { accountId: id, available: 0, frozen: 0, spent: 0, credited: 0 };
       await tx.set("meme_wallets", id, wallet);
@@ -166,7 +168,13 @@ function createAccounts({ store: store2, env: env2, billingEnabled: billingEnabl
     return true;
   }
   return {
-    me: (uid) => store2.transaction((tx) => ensure(tx, uid)),
+    async me(uid) {
+      if (store2.readOnly) {
+        const found = await store2.readOnly((tx) => ensure(tx, uid, false));
+        if (found) return found;
+      }
+      return store2.transaction((tx) => ensure(tx, uid));
+    },
     async start({ clientId, secret }) {
       if (!/^[a-f0-9]{32,64}$/.test(clientId || "") || !/^[A-Za-z0-9_-]{40,100}$/.test(secret || "")) fail("\u6D4F\u89C8\u5668\u767B\u5F55\u4FE1\u606F\u65E0\u6548", 400);
       const result = await store2.transaction(async (tx) => {
@@ -498,7 +506,7 @@ function createPayments({ store: store2, env: env2 = process.env, fetcher = fetc
     },
     async orders(uid) {
       if (!validUid(uid)) throw fail2("\u8BF7\u5148\u4F7F\u7528\u5FAE\u4FE1\u767B\u5F55", 401);
-      return store2.transaction(async (tx) => {
+      return (store2.readOnly ? store2.readOnly.bind(store2) : store2.transaction.bind(store2))(async (tx) => {
         const index = await tx.get("meme_orders", "index:" + paymentAccountId(uid));
         const rows = await Promise.all((index?.ids || []).slice(0, 50).map((id) => owned(tx, uid, id)));
         return rows.map(publicOrder);
@@ -995,6 +1003,13 @@ function cloudStore(env2 = process.env) {
   const get = async (c, id) => (await c.where({ _id: id }).get()).data[0];
   const accountCollections = /* @__PURE__ */ new Set(["meme_accounts", "meme_wallets", "meme_orders", "meme_wallet_events", "meme_login_challenges", "meme_login_limits", "meme_account_sessions"]);
   const store2 = {
+    async readOnly(fn) {
+      await ready();
+      return fn({ async get(c, id) {
+        if (!accountCollections.has(c)) throw Error("\u8D26\u6237\u96C6\u5408\u65E0\u6548");
+        return get(db.collection(c), id);
+      } });
+    },
     async transaction(fn) {
       await ready();
       return runTransaction(async (tx) => fn({

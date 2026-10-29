@@ -1,4 +1,5 @@
-import {createAccounts,accountId} from './accounts.mjs';
+import {billingPolicy} from './billing-policy.mjs';
+import {createAccounts} from './accounts.mjs';
 import {createPayments} from './payments.mjs';
 import {createAccountHandler} from './account-handler.mjs';
 import {accountWechat} from './account-wechat.mjs';
@@ -11,11 +12,10 @@ import security from '../meme-feedback/security-core.cjs';
 const env=process.env,{store,storage}=cloudStore(env);
 const wechat=accountWechat(env);
 const payments=createPayments({store,env,wxSession:code=>wechat.session(code),accessToken:()=>wechat.token()});
-const billingEnabled=env.MEME_BILLING_ENABLED==='true'&&payments.catalog().enabled;
-const accounts=createAccounts({store,env,billingEnabled});
+const policy=billingPolicy(env,payments.catalog().enabled),billingEnabled=policy.enabled;
+const accounts=createAccounts({store,env,billingEnabled,billingExempt:policy.exempt});
 const accountHandler=createAccountHandler({accounts,payments,env});
-const exempt=new Set((env.MEME_DEVELOPER_ACCOUNT_IDS||'').split(',').map(x=>x.trim()).filter(Boolean));
-const shared={store,storage,billingEnabled,billingExempt:uid=>exempt.has(accountId(uid)),provider:createProvider({key:env.DASHSCOPE_API_KEY,base:env.DASHSCOPE_BASE_URL||'https://dashscope.aliyuncs.com'}),budgetEnforced:env.MOTION_TEST_UNLIMITED!=='true',budget:Number(env.MOTION_BUDGET_CNY||3),maxJobs:Number(env.MOTION_MAX_JOBS||4),validate:validateMedia,inspectResult:videoInfo,inspectImage:imageInfo};
+const shared={store,storage,billingEnabled,billingExempt:policy.exempt,provider:createProvider({key:env.DASHSCOPE_API_KEY,base:env.DASHSCOPE_BASE_URL||'https://dashscope.aliyuncs.com'}),budgetEnforced:env.MOTION_TEST_UNLIMITED!=='true',budget:Number(env.MOTION_BUDGET_CNY||3),maxJobs:Number(env.MOTION_MAX_JOBS||4),validate:validateMedia,inspectResult:videoInfo,inspectImage:imageInfo};
 const webService=createMotion({...shared,activeScope:'user',verifyInput:async uid=>{if(!uid)throw Error('网页登录无效');}});
 const webHandler=createWebMotionHandler({service:webService,env,resolveAccount:token=>accounts.resolve(token)});
 const service=createMotion({...shared,verifyInput:async(uid,{receipt,prompt,imageBytes})=>{
@@ -44,7 +44,7 @@ export async function main(event){
   const headers=Object.fromEntries(Object.entries(event.headers||{}).map(([k,v])=>[k.toLowerCase(),v]));
   const session=security.verify(String(headers.authorization||'').replace(/^Bearer /,''),env,'session');
   const raw=event.isBase64Encoded?Buffer.from(event.body||'','base64').toString():event.body||'{}';if(Buffer.byteLength(raw)>30000)return json(413,{error:'参数过大，请重新选择素材'});const data=JSON.parse(raw);
-  if(op==='config'){const account=await accounts.me(session.uid);return json(200,{...await service.info(),developer:account.developer,billingEnabled:billingEnabled&&!account.developer});}
+  if(op==='config'){const account=await accounts.me(session.uid);return json(200,{...await service.info(session.uid),developer:account.developer,billingEnabled:billingEnabled(session.uid)&&!policy.exempt(session.uid)});}
   if(op==='prepare')return json(200,await service.prepare(session.uid,data));
   if(op==='create')return json(200,await service.create(session.uid,data));
   if(op==='query')return json(200,await service.query(session.uid,data.id));

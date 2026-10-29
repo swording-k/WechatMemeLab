@@ -5,6 +5,7 @@ import {MODELS} from '../../server/motion/provider.mjs';
 const hash=s=>createHash('sha256').update(s).digest('hex');
 const uuid=s=>/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(s||'');
 export function createMotion({store,storage,provider,validate,verifyInput,inspectResult,inspectImage,budget=3,maxJobs=4,budgetEnforced=true,activeScope='global',billingEnabled=false,billingExempt=()=>false,now=Date.now}){
+ const charging=uid=>typeof billingEnabled==='function'?billingEnabled(uid):billingEnabled;
  const activeKey=uid=>activeScope==='user'?'active_'+hash(uid):'active';
  const publicRow=r=>({id:r.id,mode:r.mode,status:r.status,error:r.error,created:r.created});
  async function owned(uid,id){if(!uuid(id))throw Object.assign(Error('任务不存在'),{status:404});const r=await store.read(id);if(!r||r.uid!==uid)throw Object.assign(Error('任务不存在'),{status:404});if(r.expires<now())throw Object.assign(Error('任务已过期，请重新制作'),{status:410});return r;}
@@ -19,7 +20,7 @@ export function createMotion({store,storage,provider,validate,verifyInput,inspec
  }
  return {
   reconcile,
-  async info(){const q=await store.info();return{billingEnabled,budgetEnforced,available:!budgetEnforced||(Number.isFinite(budget)&&budget>0&&q.count<maxJobs&&q.cost+.2<=budget+.000001),remaining:budgetEnforced?Math.max(0,Math.min(maxJobs-q.count,Math.floor((budget-q.cost+.000001)/.2))):null,models:MODELS,pricing:catalog()};},
+  async info(uid){const q=await store.info();return{billingEnabled:charging(uid)&&!billingExempt(uid),budgetEnforced,available:!budgetEnforced||(Number.isFinite(budget)&&budget>0&&q.count<maxJobs&&q.cost+.2<=budget+.000001),remaining:budgetEnforced?Math.max(0,Math.min(maxJobs-q.count,Math.floor((budget-q.cost+.000001)/.2))):null,models:MODELS,pricing:catalog()};},
   async prepare(uid,{id,mode}){
    if(!uuid(id)||!Object.hasOwn(MODELS,mode))throw Error('制作参数无效');
    await store.atomic(id,s=>{if(s.row){if(s.row.uid!==uid)throw Error('任务不存在');if(s.row.mode!==mode)throw Error('任务内容已变化');return;}s.row={id,uid,mode,status:'draft',created:now(),expires:now()+24*3600000};});
@@ -30,7 +31,7 @@ export function createMotion({store,storage,provider,validate,verifyInput,inspec
    return{...publicRow(row),uploads:{...(image?{image}:{}),...(reference?{reference}:{})}};
   },
   async create(uid,data){
-   if(billingEnabled&&(typeof uid!=='string'||!uid||uid.startsWith('web:')))throw Object.assign(Error('请先使用微信登录后制作'),{status:401});
+   if(charging(uid)&&(typeof uid!=='string'||!uid||uid.startsWith('web:')))throw Object.assign(Error('请先使用微信登录后制作'),{status:401});
    const row=await owned(uid,data.id);const prompt=typeof data.prompt==='string'?data.prompt.trim():'';
    if(prompt.length>800||(row.mode!=='imitate'&&!prompt))throw Error('请用800字以内描述创意');
    if(row.status!=='draft'){if(row.promptHash!==hash(prompt))throw Error('任务内容已变化，请新建任务');return publicRow(row);}
@@ -40,12 +41,12 @@ export function createMotion({store,storage,provider,validate,verifyInput,inspec
    await verifyInput(uid,{...data,prompt,imageBytes});
    const input=await validate({mode:row.mode,prompt,imageBytes,...(row.mode==='imitate'?{referenceBytes:await storage.read(row.referenceFile,20*1024*1024)}:{})});
    const priceFen=quote(row.mode,input.duration).priceFen,exempt=billingExempt(uid)===true;
-   if(billingEnabled&&!exempt&&(data.acceptedPriceFen!==priceFen||data.priceVersion!==PRICE_VERSION))throw Object.assign(Error('价格已更新，请重新确认本次点数'),{status:422});
+   if(charging(uid)&&!exempt&&(data.acceptedPriceFen!==priceFen||data.priceVersion!==PRICE_VERSION))throw Object.assign(Error('价格已更新，请重新确认本次点数'),{status:422});
    const claimed=await store.atomic(row.id,s=>{
     if(s.row.status!=='draft'){if(s.row.promptHash!==hash(prompt))throw Error('任务内容已变化');return false;}
     if(s.quota[activeKey(uid)])throw Error('已有动作任务进行中，请先查询原任务');
     if(!Number.isFinite(input.cost)||input.cost<0||(budgetEnforced&&(!Number.isFinite(budget)||!Number.isSafeInteger(maxJobs)||maxJobs<1||s.quota.count>=maxJobs||s.quota.cost+input.cost>budget+.000001)))throw Error('免费体验额度暂时用完，请稍后再来');
-    if(billingEnabled)Object.assign(s,reserveUsage(s,{id:row.id,uid,points:priceFen,enabled:true,exempt,now:now()}));
+    if(charging(uid))Object.assign(s,reserveUsage(s,{id:row.id,uid,points:priceFen,enabled:true,exempt,now:now()}));
     s.quota.count++;s.quota.cost+=input.cost;s.quota[activeKey(uid)]=row.id;
     Object.assign(s.row,{status:'submitting',cost:input.cost,model:MODELS[row.mode],priceVersion:PRICE_VERSION,priceFen,promptHash:hash(prompt),submitted:now()});return true;
    });

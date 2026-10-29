@@ -25,7 +25,7 @@ export function createWebMotionHandler({service,env,resolveAccount}){
    let kind;try{kind=JSON.parse(Buffer.from(token.split('.')[0],'base64url')).kind;}catch{}
    if(kind==='account-session'&&resolveAccount)session={uid:await resolveAccount(token)};
    else{session=security.verify(token,env,'web-motion-session');if(session.invite!==digest(invite)||!session.uid?.startsWith('web:'))fail('测试登录已失效，请重新打开邀请链接',401);}
-   if(op==='web-config')return json(200,{...await service.info(),configured:true});
+   if(op==='web-config')return json(200,{...await service.info(session.uid),configured:true});
    if(op==='web-prepare')return json(200,await service.prepare(session.uid,data));
    if(op==='web-create')return json(200,await service.create(session.uid,data));
    if(op==='web-query')return json(200,await service.query(session.uid,data.id));

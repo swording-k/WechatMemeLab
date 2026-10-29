@@ -4,9 +4,9 @@
  <view class="card" wx:if="{{error}}"><text class="error">{{error}}</text><text class="note" wx:if="{{!account}}">微信账户未连接，可点底部刷新重试。</text></view>
  <view class="card" wx:if="{{account}}">
   <text class="label">账户编号</text><text class="account-id" selectable>{{account.number || account.id}}</text>
-  <text class="tag">微信已登录</text><text class="note" wx:if="{{developer}}">开发者测试账户 · AI生成免点数，无需充值</text>
+  <text class="tag">微信已登录</text><text class="note" wx:if="{{developer && free}}">开发者测试账户 · AI生成免点数，无需充值</text>
   <view class="balance"><text>可用点数</text><text class="points">{{wallet.available}}</text></view>
-  <text class="note" wx:if="{{free && !developer}}">当前所有创作功能免费开放，无需充值。</text>
+  <text class="note" wx:if="{{free && !developer}}">当前账户可免费创作，无需充值。</text>
  </view>
  <view class="card" wx:else><text class="note">{{loading ? '正在使用微信自动登录…' : '微信账户未连接，请点击下方重新连接'}}</text></view>
  <view class="card" wx:if="{{account}}">

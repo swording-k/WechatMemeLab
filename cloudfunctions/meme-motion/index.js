@@ -38,7 +38,7 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 var require_security_core = __commonJS({
   "cloudfunctions/meme-feedback/security-core.cjs"(exports2, module2) {
     "use strict";
-    var { createHash: createHash7, createHmac: createHmac3, timingSafeEqual: timingSafeEqual3, createDecipheriv } = require("node:crypto");
+    var { createHash: createHash8, createHmac: createHmac3, timingSafeEqual: timingSafeEqual3, createDecipheriv } = require("node:crypto");
     function fail5(message, status = 503) {
       throw Object.assign(new Error(message), { status });
     }
@@ -67,7 +67,7 @@ var require_security_core = __commonJS({
       return data;
     }
     function digest2(text, images) {
-      const h = createHash7("sha256").update(JSON.stringify(String(text)));
+      const h = createHash8("sha256").update(JSON.stringify(String(text)));
       for (const image of images) {
         const b = image.buffer || Buffer.from(image.data, "base64");
         h.update(String(b.length) + ":").update(b);
@@ -84,7 +84,7 @@ var require_security_core = __commonJS({
       if (!/^\d+$/.test(q.timestamp || "") || Math.abs(Date.now() / 1e3 - Number(q.timestamp)) > 600 || !q.nonce) fail5("\u65E0\u6548\u56DE\u8C03", 403);
       const values = [env2.WECHAT_CALLBACK_TOKEN, q.timestamp, q.nonce];
       if (encrypted) values.push(encrypted);
-      const hash3 = createHash7("sha1").update(values.sort().join("")).digest("hex");
+      const hash3 = createHash8("sha1").update(values.sort().join("")).digest("hex");
       if (!equal2(hash3, encrypted ? q.msg_signature : q.signature)) fail5("\u56DE\u8C03\u7B7E\u540D\u4E0D\u7B26", 403);
     }
     function callbackMessage(q, body, env2) {
@@ -129,32 +129,42 @@ __export(entry_exports, {
 });
 module.exports = __toCommonJS(entry_exports);
 
-// cloudfunctions/meme-motion/accounts.mjs
+// cloudfunctions/meme-motion/billing-policy.mjs
 var import_node_crypto = require("node:crypto");
+var id = (uid) => (0, import_node_crypto.createHash)("sha256").update("wechat:" + uid).digest("hex");
+var ids = (value) => new Set((value || "").split(",").map((x) => x.trim()).filter(Boolean));
+function billingPolicy(env2, publicPaymentEnabled) {
+  const testers = ids(env2.MEME_BILLING_TEST_ACCOUNT_IDS), free = ids([env2.MEME_DEVELOPER_ACCOUNT_IDS, env2.MEME_FREE_ACCOUNT_IDS].filter(Boolean).join(","));
+  const publicEnabled = env2.MEME_BILLING_ENABLED === "true" && publicPaymentEnabled;
+  return { enabled: (uid) => publicEnabled || typeof uid === "string" && testers.has(id(uid)), exempt: (uid) => !testers.has(id(uid)) && free.has(id(uid)) };
+}
+
+// cloudfunctions/meme-motion/accounts.mjs
+var import_node_crypto2 = require("node:crypto");
 var import_security_core = __toESM(require_security_core(), 1);
-var hash = (x) => (0, import_node_crypto.createHash)("sha256").update(x).digest("hex");
+var hash = (x) => (0, import_node_crypto2.createHash)("sha256").update(x).digest("hex");
 var fail = (message, status = 422) => {
   throw Object.assign(Error(message), { status });
 };
-var same = (a, b) => typeof a === "string" && typeof b === "string" && a.length === b.length && (0, import_node_crypto.timingSafeEqual)(Buffer.from(a), Buffer.from(b));
+var same = (a, b) => typeof a === "string" && typeof b === "string" && a.length === b.length && (0, import_node_crypto2.timingSafeEqual)(Buffer.from(a), Buffer.from(b));
 var accountId = (uid) => hash("wechat:" + uid);
-function createAccounts({ store: store2, env: env2, billingEnabled: billingEnabled2 = false, now = Date.now }) {
+function createAccounts({ store: store2, env: env2, billingEnabled: billingEnabled2 = false, billingExempt, now = Date.now }) {
   async function ensure(tx, uid, create = true) {
     if (typeof uid !== "string" || !uid || uid.startsWith("web:")) fail("\u8BF7\u4F7F\u7528\u5FAE\u4FE1\u767B\u5F55", 401);
-    const id = accountId(uid);
-    let account = await tx.get("meme_accounts", id);
+    const id2 = accountId(uid);
+    let account = await tx.get("meme_accounts", id2);
     if (!account && !create) return null;
     if (!account) {
-      account = { id, createdAt: now() };
-      await tx.set("meme_accounts", id, account);
+      account = { id: id2, createdAt: now() };
+      await tx.set("meme_accounts", id2, account);
     }
-    let wallet = await tx.get("meme_wallets", id);
+    let wallet = await tx.get("meme_wallets", id2);
     if (!wallet && !create) return null;
     if (!wallet) {
-      wallet = { accountId: id, available: 0, frozen: 0, spent: 0, credited: 0 };
-      await tx.set("meme_wallets", id, wallet);
+      wallet = { accountId: id2, available: 0, frozen: 0, spent: 0, credited: 0 };
+      await tx.set("meme_wallets", id2, wallet);
     }
-    return { account: { id, number: "GX" + id.slice(0, 12).toUpperCase(), createdAt: account.createdAt }, wallet: { available: wallet.available, frozen: wallet.frozen, spent: wallet.spent }, developer: (env2.MEME_DEVELOPER_ACCOUNT_IDS || "").split(",").map((x) => x.trim()).includes(id), free: !billingEnabled2 || (env2.MEME_DEVELOPER_ACCOUNT_IDS || "").split(",").map((x) => x.trim()).includes(id) };
+    return { account: { id: id2, number: "GX" + id2.slice(0, 12).toUpperCase(), createdAt: account.createdAt }, wallet: { available: wallet.available, frozen: wallet.frozen, spent: wallet.spent }, developer: (env2.MEME_DEVELOPER_ACCOUNT_IDS || "").split(",").map((x) => x.trim()).includes(id2), free: !(typeof billingEnabled2 === "function" ? billingEnabled2(uid) : billingEnabled2) || (billingExempt ? billingExempt(uid) : (env2.MEME_DEVELOPER_ACCOUNT_IDS || "").split(",").map((x) => x.trim()).includes(id2)) };
   }
   async function rate(tx, key, limit, window) {
     const r = await tx.get("meme_login_limits", key) || { at: now(), count: 0 };
@@ -181,13 +191,13 @@ function createAccounts({ store: store2, env: env2, billingEnabled: billingEnabl
         if (!await rate(tx, "start:" + hash(clientId), 1, 3e4)) return { error: "\u767B\u5F55\u7801\u7533\u8BF7\u8FC7\u4E8E\u9891\u7E41\uFF0C\u8BF7\u7A0D\u540E\u518D\u8BD5" };
         let code;
         for (let i = 0; i < 5; i++) {
-          code = String((0, import_node_crypto.randomInt)(1e7, 1e8));
+          code = String((0, import_node_crypto2.randomInt)(1e7, 1e8));
           const old = await tx.get("meme_login_challenges", code);
           if (!old || old.expires < now()) break;
           code = null;
         }
         if (!code) return { error: "\u767B\u5F55\u7E41\u5FD9\uFF0C\u8BF7\u7A0D\u540E\u91CD\u8BD5" };
-        const row = { code, secret: hash(secret), expires: now() + 3e5, state: "pending", sid: (0, import_node_crypto.randomUUID)() };
+        const row = { code, secret: hash(secret), expires: now() + 3e5, state: "pending", sid: (0, import_node_crypto2.randomUUID)() };
         await tx.set("meme_login_challenges", code, row);
         return { code, expires: row.expires };
       });
@@ -251,10 +261,10 @@ function createAccounts({ store: store2, env: env2, billingEnabled: billingEnabl
 }
 
 // cloudfunctions/meme-motion/payments.mjs
-var import_node_crypto2 = require("node:crypto");
+var import_node_crypto3 = require("node:crypto");
 var import_security_core2 = __toESM(require_security_core(), 1);
-var paymentAccountId = (uid) => (0, import_node_crypto2.createHash)("sha256").update("wechat:" + uid).digest("hex");
-var hmac = (key, value) => (0, import_node_crypto2.createHmac)("sha256", key).update(value, "utf8").digest("hex");
+var paymentAccountId = (uid) => (0, import_node_crypto3.createHash)("sha256").update("wechat:" + uid).digest("hex");
+var hmac = (key, value) => (0, import_node_crypto3.createHmac)("sha256", key).update(value, "utf8").digest("hex");
 var fail2 = (message, status = 400) => {
   const e = new Error(message);
   e.status = status;
@@ -268,10 +278,10 @@ function createPayments({ store: store2, env: env2 = process.env, fetcher = fetc
   try {
     const parsed = JSON.parse(env2.MEME_PAY_PRODUCTS_BASE64 ? Buffer.from(env2.MEME_PAY_PRODUCTS_BASE64, "base64").toString("utf8") : env2.MEME_PAY_PRODUCTS_JSON || "[]");
     if (!Array.isArray(parsed) || !parsed.length || parsed.length > 30) throw Error("catalog");
-    const ids = /* @__PURE__ */ new Set(), providerIds = /* @__PURE__ */ new Set();
+    const ids2 = /* @__PURE__ */ new Set(), providerIds = /* @__PURE__ */ new Set();
     products = parsed.map((p) => {
-      if (!p || typeof p.id !== "string" || !/^[A-Za-z0-9_-]{1,64}$/.test(p.id) || typeof p.productId !== "string" || !/^[A-Za-z0-9_-]{1,64}$/.test(p.productId) || !Number.isSafeInteger(p.priceFen) || p.priceFen < 100 || p.priceFen > 1e6 || !Number.isSafeInteger(p.points) || p.points < 1 || p.points > 1e9 || ids.has(p.id) || providerIds.has(p.productId)) throw Error("catalog");
-      ids.add(p.id);
+      if (!p || typeof p.id !== "string" || !/^[A-Za-z0-9_-]{1,64}$/.test(p.id) || typeof p.productId !== "string" || !/^[A-Za-z0-9_-]{1,64}$/.test(p.productId) || !Number.isSafeInteger(p.priceFen) || p.priceFen < 100 || p.priceFen > 1e6 || !Number.isSafeInteger(p.points) || p.points < 1 || p.points > 1e9 || ids2.has(p.id) || providerIds.has(p.productId)) throw Error("catalog");
+      ids2.add(p.id);
       providerIds.add(p.productId);
       return { id: p.id, productId: p.productId, priceFen: p.priceFen, points: p.points };
     });
@@ -291,13 +301,13 @@ function createPayments({ store: store2, env: env2 = process.env, fetcher = fetc
     if (s?.openid !== uid || typeof s.session_key !== "string" || !s.session_key) throw fail2("\u5FAE\u4FE1\u767B\u5F55\u8EAB\u4EFD\u4E0D\u4E00\u81F4\uFF0C\u8BF7\u91CD\u65B0\u767B\u5F55", 401);
     return s;
   };
-  const owned = async (tx, uid, id) => {
-    const r = await tx.get("meme_orders", id);
+  const owned = async (tx, uid, id2) => {
+    const r = await tx.get("meme_orders", id2);
     if (!r || r.accountId !== paymentAccountId(uid) || r.openid !== uid) throw fail2("\u8BA2\u5355\u4E0D\u5B58\u5728", 404);
     return r;
   };
-  const query = async (uid, id, sessionKey) => {
-    const body = JSON.stringify({ openid: uid, env: 0, order_id: id });
+  const query = async (uid, id2, sessionKey) => {
+    const body = JSON.stringify({ openid: uid, env: 0, order_id: id2 });
     const params = new URLSearchParams({ access_token: await accessToken(), pay_sig: hmac(env2.MEME_PAY_APP_KEY, "/xpay/query_order&" + body), signature: hmac(sessionKey, body) });
     let response2, data;
     try {
@@ -309,7 +319,7 @@ function createPayments({ store: store2, env: env2 = process.env, fetcher = fetc
     if (!response2.ok || data?.errcode !== 0 || !data.order || typeof data.order !== "object") throw fail2("\u5FAE\u4FE1\u67E5\u5355\u672A\u5B8C\u6210\uFF08\u9519\u8BEF\u7801 " + (Number.isSafeInteger(data?.errcode) ? data.errcode : "\u672A\u77E5") + "\uFF09\uFF0C\u8BF7\u67E5\u8BE2\u539F\u8BA2\u5355\uFF0C\u52FF\u91CD\u590D\u4ED8\u6B3E", 502);
     return data.order;
   };
-  const hash3 = (value) => (0, import_node_crypto2.createHash)("sha256").update(value).digest("hex");
+  const hash3 = (value) => (0, import_node_crypto3.createHash)("sha256").update(value).digest("hex");
   const credit = async (tx, row, providerId, providerType) => {
     const eventId = "xpay:" + hash3(row.id), event = await tx.get("meme_wallet_events", eventId);
     if (event) {
@@ -338,25 +348,25 @@ function createPayments({ store: store2, env: env2 = process.env, fetcher = fetc
     await tx.set("meme_orders", row.id, row);
     return publicOrder(row);
   };
-  const notifyDelivery = async (uid, id) => {
-    const before = await store2.transaction((tx) => owned(tx, uid, id));
+  const notifyDelivery = async (uid, id2) => {
+    const before = await store2.transaction((tx) => owned(tx, uid, id2));
     if (before.status !== "credited" || before.deliveryPending !== true) return publicOrder(before);
     let delivered = false;
     try {
-      const response2 = await fetcher("https://api.weixin.qq.com/xpay/notify_provide_goods?" + new URLSearchParams({ access_token: await accessToken() }), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ order_id: id, env: 0 }), redirect: "error", signal: AbortSignal.timeout(15e3) });
+      const response2 = await fetcher("https://api.weixin.qq.com/xpay/notify_provide_goods?" + new URLSearchParams({ access_token: await accessToken() }), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ order_id: id2, env: 0 }), redirect: "error", signal: AbortSignal.timeout(15e3) });
       const result = await response2.json();
       delivered = response2.ok && result?.errcode === 0;
     } catch {
     }
     return store2.transaction(async (tx) => {
-      const row = await owned(tx, uid, id);
+      const row = await owned(tx, uid, id2);
       if (row.status === "credited" && row.deliveryPending === true) {
         row.deliveryLastAttempt = now();
         if (delivered) {
           row.deliveryPending = false;
           row.deliveryNotifiedAt = now();
         }
-        await tx.set("meme_orders", id, row);
+        await tx.set("meme_orders", id2, row);
       }
       return publicOrder(row);
     });
@@ -372,35 +382,35 @@ function createPayments({ store: store2, env: env2 = process.env, fetcher = fetc
       if (!p) throw fail2("\u5145\u503C\u5546\u54C1\u4E0D\u5B58\u5728");
       if (!Number.isSafeInteger(quantity) || quantity < 1 || quantity > 500 || !Number.isSafeInteger(p.priceFen * quantity) || !Number.isSafeInteger(p.points * quantity)) throw fail2("\u5145\u503C\u6570\u91CF\u987B\u4E3A1\u81F3500\u7684\u6574\u6570");
       const s = await auth(uid, code), accountId2 = paymentAccountId(uid);
-      const id = "M" + (0, import_node_crypto2.randomBytes)(15).toString("hex");
+      const id2 = "M" + (0, import_node_crypto3.randomBytes)(15).toString("hex");
       const createdAt = now();
-      const row = { id, accountId: accountId2, openid: uid, productId: p.productId, catalogId: p.id, quantity, unitPriceFen: p.priceFen, priceFen: p.priceFen * quantity, points: p.points * quantity, status: "pending", createdAt, updatedAt: createdAt };
-      const signData = JSON.stringify({ offerId: env2.MEME_PAY_OFFER_ID, buyQuantity: quantity, env: 0, currencyType: "CNY", productId: p.productId, goodsPrice: p.priceFen, outTradeNo: id, attach: id });
+      const row = { id: id2, accountId: accountId2, openid: uid, productId: p.productId, catalogId: p.id, quantity, unitPriceFen: p.priceFen, priceFen: p.priceFen * quantity, points: p.points * quantity, status: "pending", createdAt, updatedAt: createdAt };
+      const signData = JSON.stringify({ offerId: env2.MEME_PAY_OFFER_ID, buyQuantity: quantity, env: 0, currencyType: "CNY", productId: p.productId, goodsPrice: p.priceFen, outTradeNo: id2, attach: id2 });
       await store2.transaction(async (tx) => {
         const account = await tx.get("meme_accounts", accountId2);
         if (!account || account.deletedAt || account.status === "deleted") throw fail2("\u8D26\u6237\u4E0D\u5B58\u5728\uFF0C\u8BF7\u91CD\u65B0\u767B\u5F55", 401);
-        if (await tx.get("meme_orders", id)) throw fail2("\u8BA2\u5355\u521B\u5EFA\u51B2\u7A81\uFF0C\u8BF7\u91CD\u8BD5", 409);
+        if (await tx.get("meme_orders", id2)) throw fail2("\u8BA2\u5355\u521B\u5EFA\u51B2\u7A81\uFF0C\u8BF7\u91CD\u8BD5", 409);
         const indexId = "index:" + accountId2, index = await tx.get("meme_orders", indexId) || { ids: [] };
-        await tx.set("meme_orders", id, row);
-        await tx.set("meme_orders", indexId, { ids: [id, ...index.ids].slice(0, 50) });
+        await tx.set("meme_orders", id2, row);
+        await tx.set("meme_orders", indexId, { ids: [id2, ...index.ids].slice(0, 50) });
       });
       return { ...publicOrder(row), payData: { signData, mode: "short_series_goods", paySig: hmac(env2.MEME_PAY_APP_KEY, "requestVirtualPayment&" + signData), signature: hmac(s.session_key, signData) } };
     },
-    async reconcile(uid, { id, code } = {}) {
+    async reconcile(uid, { id: id2, code } = {}) {
       guard(uid);
       if (!validUid(uid)) throw fail2("\u8BF7\u5148\u4F7F\u7528\u5FAE\u4FE1\u767B\u5F55", 401);
-      if (typeof id !== "string" || !/^M[0-9a-f]{30}$/.test(id)) throw fail2("\u8BA2\u5355\u4E0D\u5B58\u5728", 404);
-      const before = await store2.transaction((tx) => owned(tx, uid, id));
-      if (before.status === "credited") return notifyDelivery(uid, id);
+      if (typeof id2 !== "string" || !/^M[0-9a-f]{30}$/.test(id2)) throw fail2("\u8BA2\u5355\u4E0D\u5B58\u5728", 404);
+      const before = await store2.transaction((tx) => owned(tx, uid, id2));
+      if (before.status === "credited") return notifyDelivery(uid, id2);
       if (["refund_review", "refunded", "closed"].includes(before.status)) return publicOrder(before);
-      const s = await auth(uid, code), remote2 = await query(uid, id, s.session_key);
+      const s = await auth(uid, code), remote2 = await query(uid, id2, s.session_key);
       const paid = remote2.status === 2 || remote2.status === 4;
       if (paid) {
-        if (remote2.order_id !== id || remote2.order_fee !== before.priceFen || remote2.openid !== void 0 && remote2.openid !== uid || remote2.order_type !== void 0 && remote2.order_type !== 0 && remote2.order_type !== 7) throw fail2("\u5FAE\u4FE1\u652F\u4ED8\u8BA2\u5355\u4FE1\u606F\u4E0D\u4E00\u81F4\uFF0C\u8BF7\u8054\u7CFB\u4F5C\u8005\u6838\u5BF9", 502);
+        if (remote2.order_id !== id2 || remote2.order_fee !== before.priceFen || remote2.openid !== void 0 && remote2.openid !== uid || remote2.order_type !== void 0 && remote2.order_type !== 0 && remote2.order_type !== 7) throw fail2("\u5FAE\u4FE1\u652F\u4ED8\u8BA2\u5355\u4FE1\u606F\u4E0D\u4E00\u81F4\uFF0C\u8BF7\u8054\u7CFB\u4F5C\u8005\u6838\u5BF9", 502);
         if (typeof remote2.wx_order_id !== "string" || !remote2.wx_order_id || remote2.wx_order_id.length > 128) throw fail2("\u5FAE\u4FE1\u652F\u4ED8\u8BA2\u5355\u7F3A\u5C11\u5E73\u53F0\u4EA4\u6613\u53F7\uFF0C\u8BF7\u7A0D\u540E\u67E5\u8BE2", 502);
       }
       const reconciled = await store2.transaction(async (tx) => {
-        const row = await owned(tx, uid, id);
+        const row = await owned(tx, uid, id2);
         if (row.status === "credited" || row.status === "refund_review") return publicOrder(row);
         const updatedAt = now();
         if (!paid) {
@@ -408,7 +418,7 @@ function createPayments({ store: store2, env: env2 = process.env, fetcher = fetc
           row.providerStatus = Number.isSafeInteger(remote2.status) ? remote2.status : null;
           if (remote2.status === 5 || remote2.status === 8) row.status = "refunded";
           else if (remote2.status === 6) row.status = "closed";
-          await tx.set("meme_orders", id, row);
+          await tx.set("meme_orders", id2, row);
           return publicOrder(row);
         }
         row.providerStatus = remote2.status;
@@ -416,7 +426,7 @@ function createPayments({ store: store2, env: env2 = process.env, fetcher = fetc
         if (remote2.status === 4) row.deliveryNotifiedAt = now();
         return credit(tx, row, remote2.wx_order_id, "wx");
       });
-      return reconciled.status === "credited" ? notifyDelivery(uid, id) : reconciled;
+      return reconciled.status === "credited" ? notifyDelivery(uid, id2) : reconciled;
     },
     async callback(event = {}) {
       try {
@@ -496,11 +506,11 @@ function createPayments({ store: store2, env: env2 = process.env, fetcher = fetc
         return response(e.status || 503, { ErrCode: -1, ErrMsg: e.status ? e.message : "\u652F\u4ED8\u56DE\u8C03\u5904\u7406\u5931\u8D25\uFF0C\u8BF7\u91CD\u8BD5" });
       }
     },
-    async recordClientFailure(uid, { id, errorCode, errorMessage } = {}) {
+    async recordClientFailure(uid, { id: id2, errorCode, errorMessage } = {}) {
       return store2.transaction(async (tx) => {
-        const row = await owned(tx, uid, id);
+        const row = await owned(tx, uid, id2);
         row.clientFailure = { code: Number.isSafeInteger(errorCode) ? errorCode : null, message: String(errorMessage || "").slice(0, 200), at: now() };
-        await tx.set("meme_orders", id, row);
+        await tx.set("meme_orders", id2, row);
         return { recorded: true };
       });
     },
@@ -508,7 +518,7 @@ function createPayments({ store: store2, env: env2 = process.env, fetcher = fetc
       if (!validUid(uid)) throw fail2("\u8BF7\u5148\u4F7F\u7528\u5FAE\u4FE1\u767B\u5F55", 401);
       return (store2.readOnly ? store2.readOnly.bind(store2) : store2.transaction.bind(store2))(async (tx) => {
         const index = await tx.get("meme_orders", "index:" + paymentAccountId(uid));
-        const rows = await Promise.all((index?.ids || []).slice(0, 50).map((id) => owned(tx, uid, id)));
+        const rows = await Promise.all((index?.ids || []).slice(0, 50).map((id2) => owned(tx, uid, id2)));
         return rows.map(publicOrder);
       });
     }
@@ -590,7 +600,7 @@ function accountWechat(env2, fetcher = fetch) {
 }
 
 // cloudfunctions/meme-motion/service.mjs
-var import_node_crypto5 = require("node:crypto");
+var import_node_crypto6 = require("node:crypto");
 
 // server/motion/pricing.mjs
 var PRICE_VERSION = "2026-10-27";
@@ -614,28 +624,28 @@ function catalog() {
 }
 
 // cloudfunctions/meme-motion/usage.mjs
-var import_node_crypto3 = require("node:crypto");
+var import_node_crypto4 = require("node:crypto");
 var fail3 = (message, status = 409) => {
   throw Object.assign(Error(message), { status });
 };
 var integer = (value, min = Number.MIN_SAFE_INTEGER) => Number.isSafeInteger(value) && value >= min;
-var accountFor = (uid) => (0, import_node_crypto3.createHash)("sha256").update("wechat:" + uid).digest("hex");
+var accountFor = (uid) => (0, import_node_crypto4.createHash)("sha256").update("wechat:" + uid).digest("hex");
 function validateWallet(wallet, accountId2) {
   if (!wallet || wallet.accountId !== accountId2 || !integer(wallet.available) || !integer(wallet.frozen, 0) || !integer(wallet.spent, 0)) fail3("\u8D26\u6237\u70B9\u6570\u8BB0\u5F55\u5F02\u5E38\uFF0C\u8BF7\u8054\u7CFB\u4F5C\u8005");
 }
 function validateUsage(usage) {
   if (!usage || typeof usage.id !== "string" || !usage.id || !/^[a-f0-9]{64}$/.test(usage.accountId || "") || !integer(usage.points, 1) || !["held", "spent", "refunded", "free", "exempt"].includes(usage.state)) fail3("\u4EFB\u52A1\u6263\u8D39\u8BB0\u5F55\u5F02\u5E38\uFF0C\u8BF7\u8054\u7CFB\u4F5C\u8005");
 }
-function reserveUsage(state, { id, uid, points, enabled, exempt: exempt2 = false, now = Date.now() }) {
-  if (typeof id !== "string" || !id || typeof uid !== "string" || !uid || uid.startsWith("web:") || !integer(points, 1) || !integer(now, 0)) fail3("\u4EFB\u52A1\u6263\u8D39\u53C2\u6570\u65E0\u6548", 422);
+function reserveUsage(state, { id: id2, uid, points, enabled, exempt = false, now = Date.now() }) {
+  if (typeof id2 !== "string" || !id2 || typeof uid !== "string" || !uid || uid.startsWith("web:") || !integer(points, 1) || !integer(now, 0)) fail3("\u4EFB\u52A1\u6263\u8D39\u53C2\u6570\u65E0\u6548", 422);
   const accountId2 = accountFor(uid);
   if (state.usage) {
     validateUsage(state.usage);
-    if (state.usage.id !== id || state.usage.accountId !== accountId2 || state.usage.points !== points) fail3("\u4EFB\u52A1\u6263\u8D39\u53C2\u6570\u4E0E\u539F\u8BB0\u5F55\u4E0D\u4E00\u81F4");
+    if (state.usage.id !== id2 || state.usage.accountId !== accountId2 || state.usage.points !== points) fail3("\u4EFB\u52A1\u6263\u8D39\u53C2\u6570\u4E0E\u539F\u8BB0\u5F55\u4E0D\u4E00\u81F4");
     if (!["free", "exempt"].includes(state.usage.state)) validateWallet(state.wallet, accountId2);
     return state;
   }
-  const usage = { id, accountId: accountId2, points, state: exempt2 ? "exempt" : enabled === true ? "held" : "free", createdAt: now };
+  const usage = { id: id2, accountId: accountId2, points, state: exempt ? "exempt" : enabled === true ? "held" : "free", createdAt: now };
   if (usage.state !== "held") return { ...state, usage };
   validateWallet(state.wallet, accountId2);
   const wallet = { ...state.wallet };
@@ -669,7 +679,7 @@ function settleUsage(state, { success, now = Date.now() }) {
 }
 
 // server/motion/provider.mjs
-var import_node_crypto4 = require("node:crypto");
+var import_node_crypto5 = require("node:crypto");
 var MODELS = { draw: "wan2.6-t2i", edit: "wan2.6-image", describe: "wan2.6-i2v-flash", imitate: "wan2.2-animate-move" };
 function buildRequest({ mode, prompt = "", image, reference }) {
   if (!MODELS[mode]) throw Error("\u8BF7\u9009\u62E9\u5199\u52A8\u4F5C\u6216\u5B66\u52A8\u4F5C");
@@ -711,7 +721,7 @@ function createProvider({ key, base = "https://dashscope.aliyuncs.com", fetcher 
       if (!ext) throw Error("\u7D20\u6750\u683C\u5F0F\u4E0D\u652F\u6301");
       const p = (await api("/uploads?action=getPolicy&model=" + encodeURIComponent(model))).data;
       remote(p.upload_host);
-      const filename = (0, import_node_crypto4.randomUUID)() + "." + ext, keyname = p.upload_dir + "/" + filename, f = new FormData();
+      const filename = (0, import_node_crypto5.randomUUID)() + "." + ext, keyname = p.upload_dir + "/" + filename, f = new FormData();
       for (const [k, v] of Object.entries({ OSSAccessKeyId: p.oss_access_key_id, Signature: p.signature, policy: p.policy, "x-oss-object-acl": p.x_oss_object_acl, "x-oss-forbid-overwrite": p.x_oss_forbid_overwrite, key: keyname, success_action_status: "200" })) {
         if (typeof v !== "string") throw Error("\u4E34\u65F6\u4E0A\u4F20\u51ED\u8BC1\u65E0\u6548");
         f.append(k, v);
@@ -736,8 +746,8 @@ function createProvider({ key, base = "https://dashscope.aliyuncs.com", fetcher 
       if (!d.output?.task_id) throw Error("\u4EFB\u52A1\u63D0\u4EA4\u7ED3\u679C\u672A\u786E\u8BA4");
       return d.output.task_id;
     },
-    async query(id) {
-      return parseTask(await api("/tasks/" + encodeURIComponent(id)));
+    async query(id2) {
+      return parseTask(await api("/tasks/" + encodeURIComponent(id2)));
     },
     async download(url) {
       return download(url, "video/", 80 * 1024 * 1024);
@@ -766,24 +776,25 @@ function createProvider({ key, base = "https://dashscope.aliyuncs.com", fetcher 
 }
 
 // cloudfunctions/meme-motion/service.mjs
-var hash2 = (s) => (0, import_node_crypto5.createHash)("sha256").update(s).digest("hex");
+var hash2 = (s) => (0, import_node_crypto6.createHash)("sha256").update(s).digest("hex");
 var uuid = (s) => /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(s || "");
 function createMotion({ store: store2, storage: storage2, provider, validate, verifyInput, inspectResult, inspectImage, budget = 3, maxJobs = 4, budgetEnforced = true, activeScope = "global", billingEnabled: billingEnabled2 = false, billingExempt = () => false, now = Date.now }) {
+  const charging = (uid) => typeof billingEnabled2 === "function" ? billingEnabled2(uid) : billingEnabled2;
   const activeKey = (uid) => activeScope === "user" ? "active_" + hash2(uid) : "active";
   const publicRow = (r) => ({ id: r.id, mode: r.mode, status: r.status, error: r.error, created: r.created });
-  async function owned(uid, id) {
-    if (!uuid(id)) throw Object.assign(Error("\u4EFB\u52A1\u4E0D\u5B58\u5728"), { status: 404 });
-    const r = await store2.read(id);
+  async function owned(uid, id2) {
+    if (!uuid(id2)) throw Object.assign(Error("\u4EFB\u52A1\u4E0D\u5B58\u5728"), { status: 404 });
+    const r = await store2.read(id2);
     if (!r || r.uid !== uid) throw Object.assign(Error("\u4EFB\u52A1\u4E0D\u5B58\u5728"), { status: 404 });
     if (r.expires < now()) throw Object.assign(Error("\u4EFB\u52A1\u5DF2\u8FC7\u671F\uFF0C\u8BF7\u91CD\u65B0\u5236\u4F5C"), { status: 410 });
     return r;
   }
-  async function finish(id, changes) {
-    return store2.atomic(id, (s) => {
+  async function finish(id2, changes) {
+    return store2.atomic(id2, (s) => {
       Object.assign(s.row, changes);
       if (s.usage && ["success", "failed"].includes(s.row.status)) Object.assign(s, settleUsage(s, { success: s.row.status === "success", now: now() }));
       const key = activeKey(s.row.uid);
-      if (["success", "failed"].includes(s.row.status) && s.quota[key] === id) delete s.quota[key];
+      if (["success", "failed"].includes(s.row.status) && s.quota[key] === id2) delete s.quota[key];
       return publicRow(s.row);
     });
   }
@@ -801,26 +812,26 @@ function createMotion({ store: store2, storage: storage2, provider, validate, ve
   }
   return {
     reconcile,
-    async info() {
+    async info(uid) {
       const q = await store2.info();
-      return { billingEnabled: billingEnabled2, budgetEnforced, available: !budgetEnforced || Number.isFinite(budget) && budget > 0 && q.count < maxJobs && q.cost + 0.2 <= budget + 1e-6, remaining: budgetEnforced ? Math.max(0, Math.min(maxJobs - q.count, Math.floor((budget - q.cost + 1e-6) / 0.2))) : null, models: MODELS, pricing: catalog() };
+      return { billingEnabled: charging(uid) && !billingExempt(uid), budgetEnforced, available: !budgetEnforced || Number.isFinite(budget) && budget > 0 && q.count < maxJobs && q.cost + 0.2 <= budget + 1e-6, remaining: budgetEnforced ? Math.max(0, Math.min(maxJobs - q.count, Math.floor((budget - q.cost + 1e-6) / 0.2))) : null, models: MODELS, pricing: catalog() };
     },
-    async prepare(uid, { id, mode }) {
-      if (!uuid(id) || !Object.hasOwn(MODELS, mode)) throw Error("\u5236\u4F5C\u53C2\u6570\u65E0\u6548");
-      await store2.atomic(id, (s) => {
+    async prepare(uid, { id: id2, mode }) {
+      if (!uuid(id2) || !Object.hasOwn(MODELS, mode)) throw Error("\u5236\u4F5C\u53C2\u6570\u65E0\u6548");
+      await store2.atomic(id2, (s) => {
         if (s.row) {
           if (s.row.uid !== uid) throw Error("\u4EFB\u52A1\u4E0D\u5B58\u5728");
           if (s.row.mode !== mode) throw Error("\u4EFB\u52A1\u5185\u5BB9\u5DF2\u53D8\u5316");
           return;
         }
-        s.row = { id, uid, mode, status: "draft", created: now(), expires: now() + 24 * 36e5 };
+        s.row = { id: id2, uid, mode, status: "draft", created: now(), expires: now() + 24 * 36e5 };
       });
-      const row = await owned(uid, id);
+      const row = await owned(uid, id2);
       if (row.status !== "draft") return publicRow(row);
-      const prefix = `meme-motion/${hash2(uid).slice(0, 24)}/${id}`;
+      const prefix = `meme-motion/${hash2(uid).slice(0, 24)}/${id2}`;
       const image = mode === "draw" ? void 0 : await storage2.ticket(prefix + "/input.jpg");
       const reference = mode === "imitate" ? await storage2.ticket(prefix + "/reference.mp4") : void 0;
-      await store2.atomic(id, (s) => {
+      await store2.atomic(id2, (s) => {
         if (s.row.status === "draft") {
           if (image) s.row.imageFile = image.fileId;
           if (reference) s.row.referenceFile = reference.fileId;
@@ -830,7 +841,7 @@ function createMotion({ store: store2, storage: storage2, provider, validate, ve
       return { ...publicRow(row), uploads: { ...image ? { image } : {}, ...reference ? { reference } : {} } };
     },
     async create(uid, data) {
-      if (billingEnabled2 && (typeof uid !== "string" || !uid || uid.startsWith("web:"))) throw Object.assign(Error("\u8BF7\u5148\u4F7F\u7528\u5FAE\u4FE1\u767B\u5F55\u540E\u5236\u4F5C"), { status: 401 });
+      if (charging(uid) && (typeof uid !== "string" || !uid || uid.startsWith("web:"))) throw Object.assign(Error("\u8BF7\u5148\u4F7F\u7528\u5FAE\u4FE1\u767B\u5F55\u540E\u5236\u4F5C"), { status: 401 });
       const row = await owned(uid, data.id);
       const prompt = typeof data.prompt === "string" ? data.prompt.trim() : "";
       if (prompt.length > 800 || row.mode !== "imitate" && !prompt) throw Error("\u8BF7\u7528800\u5B57\u4EE5\u5185\u63CF\u8FF0\u521B\u610F");
@@ -843,8 +854,8 @@ function createMotion({ store: store2, storage: storage2, provider, validate, ve
       const imageBytes = row.mode === "draw" ? void 0 : await storage2.read(row.imageFile, 1024 * 1024);
       await verifyInput(uid, { ...data, prompt, imageBytes });
       const input = await validate({ mode: row.mode, prompt, imageBytes, ...row.mode === "imitate" ? { referenceBytes: await storage2.read(row.referenceFile, 20 * 1024 * 1024) } : {} });
-      const priceFen = quote(row.mode, input.duration).priceFen, exempt2 = billingExempt(uid) === true;
-      if (billingEnabled2 && !exempt2 && (data.acceptedPriceFen !== priceFen || data.priceVersion !== PRICE_VERSION)) throw Object.assign(Error("\u4EF7\u683C\u5DF2\u66F4\u65B0\uFF0C\u8BF7\u91CD\u65B0\u786E\u8BA4\u672C\u6B21\u70B9\u6570"), { status: 422 });
+      const priceFen = quote(row.mode, input.duration).priceFen, exempt = billingExempt(uid) === true;
+      if (charging(uid) && !exempt && (data.acceptedPriceFen !== priceFen || data.priceVersion !== PRICE_VERSION)) throw Object.assign(Error("\u4EF7\u683C\u5DF2\u66F4\u65B0\uFF0C\u8BF7\u91CD\u65B0\u786E\u8BA4\u672C\u6B21\u70B9\u6570"), { status: 422 });
       const claimed = await store2.atomic(row.id, (s) => {
         if (s.row.status !== "draft") {
           if (s.row.promptHash !== hash2(prompt)) throw Error("\u4EFB\u52A1\u5185\u5BB9\u5DF2\u53D8\u5316");
@@ -852,7 +863,7 @@ function createMotion({ store: store2, storage: storage2, provider, validate, ve
         }
         if (s.quota[activeKey(uid)]) throw Error("\u5DF2\u6709\u52A8\u4F5C\u4EFB\u52A1\u8FDB\u884C\u4E2D\uFF0C\u8BF7\u5148\u67E5\u8BE2\u539F\u4EFB\u52A1");
         if (!Number.isFinite(input.cost) || input.cost < 0 || budgetEnforced && (!Number.isFinite(budget) || !Number.isSafeInteger(maxJobs) || maxJobs < 1 || s.quota.count >= maxJobs || s.quota.cost + input.cost > budget + 1e-6)) throw Error("\u514D\u8D39\u4F53\u9A8C\u989D\u5EA6\u6682\u65F6\u7528\u5B8C\uFF0C\u8BF7\u7A0D\u540E\u518D\u6765");
-        if (billingEnabled2) Object.assign(s, reserveUsage(s, { id: row.id, uid, points: priceFen, enabled: true, exempt: exempt2, now: now() }));
+        if (charging(uid)) Object.assign(s, reserveUsage(s, { id: row.id, uid, points: priceFen, enabled: true, exempt, now: now() }));
         s.quota.count++;
         s.quota.cost += input.cost;
         s.quota[activeKey(uid)] = row.id;
@@ -886,25 +897,25 @@ function createMotion({ store: store2, storage: storage2, provider, validate, ve
       }
       return publicRow(await owned(uid, row.id));
     },
-    async query(uid, id) {
-      const row = await owned(uid, id);
-      if (row.taskId && !["success", "failed"].includes(row.status)) return finish(id, await provider.query(row.taskId));
-      if (row.status === "submitting" && now() - row.submitted > 12e4) return finish(id, { status: "unknown", error: "\u63D0\u4EA4\u7ED3\u679C\u5F85\u786E\u8BA4\uFF0C\u8BF7\u8054\u7CFB\u5F00\u53D1\u8005\u67E5\u8BE2\u539F\u4EFB\u52A1\uFF0C\u6682\u52FF\u91CD\u590D\u751F\u6210" });
+    async query(uid, id2) {
+      const row = await owned(uid, id2);
+      if (row.taskId && !["success", "failed"].includes(row.status)) return finish(id2, await provider.query(row.taskId));
+      if (row.status === "submitting" && now() - row.submitted > 12e4) return finish(id2, { status: "unknown", error: "\u63D0\u4EA4\u7ED3\u679C\u5F85\u786E\u8BA4\uFF0C\u8BF7\u8054\u7CFB\u5F00\u53D1\u8005\u67E5\u8BE2\u539F\u4EFB\u52A1\uFF0C\u6682\u52FF\u91CD\u590D\u751F\u6210" });
       return publicRow(row);
     },
-    async result(uid, id) {
-      let row = await owned(uid, id);
+    async result(uid, id2) {
+      let row = await owned(uid, id2);
       const image = ["draw", "edit"].includes(row.mode);
       if (row.status !== "success" || !(image ? row.imageUrl : row.videoUrl)) throw Error("\u4F5C\u54C1\u5C1A\u672A\u5B8C\u6210\uFF0C\u8BF7\u7EE7\u7EED\u67E5\u8BE2");
       if (!row.resultFile) {
         const bytes = image ? await provider.downloadImage(row.imageUrl) : await provider.download(row.videoUrl);
         const info = image ? await inspectImage(bytes) : await inspectResult(bytes);
         const resultFile = await storage2.save(row.prefix + (image ? "/result.png" : "/result.mp4"), bytes);
-        await store2.atomic(id, (s) => {
+        await store2.atomic(id2, (s) => {
           s.row.resultFile = resultFile;
           s.row.resultInfo = info;
         });
-        row = await owned(uid, id);
+        row = await owned(uid, id2);
       }
       return { ...row.resultInfo, kind: image ? "image" : "video", url: await storage2.url(row.resultFile) };
     }
@@ -912,12 +923,12 @@ function createMotion({ store: store2, storage: storage2, provider, validate, ve
 }
 
 // cloudfunctions/meme-motion/web.mjs
-var import_node_crypto6 = require("node:crypto");
+var import_node_crypto7 = require("node:crypto");
 var import_security_core4 = __toESM(require_security_core(), 1);
-var digest = (x) => (0, import_node_crypto6.createHash)("sha256").update(x).digest("hex");
+var digest = (x) => (0, import_node_crypto7.createHash)("sha256").update(x).digest("hex");
 var equal = (a, b) => {
   const x = Buffer.from(a), y = Buffer.from(b);
-  return x.length === y.length && (0, import_node_crypto6.timingSafeEqual)(x, y);
+  return x.length === y.length && (0, import_node_crypto7.timingSafeEqual)(x, y);
 };
 var fail4 = (message, status) => {
   throw Object.assign(Error(message), { status });
@@ -945,7 +956,7 @@ function createWebMotionHandler({ service: service2, env: env2, resolveAccount }
       if (op === "web-login") {
         if (!invite || !equal(token, invite)) fail4("\u9080\u8BF7\u7801\u4E0D\u6B63\u786E\uFF0C\u8BF7\u68C0\u67E5\u5B8C\u6574\u6D4B\u8BD5\u94FE\u63A5", 401);
         if (!/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(data.clientId || "")) fail4("\u6D4F\u89C8\u5668\u6807\u8BC6\u65E0\u6548\uFF0C\u8BF7\u91CD\u65B0\u6253\u5F00\u9875\u9762", 400);
-        const uid = "web:" + (0, import_node_crypto6.createHmac)("sha256", env2.MEME_SECURITY_SECRET).update(invite + ":" + data.clientId).digest("hex").slice(0, 40);
+        const uid = "web:" + (0, import_node_crypto7.createHmac)("sha256", env2.MEME_SECURITY_SECRET).update(invite + ":" + data.clientId).digest("hex").slice(0, 40);
         const session2 = import_security_core4.default.sign({ kind: "web-motion-session", uid, invite: digest(invite), exp: Date.now() + 30 * 24 * 36e5 }, env2);
         return json(200, { session: session2 });
       }
@@ -960,7 +971,7 @@ function createWebMotionHandler({ service: service2, env: env2, resolveAccount }
         session = import_security_core4.default.verify(token, env2, "web-motion-session");
         if (session.invite !== digest(invite) || !session.uid?.startsWith("web:")) fail4("\u6D4B\u8BD5\u767B\u5F55\u5DF2\u5931\u6548\uFF0C\u8BF7\u91CD\u65B0\u6253\u5F00\u9080\u8BF7\u94FE\u63A5", 401);
       }
-      if (op === "web-config") return json(200, { ...await service2.info(), configured: true });
+      if (op === "web-config") return json(200, { ...await service2.info(session.uid), configured: true });
       if (op === "web-prepare") return json(200, await service2.prepare(session.uid, data));
       if (op === "web-create") return json(200, await service2.create(session.uid, data));
       if (op === "web-query") return json(200, await service2.query(session.uid, data.id));
@@ -983,7 +994,7 @@ async function retryTransaction(operation, sleep = (ms) => new Promise((resolve)
 }
 
 // cloudfunctions/meme-motion/store.mjs
-var import_node_crypto7 = require("node:crypto");
+var import_node_crypto8 = require("node:crypto");
 var import_node_sdk = __toESM(require("@cloudbase/node-sdk"), 1);
 function cloudStore(env2 = process.env) {
   const app = import_node_sdk.default.init({ env: env2.TCB_ENV || env2.CLOUDBASE_ENV_ID }), db = app.database();
@@ -1000,45 +1011,45 @@ function cloudStore(env2 = process.env) {
     throw e;
   });
   const runTransaction = (fn) => retryTransaction(() => db.runTransaction(fn));
-  const get = async (c, id) => (await c.where({ _id: id }).get()).data[0];
+  const get = async (c, id2) => (await c.where({ _id: id2 }).get()).data[0];
   const accountCollections = /* @__PURE__ */ new Set(["meme_accounts", "meme_wallets", "meme_orders", "meme_wallet_events", "meme_login_challenges", "meme_login_limits", "meme_account_sessions"]);
   const store2 = {
     async readOnly(fn) {
       await ready();
-      return fn({ async get(c, id) {
+      return fn({ async get(c, id2) {
         if (!accountCollections.has(c)) throw Error("\u8D26\u6237\u96C6\u5408\u65E0\u6548");
-        return get(db.collection(c), id);
+        return get(db.collection(c), id2);
       } });
     },
     async transaction(fn) {
       await ready();
       return runTransaction(async (tx) => fn({
-        async get(c, id) {
+        async get(c, id2) {
           if (!accountCollections.has(c)) throw Error("\u8D26\u6237\u96C6\u5408\u65E0\u6548");
-          return get(tx.collection(c), id);
+          return get(tx.collection(c), id2);
         },
-        async set(c, id, row) {
+        async set(c, id2, row) {
           if (!accountCollections.has(c)) throw Error("\u8D26\u6237\u96C6\u5408\u65E0\u6548");
           const { _id, ...safe } = row;
-          return tx.collection(c).doc(id).set(safe);
+          return tx.collection(c).doc(id2).set(safe);
         }
       }));
     },
-    async read(id) {
+    async read(id2) {
       await ready();
-      return get(db.collection("meme_motion_jobs"), id);
+      return get(db.collection("meme_motion_jobs"), id2);
     },
     async info() {
       await ready();
       return await get(db.collection("meme_motion_quota"), "global") || base();
     },
-    async atomic(id, fn) {
+    async atomic(id2, fn) {
       await ready();
       return runTransaction(async (tx) => {
         const jobs = tx.collection("meme_motion_jobs"), quotas = tx.collection("meme_motion_quota");
-        const row = await get(jobs, id), accountId2 = row?.uid ? (0, import_node_crypto7.createHash)("sha256").update("wechat:" + row.uid).digest("hex") : null;
+        const row = await get(jobs, id2), accountId2 = row?.uid ? (0, import_node_crypto8.createHash)("sha256").update("wechat:" + row.uid).digest("hex") : null;
         const wallets = tx.collection("meme_wallets"), events = tx.collection("meme_wallet_events");
-        const wallet = accountId2 ? await get(wallets, accountId2) : void 0, usage = await get(events, "usage:" + id);
+        const wallet = accountId2 ? await get(wallets, accountId2) : void 0, usage = await get(events, "usage:" + id2);
         const data = { row, quota: await get(quotas, "global") || base(), wallet, usage };
         const result = fn(data);
         if (data.wallet && data.wallet !== wallet) {
@@ -1047,13 +1058,13 @@ function cloudStore(env2 = process.env) {
           await wallets.doc(accountId2).set(safe);
         }
         if (data.usage && data.usage !== usage) {
-          if (data.usage.id !== id || data.usage.accountId !== accountId2) throw Error("\u4EFB\u52A1\u6263\u8D39\u5F52\u5C5E\u5F02\u5E38");
+          if (data.usage.id !== id2 || data.usage.accountId !== accountId2) throw Error("\u4EFB\u52A1\u6263\u8D39\u5F52\u5C5E\u5F02\u5E38");
           const { _id: _id2, ...safe } = data.usage;
-          await events.doc("usage:" + id).set(safe);
+          await events.doc("usage:" + id2).set(safe);
         }
         if (data.row) {
           const { _id: _id2, ...row2 } = data.row;
-          await jobs.doc(id).set(row2);
+          await jobs.doc(id2).set(row2);
         }
         const { _id, ...quota } = data.quota;
         await quotas.doc("global").set(quota);
@@ -1183,11 +1194,11 @@ var env = process.env;
 var { store, storage } = cloudStore(env);
 var wechat = accountWechat(env);
 var payments = createPayments({ store, env, wxSession: (code) => wechat.session(code), accessToken: () => wechat.token() });
-var billingEnabled = env.MEME_BILLING_ENABLED === "true" && payments.catalog().enabled;
-var accounts = createAccounts({ store, env, billingEnabled });
+var policy = billingPolicy(env, payments.catalog().enabled);
+var billingEnabled = policy.enabled;
+var accounts = createAccounts({ store, env, billingEnabled, billingExempt: policy.exempt });
 var accountHandler = createAccountHandler({ accounts, payments, env });
-var exempt = new Set((env.MEME_DEVELOPER_ACCOUNT_IDS || "").split(",").map((x) => x.trim()).filter(Boolean));
-var shared = { store, storage, billingEnabled, billingExempt: (uid) => exempt.has(accountId(uid)), provider: createProvider({ key: env.DASHSCOPE_API_KEY, base: env.DASHSCOPE_BASE_URL || "https://dashscope.aliyuncs.com" }), budgetEnforced: env.MOTION_TEST_UNLIMITED !== "true", budget: Number(env.MOTION_BUDGET_CNY || 3), maxJobs: Number(env.MOTION_MAX_JOBS || 4), validate: validateMedia, inspectResult: videoInfo, inspectImage: imageInfo };
+var shared = { store, storage, billingEnabled, billingExempt: policy.exempt, provider: createProvider({ key: env.DASHSCOPE_API_KEY, base: env.DASHSCOPE_BASE_URL || "https://dashscope.aliyuncs.com" }), budgetEnforced: env.MOTION_TEST_UNLIMITED !== "true", budget: Number(env.MOTION_BUDGET_CNY || 3), maxJobs: Number(env.MOTION_MAX_JOBS || 4), validate: validateMedia, inspectResult: videoInfo, inspectImage: imageInfo };
 var webService = createMotion({ ...shared, activeScope: "user", verifyInput: async (uid) => {
   if (!uid) throw Error("\u7F51\u9875\u767B\u5F55\u65E0\u6548");
 } });
@@ -1223,7 +1234,7 @@ async function main(event) {
     const data = JSON.parse(raw);
     if (op === "config") {
       const account = await accounts.me(session.uid);
-      return json(200, { ...await service.info(), developer: account.developer, billingEnabled: billingEnabled && !account.developer });
+      return json(200, { ...await service.info(session.uid), developer: account.developer, billingEnabled: billingEnabled(session.uid) && !policy.exempt(session.uid) });
     }
     if (op === "prepare") return json(200, await service.prepare(session.uid, data));
     if (op === "create") return json(200, await service.create(session.uid, data));

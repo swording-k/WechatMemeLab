@@ -191,8 +191,17 @@
 ### 公开仓库主代码与README（2026-10-29）
 
 - 用户要求把「主目录」更新到最新并让 README 反映最新状态（用户口述 0.4.15，实际核对最新上传版本为 **0.4.5**）。已将 `codex/ai-motion-studio` 的 32 个提交快进合入 `main`，此前 main 停在网页 0.1.x；小程序 0.4.5、AI 创作、账户/支付源码与微信内容安全代码现都在主分支，历史 `codex/wechat-miniprogram` 分支保留。
-- 公开 GitHub Pages 只构建照片整活、视频表情和反馈：`vite.config.ts` 的生产入口不再包含 `motion.html`/`account.html`，`mode-nav` 移除 AI/账户链接，避免公开站出现需要邀请码的 AI 页或未验收的账户/支付入口。网页 AI 内测源码保留在 `src/motion`、`src/account`，仍按 docs/2026-10-27-公网AI朋友测试版.md 用独立 CloudBase 地址与邀请码单独部署。
+- 首次公开更新时只构建照片整活、视频表情和反馈，AI/账户页暂不构建。用户随后指出网页版缺少 AI 创作，当晚已加回并完成跨域配置，见下节「网页 AI 创作上线」；上面这段只描述首次更新的临时状态。
 - README 重写并加入 `docs/images/miniprogram-code.jpg` 小程序码（与用户提供图片同源）。小程序 0.4.5 已提交审核、结果未公布，README 明确「以微信后台发布状态及体验权限为准」，不宣称已公开上线可搜。
 - 构建配置：`pages.yml` 增加 `npm ci --prefix cloudfunctions/meme-motion`（测试会导入云函数依赖，缺失时 1 项失败）并安装 `ffmpeg`（3 项 MP4 解析测试需要；GitHub runner 未预装）。本地同样需要这两项才能跑满 209 项测试。修改共享效果后必须在仓库根目录运行 `npm run build:miniprogram` 重新生成 `miniprogram/core/engine.js`，禁止提交含本机绝对路径的构建注释（此前某临时工作树产物出现过该问题）。
-- 本次已实际推送 `github/main` 并触发 GitHub Pages 部署成功（run 40850427812）；线上导航只有照片/视频，`motion.html`、`account.html` 均 404，二维码图片 200。
+- 首次更新已推送 `github/main` 并部署成功（run 40850427812），当时线上导航只有照片/视频；当晚再次部署（run 40855066020）后为 4 个入口，`motion.html`、`account.html` 均返回 200。二维码图片 200。
 - 详情与验证证据见 docs/2026-10-29-公开仓库与README更新.md。
+
+### 网页 AI 创作上线（2026-10-29 晚）
+
+- 用户要求网页版跟进最新功能（AI 创作），不要把网页和小程序做成两套状态。已把 `motion.html`、`account.html` 加回生产构建与四入口导航；网页 AI 与小程序共用同一 CloudBase 函数，需微信账户登录或朋友内测邀请码，未登录只显示登录面板。
+- 生产构建默认连现有 CloudBase 函数（`src/motion/main.ts` 的 PROD 分支），本地开发仍走 `/api/motion` 回环后端；可用公开的 `VITE_MOTION_CLOUD_ENDPOINT` 覆盖。端点、函数名、AppID 可公开，模型 Key/邀请码/AppSecret 仍只在云端或忽略文件。
+- 免费 CloudBase 套餐无法通过 `tcb cors add` 新增安全域名（`CreateAuthDomain` 失败），因此：云端函数 `MEME_WEB_ORIGINS` 增加 `https://swording-k.github.io`（用 `tcb config pull` → 修改 → `tcb config update fn --yes`，未改 timeout/memory/runtime 与其他变量）；`entry.mjs` 自行响应 OPTIONS 预检（允许来源 204、其他 403），重新 `npm run build:motion-cloud` 后用 `tcb fn code update` 只更新代码；COS 桶 CORS 用 COS SDK `putBucketCors` 追加 Pages 来源，保留原规则。
+- 已验证：209 项测试、5 个 HTML 构建；函数 OPTIONS 204/403、邀请登录 200、未登录 account-start 401 且带 CORS 头；COS OPTIONS 200 与 403；线上邀请码进入后显示“免费内测 · 当前不限制生成次数”，账户页能取 8 位登录码，浏览器从 Pages 来源签名 PUT 上传 200，390px 无横向溢出。未调用付费模型。
+- 边界：小程序审核通过前普通访客无法完成微信登录，公开可用人群有限；网页 AI 不做微信内容安全检测，只依赖供应商过滤；支付与计费仍关闭。
+- 详情与证据见 docs/2026-10-29-网页AI创作上线.md。

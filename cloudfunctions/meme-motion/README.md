@@ -20,8 +20,12 @@ HTTP路径/meme-motion-api；health为只读公开探针，config/prepare/create
 
 内测取消额度限制：仅由服务端环境变量MOTION_TEST_UNLIMITED=true开启；同时跳过累计金额与次数门槛，config返回budgetEnforced=false、remaining=null。缺省保持限制，不能由请求参数开启。历史cost/count仅继续记录调用估算，不冻结模型账户余额，不作为产品钱包。身份校验、素材检测、任务归属与幂等/进行中任务互斥保持有效。
 
-## 网页朋友内测
+## 网页入口
 
-服务端设置 `MEME_WEB_INVITE_CODE`（至少24位随机值）和 `MEME_WEB_ORIGINS`（精确Origin逗号分隔）后启用 `web-login/config/prepare/create/query/result` 操作，均为POST。邀请登录签发专用Web会话，不接受微信会话替代；原微信入口保持原检测凭证校验。Web用浏览器身份隔离在途任务并复用同一持久任务服务，不把邀请登录包装为正式账户。没有邀请配置时关闭Web入口。
+服务端设置 `MEME_WEB_INVITE_CODE`（至少24位随机值）和 `MEME_WEB_ORIGINS`（精确Origin逗号分隔，例如 `https://swording-k.github.io`）后启用 `web-*` 操作，均为POST。邀请登录签发专用Web会话；正式账户登录使用 `account-session`（`resolveAccount`），网页与小程序共用同一账户。没有邀请配置时关闭邀请入口，但正式账户会话仍可用。
 
-网页构建仅设置公开的 `VITE_MOTION_CLOUD_ENDPOINT`，邀请码通过私有部署生成的同目录 `try-<邀请码>.html` 入口读取，不能把模型Key放入任何VITE变量。首次CloudBase确认访问会丢掉片段，故发布必须保留路径入口。实际发布及回归证据见 `docs/2026-10-27-公网AI朋友测试版.md`。
+免费CloudBase套餐无法通过`tcb cors add`新增安全域名（`CreateAuthDomain`返回“当前套餐无法执行此操作”），因此函数入口自行处理浏览器`OPTIONS`预检：允许的来源返回204及CORS响应头，其他来源返回403。新增网页域名时必须同步更新`MEME_WEB_ORIGINS`，否则实际请求也会被403。
+
+签名PUT直传使用COS。COS桶CORS必须包含网页来源，否则预检403、上传失败；可用COS SDK的`getBucketCors`/`putBucketCors`读取现有规则后追加，保留其他规则。本次已加入`https://swording-k.github.io`。小程序request需允许函数域名与现有COS存储域名；uploadFile/downloadFile也配置相同COS域名。
+
+网页生产构建默认连接本函数（`src/motion/main.ts`的PROD分支），本地开发仍用`/api/motion`回环代理；可用公开的`VITE_MOTION_CLOUD_ENDPOINT`覆盖，不能把模型Key放入任何VITE变量。实际发布与回归证据见 `docs/2026-10-29-网页AI创作上线.md`。

@@ -41,7 +41,7 @@ AI 链路为「一句话生图 → 自然语言改图 → 生成约 2 秒动作 
 
 ## 本地运行和验证
 
-需要 Node.js 22.12+、已安装的 Chrome。
+需要 Node.js 22.12+、已安装的 Chrome；3 项 MP4 解析测试还需要 `ffmpeg`（GitHub Actions 会安装）。
 
 ```sh
 npm ci

@@ -9,9 +9,15 @@
   <text class="note" wx:if="{{free && !developer}}">当前所有创作功能免费开放，无需充值。</text>
  </view>
  <view class="card" wx:else><text class="note">{{loading ? '正在使用微信自动登录…' : '微信账户未连接，请点击下方重新连接'}}</text></view>
+ <view class="card" wx:if="{{account}}">
+  <view class="section-title">登录网页版</view>
+  <text class="note">在网页版获取 8 位登录码后填在这里，确认后网页会登录你的账户。</text>
+  <input type="number" maxlength="8" value="{{loginCode}}" bindinput="codeInput" disabled="{{busy}}" placeholder="输入网页版登录码" aria-label="网页版登录码" />
+  <button class="product" bindtap="confirmLogin" disabled="{{busy}}">确认登录网页版</button>
+ </view>
+ <view class="card" wx:if="{{notice}}"><text class="message">{{notice}}</text></view>
  <view class="card" wx:if="{{!free && payments.enabled}}">
   <view class="section-title">充值创作点</view><text class="note" wx:if="{{queryError}}">{{queryError}}；请查询原订单，勿重复付款。</text>
-  <text class="message" wx:if="{{notice}}">{{notice}}</text>
   <text class="note" wx:if="{{lastOrder}}">订单 {{lastOrder.id}} · {{lastOrder.statusText}}</text>
   <text class="note" wx:if="{{!payments.enabled}}">当前账户尚未开放充值验收，请向开发者提供上方账户编号核对。</text>
   <block wx:else><text class="note">1元 = 100创作点。输入整数金额，一次完成付款。</text><view class="amount-options"><button wx:for="{{amountPresets}}" wx:key="*this" data-amount="{{item}}" bindtap="selectAmount" disabled="{{busy}}">{{item}}元</button></view><input type="number" maxlength="3" value="{{amount}}" bindinput="amountInput" disabled="{{busy}}" placeholder="自定义金额（1至500元）" aria-label="充值金额（元）"/><text class="note">充值 {{amount || 0}} 元，到账 {{topupPoints}} 点</text><button wx:for="{{payments.products}}" wx:key="id" class="product" data-id="{{item.id}}" bindtap="purchase" disabled="{{busy}}">确认充值 {{amount || 0}} 元</button></block>

@@ -16,7 +16,7 @@
   <button class="product" bindtap="confirmLogin" disabled="{{busy}}">确认登录网页版</button>
  </view>
  <view class="card" wx:if="{{notice}}"><text class="message">{{notice}}</text></view>
- <view class="card" wx:if="{{!free && payments.enabled}}">
+ <view class="card" wx:if="{{payments.enabled}}">
   <view class="section-title">充值创作点</view><text class="note" wx:if="{{queryError}}">{{queryError}}；请查询原订单，勿重复付款。</text>
   <text class="note" wx:if="{{lastOrder}}">订单 {{lastOrder.id}} · {{lastOrder.statusText}}</text>
   <text class="note" wx:if="{{!payments.enabled}}">当前账户尚未开放充值验收，请向开发者提供上方账户编号核对。</text>

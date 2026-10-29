@@ -194,4 +194,5 @@
 - 公开 GitHub Pages 只构建照片整活、视频表情和反馈：`vite.config.ts` 的生产入口不再包含 `motion.html`/`account.html`，`mode-nav` 移除 AI/账户链接，避免公开站出现需要邀请码的 AI 页或未验收的账户/支付入口。网页 AI 内测源码保留在 `src/motion`、`src/account`，仍按 docs/2026-10-27-公网AI朋友测试版.md 用独立 CloudBase 地址与邀请码单独部署。
 - README 重写并加入 `docs/images/miniprogram-code.jpg` 小程序码（与用户提供图片同源）。小程序 0.4.5 尚未正式发布，README 明确「以微信后台发布状态及体验权限为准」，不宣称已公开上线可搜。
 - 构建配置：`pages.yml` 增加 `npm ci --prefix cloudfunctions/meme-motion`（测试会导入云函数依赖，缺失时 1 项失败）并安装 `ffmpeg`（3 项 MP4 解析测试需要；GitHub runner 未预装）。本地同样需要这两项才能跑满 209 项测试。修改共享效果后必须在仓库根目录运行 `npm run build:miniprogram` 重新生成 `miniprogram/core/engine.js`，禁止提交含本机绝对路径的构建注释（此前某临时工作树产物出现过该问题）。
+- 本次已实际推送 `github/main` 并触发 GitHub Pages 部署成功（run 40850427812）；线上导航只有照片/视频，`motion.html`、`account.html` 均 404，二维码图片 200。
 - 详情与验证证据见 docs/2026-10-29-公开仓库与README更新.md。

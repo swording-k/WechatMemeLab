@@ -109,7 +109,7 @@ npm run build:miniprogram
 
 ## GitHub Pages 发布
 
-`.github/workflows/pages.yml` 在 `main` 推送后自动安装依赖（含 AI 云函数依赖）、运行 209 项测试、构建并部署 `dist`。公开构建不包含 `motion.html` 与 `account.html`，因此公开站不会出现需要内测邀请码的 AI 页面或未验收的账户/支付入口。静态资源及本地识别人脸的 Worker 支持项目子路径。
+`.github/workflows/pages.yml` 在 `main` 推送后自动安装依赖（含 AI 云函数依赖）、运行 209 项测试、构建并部署 `dist`。公开构建不包含 `motion.html` 与 `account.html`，因此公开站不会出现需要内测邀请码的 AI 页面或未验收的账户/支付入口。静态资源及本地识别人脸的 Worker 支持项目子路径。2026-10-29 合入小程序 0.4.5 主代码后已实际部署成功（run 40850427812）。
 
 ## 源码、作者和反馈
 

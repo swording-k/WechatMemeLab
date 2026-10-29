@@ -1187,6 +1187,12 @@ async function main(event) {
     return { cleaned: await store.cleanup() };
   }
   const json = (statusCode, body) => ({ statusCode, headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" }, body: JSON.stringify(body) });
+  const requestHeaders = Object.fromEntries(Object.entries(event.headers || {}).map(([k, v]) => [k.toLowerCase(), String(v)]));
+  if ((event.httpMethod || "").toUpperCase() === "OPTIONS") {
+    const origin = requestHeaders.origin, allowed = (env.MEME_WEB_ORIGINS || "").split(",").map((x) => x.trim()).filter(Boolean);
+    if (!origin || !allowed.includes(origin)) return { statusCode: 403, headers: { "Cache-Control": "no-store" }, body: "" };
+    return { statusCode: 204, headers: { "Access-Control-Allow-Origin": origin, "Access-Control-Allow-Methods": "POST, OPTIONS", "Access-Control-Allow-Headers": "content-type, authorization", "Access-Control-Max-Age": "600", Vary: "Origin", "Cache-Control": "no-store" }, body: "" };
+  }
   const op = (event.queryStringParameters || event.queryString || {}).op;
   if (op === "health") return json(200, { configured: Boolean(env.DASHSCOPE_API_KEY), service: "meme-motion", version: "0.3.0" });
   if (op === "pay-callback") return payments.callback(event);

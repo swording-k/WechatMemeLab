@@ -1,5 +1,5 @@
-// 公开站只有照片和视频两个入口；AI 内测与账户页保留源码但不进入公开导航。
+// 四个入口：照片、视频、AI 创作（内测，需登录或邀请码）和账户。账户页同时服务网页登录。
 export function modeNav(active:'photo'|'video'|'motion'|'account') {
  const base=import.meta.env.BASE_URL;
- return `<nav class="mode-nav" aria-label="选择制作方式"><a href="${base}" ${active==='photo'?'aria-current="page"':''}><span class="mode-symbol" aria-hidden="true">▧</span><span><strong>照片整活</strong><small>贴贴、变形，整蛊熟人</small></span></a><a href="${base}video.html" ${active==='video'?'aria-current="page"':''}><span class="mode-symbol" aria-hidden="true">▷</span><span><strong>视频表情</strong><small>截片段、加字、转 GIF</small></span><span class="mode-new">新</span></a></nav>`;
+ return `<nav class="mode-nav" aria-label="选择制作方式"><a href="${base}" ${active==='photo'?'aria-current="page"':''}><span class="mode-symbol" aria-hidden="true">▧</span><span><strong>照片整活</strong><small>贴贴、变形，整蛊熟人</small></span></a><a href="${base}video.html" ${active==='video'?'aria-current="page"':''}><span class="mode-symbol" aria-hidden="true">▷</span><span><strong>视频表情</strong><small>截片段、加字、转 GIF</small></span><span class="mode-new">新</span></a><a href="${base}motion.html" ${active==='motion'?'aria-current="page"':''}><span><strong>AI 表情创作</strong><small>生图、改图，再让它动起来 · 内测</small></span></a><a href="${base}account.html" ${active==='account'?'aria-current="page"':''}><span><strong>我的账户</strong><small>登录、点数与订单</small></span></a></nav>`;
 }

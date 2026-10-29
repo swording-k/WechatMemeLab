@@ -186,13 +186,13 @@
 - 用户明确暂缓网页登录与收费，先做好小程序收费版；0.4.2 移除原生账户页的网页关联面板，复查为 CloudBase TransactionBusy 增加仅针对已中止事务的有界重试。203 项检查通过并部署。
 - 0.4.3 增加自定义金额并修复输入 50 显示 5000 点的问题；207 项检查通过，原生模拟器实际输入未发起付款。0.4.4 真机返回原始错误 -15001「当前商户尚未开启 iOS 支付」，此前 query_order 的 268490002 只是未查到订单；已显示后台开通指引。两端构建通过，后端部署成功。
 - 用户改为先全功能免费发布、支付延后：0.4.5 云端实际部署 MEME_BILLING_ENABLED=false、MEME_PAY_ENABLED=false、MEME_PAY_VERIFIED=false、MEME_PAY_TEST_ACCOUNT_IDS 为空、MOTION_TEST_UNLIMITED=true；原生免费模式隐藏充值按钮和点数余额，AI 页改为免费说明，保留订单查询。209 项测试、native/cloud 构建通过，官方 CLI 上传 0.4.5 成功（1369630 字节），生成桌面二维码。
-- 0.4.5 尚未提审/正式发布，真机验收待用户完成；免费版没有验证原付款故障已解决，不宣称可收款或真实交易通过。详情 docs/2026-10-28-账户支付验收.md 与 docs/小程序隐私补充说明.txt。
+- 0.4.5 已提交微信审核，结果尚未公布（用户 2026-10-29 确认已提审）；真机验收待用户完成。免费版没有验证原付款故障已解决，不宣称可收款或真实交易通过。详情 docs/2026-10-28-账户支付验收.md 与 docs/小程序隐私补充说明.txt。
 
 ### 公开仓库主代码与README（2026-10-29）
 
 - 用户要求把「主目录」更新到最新并让 README 反映最新状态（用户口述 0.4.15，实际核对最新上传版本为 **0.4.5**）。已将 `codex/ai-motion-studio` 的 32 个提交快进合入 `main`，此前 main 停在网页 0.1.x；小程序 0.4.5、AI 创作、账户/支付源码与微信内容安全代码现都在主分支，历史 `codex/wechat-miniprogram` 分支保留。
 - 公开 GitHub Pages 只构建照片整活、视频表情和反馈：`vite.config.ts` 的生产入口不再包含 `motion.html`/`account.html`，`mode-nav` 移除 AI/账户链接，避免公开站出现需要邀请码的 AI 页或未验收的账户/支付入口。网页 AI 内测源码保留在 `src/motion`、`src/account`，仍按 docs/2026-10-27-公网AI朋友测试版.md 用独立 CloudBase 地址与邀请码单独部署。
-- README 重写并加入 `docs/images/miniprogram-code.jpg` 小程序码（与用户提供图片同源）。小程序 0.4.5 尚未正式发布，README 明确「以微信后台发布状态及体验权限为准」，不宣称已公开上线可搜。
+- README 重写并加入 `docs/images/miniprogram-code.jpg` 小程序码（与用户提供图片同源）。小程序 0.4.5 已提交审核、结果未公布，README 明确「以微信后台发布状态及体验权限为准」，不宣称已公开上线可搜。
 - 构建配置：`pages.yml` 增加 `npm ci --prefix cloudfunctions/meme-motion`（测试会导入云函数依赖，缺失时 1 项失败）并安装 `ffmpeg`（3 项 MP4 解析测试需要；GitHub runner 未预装）。本地同样需要这两项才能跑满 209 项测试。修改共享效果后必须在仓库根目录运行 `npm run build:miniprogram` 重新生成 `miniprogram/core/engine.js`，禁止提交含本机绝对路径的构建注释（此前某临时工作树产物出现过该问题）。
 - 本次已实际推送 `github/main` 并触发 GitHub Pages 部署成功（run 40850427812）；线上导航只有照片/视频，`motion.html`、`account.html` 均 404，二维码图片 200。
 - 详情与验证证据见 docs/2026-10-29-公开仓库与README更新.md。

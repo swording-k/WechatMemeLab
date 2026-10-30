@@ -8,3 +8,7 @@
 /* The mobile result stays in normal flow so it cannot cover editing or the keyboard. */
 .motion-shell{max-width:1160px;padding:24px 24px 48px}.motion-shell h1{font-size:clamp(26px,4vw,42px);margin:0 0 12px}.motion-shell .motion-lead{margin-top:0}.motion-tabs button{min-height:48px}.motion-shell input[type=text],.motion-shell textarea{font-size:16px}
 @media(max-width:880px){.motion-output{order:0;position:static;top:auto;padding:0;z-index:auto;background:transparent}.motion-layout{gap:20px;margin-top:20px}.motion-stage{height:auto;min-height:160px;max-height:280px}.motion-stage img,.motion-stage video{max-height:280px}.motion-shell h1{font-size:26px}.motion-shell .motion-lead{font-size:14px}.motion-tabs button{min-width:0;flex-basis:45%;font-size:14px}.motion-shell .motion-actions{gap:10px}.motion-output .motion-note{display:block}}
+
+.motion-wallet{padding:16px 0;border-top:1px solid #c4cbb4;border-bottom:1px solid #c4cbb4;margin:20px 0}.motion-wallet p{margin:0;line-height:1.8}.motion-wallet .motion-actions{margin:10px 0 0}.motion-wallet a{color:#425920;text-underline-offset:4px}.motion-wallet #low-balance{color:#9d302a;margin-top:12px}.motion-wallet #wallet-summary{font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+
+.motion-invite{padding:10px 12px;margin:12px 0}.motion-invite summary{cursor:pointer;font-size:13px;color:#52613e}.motion-wallet #wallet-login{display:inline-block;padding:10px 14px;border-radius:9px;background:#d5ed73;color:#293122;font-weight:650;text-decoration:none;min-height:44px;box-sizing:border-box}

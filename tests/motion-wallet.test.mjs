@@ -1,0 +1,5 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {quotedPoints,needsRecharge} from '../src/motion/wallet.mjs';
+const pricing={items:[{mode:'draw',priceFen:50},{mode:'imitate',priceFen:80}]};
+test('display quote uses server catalog and rounds reference seconds up',()=>{assert.equal(quotedPoints(pricing,'draw'),50);assert.equal(quotedPoints(pricing,'imitate',2.1),240);assert.equal(quotedPoints(pricing,'imitate',NaN),null);assert.equal(quotedPoints(pricing,'missing'),null);assert.equal(quotedPoints({items:[{mode:'draw',priceFen:-1}]},'draw'),null);});
+test('only a confirmed paid account with a known insufficient balance is asked to recharge',()=>{assert.equal(needsRecharge({billing:true,available:49,points:50}),true);assert.equal(needsRecharge({billing:true,available:50,points:50}),false);assert.equal(needsRecharge({billing:false,available:0,points:50}),false);assert.equal(needsRecharge({billing:true,available:null,points:50}),false);assert.equal(needsRecharge({billing:true,available:0,points:null}),false);});

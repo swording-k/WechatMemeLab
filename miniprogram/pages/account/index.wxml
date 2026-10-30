@@ -4,9 +4,7 @@
  <view class="card" wx:if="{{error}}"><text class="error">{{error}}</text><text class="note" wx:if="{{!account}}">微信账户未连接，可点底部刷新重试。</text></view>
  <view class="card" wx:if="{{account}}">
   <text class="label">账户编号</text><text class="account-id" selectable>{{account.number || account.id}}</text>
-  <text class="tag">微信已登录</text><text class="note" wx:if="{{developer && free}}">开发者测试账户 · AI生成免点数，无需充值</text>
-  <view class="balance"><text>可用点数</text><text class="points">{{wallet.available}}</text></view>
-  <text class="note" wx:if="{{free && !developer}}">当前账户可免费创作，无需充值。</text>
+  <text class="tag">微信已登录</text>
  </view>
  <view class="card" wx:else><text class="note">{{loading ? '正在使用微信自动登录…' : '微信账户未连接，请点击下方重新连接'}}</text></view>
  <view class="card" wx:if="{{account}}">
@@ -16,15 +14,9 @@
   <button class="product" bindtap="confirmLogin" disabled="{{busy}}">确认登录网页版</button>
  </view>
  <view class="card" wx:if="{{notice}}"><text class="message">{{notice}}</text></view>
- <view class="card" wx:if="{{payments.enabled}}">
-  <view class="section-title">充值创作点</view><text class="note" wx:if="{{queryError}}">{{queryError}}；请查询原订单，勿重复付款。</text>
-  <text class="note" wx:if="{{lastOrder}}">订单 {{lastOrder.id}} · {{lastOrder.statusText}}</text>
-  <text class="note" wx:if="{{!payments.enabled}}">当前账户尚未开放充值验收，请向开发者提供上方账户编号核对。</text>
-  <block wx:else><text class="note">1元 = 100创作点。输入整数金额，一次完成付款。</text><view class="amount-options"><button wx:for="{{amountPresets}}" wx:key="*this" data-amount="{{item}}" bindtap="selectAmount" disabled="{{busy}}">{{item}}元</button></view><input type="number" maxlength="3" value="{{amount}}" bindinput="amountInput" disabled="{{busy}}" placeholder="自定义金额（1至500元）" aria-label="充值金额（元）"/><text class="note">充值 {{amount || 0}} 元，到账 {{topupPoints}} 点</text><button wx:for="{{payments.products}}" wx:key="id" class="product" data-id="{{item.id}}" bindtap="purchase" disabled="{{busy}}">确认充值 {{amount || 0}} 元</button></block>
- </view>
- <view class="card" wx:if="{{!free || orders.length}}">
-  <view class="section-title">充值订单</view><text class="note" wx:if="{{queryError}}">{{queryError}}</text>
-  <text class="note" wx:if="{{!orders.length}}">暂无充值订单</text>
+ <view class="card" wx:if="{{orders.length}}">
+  <view class="section-title">历史订单</view><text class="note" wx:if="{{queryError}}">{{queryError}}</text>
+  <text class="note" wx:if="{{!orders.length}}">暂无历史订单</text>
   <view class="order" wx:for="{{orders}}" wx:key="id"><text class="order-id" selectable>{{item.id}}</text><view class="order-status"><text>{{item.statusText}}</text><button wx:if="{{item.canQuery}}" data-id="{{item.id}}" bindtap="queryOrder" disabled="{{busy}}">查询到账</button></view></view>
  </view>
 

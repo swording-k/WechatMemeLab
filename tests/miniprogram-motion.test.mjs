@@ -16,11 +16,8 @@ test('risky input never uploads or creates an AI job; restored job can be querie
  const bad=client({blocked:true});await bad.p.generate();assert.equal(bad.creates,0);assert.equal(bad.p.data.pending,false);
  const c=client({restored:true});await c.p.onLoad();await c.p.resume();assert.equal(c.creates,0);assert.equal(c.downloaded,1);assert.equal(c.p.data.caption,'我没笑');
 });
-test('video editor accepts only matching local AI handoff and preserves caption',async()=>{
- let definition;const saved={id:'12345678-1234-4234-8234-123456789abc',path:'user/motion-result.mp4',caption:'我没笑'};
- vm.runInNewContext(readFileSync('miniprogram/pages/video/index.js','utf8'),{Page:p=>definition=p,wx:{env:{USER_DATA_PATH:'user'},getStorageSync:()=>saved},require:()=>({}),setTimeout,clearTimeout});
- let accepted;const p={...definition,data:{...definition.data},setData(x){Object.assign(this.data,x)},useVideo:async f=>accepted=f,error:e=>{throw e;}};
- await p.onLoad({motion:saved.id});assert.equal(accepted.tempFilePath,saved.path);assert.equal(p.data.caption,'我没笑');await assert.rejects(p.onLoad({motion:'wrong'}),/失效/);
+test('tools video editor ignores retired AI handoff parameters',async()=>{
+ let definition,read=false;vm.runInNewContext(readFileSync('miniprogram/pages/video/index.js','utf8'),{Page:p=>definition=p,wx:{getStorageSync:()=>{read=true;}},require:()=>({}),setTimeout,clearTimeout});definition.onLoad({motion:'old-task'});assert.equal(read,false);
 });
 
 test('a definitely missing task can escape recovery and generate again instead of being stuck pending',async()=>{const c=client({missing:true});await c.p.generate();assert.equal(c.p.data.pending,true);await c.p.resume();assert.equal(c.p.data.pending,false);assert.equal(c.p.data.jobId,'');});

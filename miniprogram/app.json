@@ -3,7 +3,6 @@
     "pages/editor/index",
     "pages/video/index",
     "pages/feedback/index",
-    "pages/motion/index",
     "pages/account/index"
   ],
   "window": {

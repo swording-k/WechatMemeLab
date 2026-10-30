@@ -2,11 +2,12 @@ const api=require('../../lib/account-api');
 function freshCode(){return new Promise((resolve,reject)=>wx.login({success:r=>r.code?resolve(r.code):reject(Error('微信登录未完成，请重试')),fail:()=>reject(Error('微信登录未完成，请重试'))}));}
 function orderView(order){const states={credited:'已到账',closed:'已关闭',pending:'等待确认到账',created:'等待支付',paid:'已到账',success:'已到账',failed:'支付未完成',cancelled:'已取消',refunded:'已退款'};return{...order,statusText:states[order.status]||'待查询',canQuery:!!order.deliveryPending||!['credited','closed','paid','success','refunded'].includes(order.status)};}
 Page({
- data:{loading:false,busy:false,error:'',queryError:'',notice:'',account:null,orders:[],loginCode:'',lastOrder:null},
+ data:{loading:false,busy:false,error:'',queryError:'',notice:'',websiteUrl:'https://swording-k.github.io/WechatMemeLab/motion.html',account:null,orders:[],loginCode:'',lastOrder:null},
  onLoad(options={}){if(/^\d{8}$/.test(options.code||''))this.setData({loginCode:options.code});},
  async onShow(){if(!this.data.busy)await this.refresh();},
  async refresh(){if(this.data.loading||this.data.busy)return;this.setData({loading:true,error:''});try{const info=await api.request('me');this.setData({account:info.account});await this.loadOrders();}catch(e){this.setData({error:e.message});}finally{this.setData({loading:false});}},
  async loadOrders(){const r=await api.request('orders');this.setData({orders:(r.orders||[]).map(orderView)});},
+ copyWebsite(){wx.setClipboardData({data:this.data.websiteUrl,success:()=>this.setData({notice:'网址已复制，请在手机浏览器中粘贴打开'}),fail:()=>this.setData({error:'复制失败，可以长按网址手动复制'})});},
  codeInput(e){this.setData({loginCode:e.detail.value.replace(/\D/g,'').slice(0,8),notice:'',error:''});},
  async confirmLogin(){if(this.data.busy)return;if(!/^\d{8}$/.test(this.data.loginCode)){this.setData({error:'请输入网页上显示的 8 位登录码'});return;}
  const r=await wx.showModal({title:'确认网页登录',content:'仅确认你正在使用的怪相馆网页上显示的登录码。确认后，该网页将登录你的账户。',confirmText:'确认登录',cancelText:'取消'});if(!r.confirm)return;

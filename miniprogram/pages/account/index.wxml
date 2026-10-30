@@ -1,6 +1,13 @@
 <scroll-view class="account-page" scroll-y>
  <mode-nav current="account" />
  <view class="heading">我的账户</view>
+ <view class="card website-card">
+  <view class="section-title">怪相馆网页版 · AI 创作</view>
+  <text class="note">一句话生图、给照片改图、让静图动起来，这些 AI 功能在网页版提供，小程序保留照片和视频工具。</text>
+  <text class="website-url" selectable>{{websiteUrl}}</text>
+  <button class="product" bindtap="copyWebsite">复制网页版网址</button>
+  <text class="note">复制后在 Safari、Chrome 等浏览器中粘贴打开。网页登录时，获取 8 位登录码，再回到本页确认即可。</text>
+ </view>
  <view class="card" wx:if="{{error}}"><text class="error">{{error}}</text><text class="note" wx:if="{{!account}}">微信账户未连接，可点底部刷新重试。</text></view>
  <view class="card" wx:if="{{account}}">
   <text class="label">账户编号</text><text class="account-id" selectable>{{account.number || account.id}}</text>

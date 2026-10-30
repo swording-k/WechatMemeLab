@@ -1,1 +1,24 @@
-.mode-nav{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:0 0 28px;width:100%;max-width:740px}.mode-nav>a{display:flex;align-items:center;gap:13px;padding:17px 20px;min-height:82px;background:#fff;border:1px solid #d8decc;border-radius:13px;text-decoration:none;color:#39452e}.mode-nav>a[aria-current=page]{background:#edf4d9;border:2px solid #819a42;padding:16px 19px}.mode-nav>a:hover{border-color:#819a42}.mode-nav strong{display:block;font-size:19px;line-height:1.4}.mode-nav small{display:block;color:#657253;font-size:13px;line-height:1.6}.mode-nav .mode-symbol{font-size:29px;line-height:1;flex-shrink:0}.mode-new{font-size:11px;background:#d9ed7f;padding:0 6px;border-radius:4px;margin-left:auto}.mode-nav a:focus-visible{outline:3px solid #819a42;outline-offset:3px}@media(max-width:620px){.mode-nav{gap:8px;margin-bottom:22px}.mode-nav>a{padding:13px 10px;gap:7px;min-height:80px}.mode-nav>a[aria-current=page]{padding:12px 9px}.mode-nav strong{font-size:17px}.mode-nav small{font-size:11px}.mode-nav .mode-symbol{font-size:23px}.mode-new{display:none}}
+/* Shared chrome for all four workspaces. Keep it independent of page styles. */
+.mode-nav{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:0 0 24px;width:100%;max-width:none}
+.mode-nav>a{display:flex;align-items:center;gap:8px;min-width:0;min-height:72px;padding:12px;background:#fff;border:1px solid #d8decc;border-radius:10px;text-decoration:none;color:#39452e}
+.mode-nav>a[aria-current=page]{background:#edf4d9;border-color:#819a42;box-shadow:inset 0 0 0 1px #819a42}
+.mode-nav>a:hover{border-color:#819a42}.mode-nav strong{display:block;font-size:16px;line-height:1.5}.mode-nav>a small{display:block;color:#566445;font-size:11px;line-height:1.6}.mode-symbol,.mode-new{display:none}
+.mode-nav a:focus-visible{outline:3px solid #819a42;outline-offset:2px}
+#app>.app-header{box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:16px;position:static;max-width:1160px;height:72px;min-height:72px;padding:0 24px;margin:0 auto;border:0;border-bottom:1px solid #d8decc;background:#f7f7ef;color:#293122}
+#app>.app-header .brand{display:flex;align-items:center;gap:8px;text-decoration:none;font:700 21px/1.2 system-ui,sans-serif;color:inherit;white-space:nowrap}
+#app>.app-header .brand img{display:block;width:28px;height:28px}
+#app>.app-header .header-links{display:flex;align-items:center;gap:16px}
+#app>.app-header .header-links a{display:flex;align-items:center;min-height:44px;font:400 13px/1.5 system-ui,sans-serif;text-decoration:none;color:#526335;white-space:nowrap}
+@media(max-width:880px){
+ .mode-nav{gap:5px;margin:0 0 16px;grid-template-columns:repeat(4,minmax(0,1fr))}
+ .mode-nav>a{min-height:48px;justify-content:center;padding:6px 2px;text-align:center;border-radius:8px}
+ .mode-nav strong{font-size:clamp(11px,3.2vw,14px);white-space:nowrap}.mode-nav>a small{display:none}
+ #app>.app-header{height:56px;min-height:56px;padding:0 12px;margin:0 0 12px}
+ #app>.app-header .brand{font-size:19px}#app>.app-header .header-links{gap:14px}
+ #app>main:not(.motion-shell):not(.account-shell){padding:0 12px}
+ .motion-shell{padding:0 12px 32px!important}
+}
+
+@media(max-width:880px){
+ #app>.app-header{height:calc(56px + env(safe-area-inset-top));min-height:calc(56px + env(safe-area-inset-top));padding-top:env(safe-area-inset-top);padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right))}
+}

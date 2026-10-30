@@ -16,9 +16,26 @@
 }
 @media(max-width:360px){.mobile-tool-body{padding:10px}.mobile-tool-body .photo-controls .editor-actions button{font-size:12px;padding:6px}.mobile-studio-stage .stage-note{font-size:10px}.mobile-studio-stage .layer-toolbar button{font-size:11px;padding:4px 7px}body.mobile-studio .export-area{grid-template-columns:minmax(0,1fr) 96px}}
 @media(max-width:880px){
- html:has(body.mobile-studio){height:100%;overflow:clip}body.mobile-studio{height:100dvh;overflow:hidden}body.mobile-studio main{overflow:hidden}body.mobile-studio .workspace{position:fixed;left:8px;right:8px;top:100px;height:calc(100dvh - 108px);min-height:0;grid-template-rows:minmax(190px,46%) 48px minmax(90px,1fr) auto}
+ html:has(body.mobile-studio){height:100%;overflow:clip}body.mobile-studio{height:100dvh;overflow:hidden}body.mobile-studio main{overflow:hidden}body.mobile-studio .workspace{position:fixed;left:8px;right:8px;top:var(--studio-top,124px);height:var(--studio-height,calc(100dvh - 132px));min-height:0;grid-template-rows:minmax(190px,46%) 48px minmax(90px,1fr) auto}
  body.studio-keyboard .workspace{top:4px;height:calc(var(--studio-height,100dvh) - 4px);min-height:0;grid-template-rows:minmax(100px,35%) 44px minmax(80px,1fr) auto}
  #mobile-help[open]{display:block;width:calc(100vw - 20px);max-width:600px;max-height:calc(100dvh - 20px);overflow:auto;box-sizing:border-box;border:1px solid #d1dcc0;border-radius:14px;padding:16px;background:#fffdf7;color:#293122}#mobile-help::backdrop{background:#182010a0}#mobile-help>form{display:flex;justify-content:space-between;align-items:center;position:sticky;top:-16px;background:#fffdf7;padding:8px 0;z-index:1}#mobile-help>form button{min-height:44px;background:#e5edcf;border:1px solid #c8d4b2;border-radius:8px;padding:8px 12px;font:inherit}#mobile-help .usage{margin:0;padding:15px 0}#mobile-help footer{display:flex}
 }
 @media(max-width:880px) and (max-height:640px){body.mobile-studio .workspace{grid-template-rows:minmax(110px,40%) 44px minmax(60px,1fr) auto}.mobile-studio-stage .editing-tools{display:none}.mobile-studio-stage .preview-bottom{min-height:24px}.mobile-tool-body{padding:9px 12px}body.mobile-studio .export-area{max-height:88px}}
 @media(max-width:880px) and (max-height:640px) and (orientation:portrait){body.mobile-studio .workspace{grid-template-rows:minmax(145px,50%) 44px minmax(60px,1fr) auto}}
+
+@media(max-width:880px){
+ body.mobile-studio .mode-nav{grid-template-columns:repeat(4,minmax(0,1fr));margin:0 0 8px}
+ body.mobile-studio .mode-nav>a{min-height:48px;padding:6px 2px}
+ body.mobile-studio .mode-nav strong{font-size:clamp(11px,3.2vw,14px)}
+ body.mobile-studio .workspace{grid-template-rows:minmax(120px,1fr) 48px minmax(100px,.75fr) auto}
+ body.studio-keyboard .workspace{grid-template-rows:minmax(85px,.65fr) 44px minmax(80px,1fr) auto}
+}
+
+/* Short landscape screens scroll rather than clipping the tool panel or export. */
+@media(max-width:880px) and (max-height:440px) and (orientation:landscape){
+ html:has(body.mobile-studio){height:auto;overflow:auto}
+ body.mobile-studio{height:auto;overflow:auto}
+ body.mobile-studio main{overflow:visible}
+ body.mobile-studio .workspace{position:relative;left:auto;right:auto;top:auto;height:auto;grid-template-rows:220px 48px minmax(160px,auto) auto;margin-bottom:12px}
+ .mobile-tool-body{max-height:320px}
+}

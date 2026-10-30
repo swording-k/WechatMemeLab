@@ -29,7 +29,13 @@ export function installMobileStudio(activate:(tool:Tool)=>void){
  let selected:Tool='photo',mobile=false;
  const media=matchMedia('(max-width:880px)');
  function select(tool:Tool){selected=tool;for(const [key,pane] of panes){const active=key===tool;pane.hidden=!active;const button=document.getElementById(`tool-${key}`)!;button.setAttribute('aria-selected',String(active));button.tabIndex=active?0:-1;}activate(tool);body.scrollTop=0;}
- function measure(){if(!mobile)return;const viewport=window.visualViewport;document.body.classList.toggle('studio-keyboard',Boolean(viewport&&viewport.height<window.innerHeight*.75));const top=workspace.getBoundingClientRect().top;workspace.style.setProperty('--studio-height',`${Math.max(340,(viewport?.height??window.innerHeight)-Math.max(0,top)-8)}px`);}
+ function measure(){if(!mobile)return;const viewport=window.visualViewport;
+  const keyboard=Boolean(viewport&&viewport.height<window.innerHeight*.75);document.body.classList.toggle('studio-keyboard',keyboard);
+  const nav=document.querySelector<HTMLElement>('.mode-nav')!;
+  const top=keyboard?4:Math.ceil(nav.getBoundingClientRect().bottom+8);
+  workspace.style.setProperty('--studio-top',`${top}px`);
+  workspace.style.setProperty('--studio-height',`${Math.max(240,(viewport?.height??window.innerHeight)-top-8)}px`);
+ }
  function update(){
   if(media.matches===mobile){measure();return;}mobile=media.matches;document.body.classList.toggle('mobile-studio',mobile);
   if(mobile){window.scrollTo(0,0);workspace.prepend(stage,tabs,body);for(const r of records)r.target.append(r.node);panes.get('motion')!.append(motion);select(selected);requestAnimationFrame(measure);}
@@ -39,6 +45,7 @@ export function installMobileStudio(activate:(tool:Tool)=>void){
  workspace.addEventListener('click',e=>{const target=(e.target as HTMLElement).closest<HTMLElement>('[data-template],#layer-text,#layer-pet');if(!mobile||!target)return;if(target.dataset.template==='custom')select('motion');else if(target.id==='layer-text')select('text');else if(target.id==='layer-pet')select('motion');});
  document.addEventListener('click',e=>{const link=(e.target as HTMLElement).closest<HTMLAnchorElement>('a[href="#usage"],a[href="#phone-tutorial"]');if(!mobile||!link)return;e.preventDefault();help.showModal();});
  document.getElementById('file')!.addEventListener('change',()=>{if(mobile)select('photo');});
+ const chromeObserver=new ResizeObserver(()=>measure());chromeObserver.observe(document.querySelector('.mode-nav')!);chromeObserver.observe(document.querySelector('.site-header')!);
  media.addEventListener('change',update);window.addEventListener('resize',measure);window.visualViewport?.addEventListener('resize',measure);update();
  return {select,refresh(){if(mobile)activate(selected);},get mobile(){return mobile;}};
 }

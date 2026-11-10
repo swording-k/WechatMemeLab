@@ -1,3 +1,4 @@
+const {shareGif}=require('../../lib/share-gif');
 const exportAccess=require('../../lib/export-access');
 const {checkFrames,checkPhoto}=require('../../lib/security');
 const {paintPhoto,frameQueue}=require('../../lib/preview');
@@ -79,7 +80,8 @@ Page({
    this.setData({gifPath:file,status:`已生成 ${size} × ${size} · ${Math.round(bytes.length/1024)} KB`});
   }catch(error){if(file&&file!==this.lastFile)wx.getFileSystemManager().unlink({filePath:file,fail(){}});this.error(error);}finally{permit?.release();this.exportPermit=undefined;this.refreshExportUsage();this.setData({busy:false});this.start();}
  },
+ shareGif(){return shareGif(this,wx);},
  previewGif(){if(this.data.gifPath)wx.previewImage({urls:[this.data.gifPath]});},
  async saveGif(){if(!this.data.gifPath)return;try{await wx.saveImageToPhotosAlbum({filePath:this.data.gifPath});wx.showModal({title:'已保存到相册',content:'打开微信或其他社交平台，从聊天的相册入口选择这张动图发送。发送后检查是否正常播放。',showCancel:false});}catch(error){if(/auth deny|authorize|auth denied/i.test(error.errMsg||'')){const r=await wx.showModal({title:'需要相册权限',content:'允许保存到相册后，即可保存刚生成的 GIF。',confirmText:'去设置'});if(r.confirm)wx.openSetting({});}else this.error(error);}},
- help(){wx.showModal({title:'把动图发到聊天里',content:'1. 生成 GIF，点击「保存到相册」。\n2. 打开微信、抖音等平台的聊天窗口，从相册选择这张动图发送。\n3. 检查发送后是否会动，再按客户端支持的方式添加收藏。\n\n不同手机和平台可能表现不同；不要以文件形式发送。当前小程序仍在真机测试中。',showCancel:false});}
+ help(){wx.showModal({title:'把动图发到聊天里',content:'1. 生成 GIF，点击「转发给朋友」，在微信图片分享菜单中选择朋友。\n2. 发送后检查是否正常播放；GIF 的实际展示以微信客户端为准。\n3. 如图片分享不可用，可明确选择改发文件，或保存到相册后从聊天相册发送。文件转发会显示为文件。',showCancel:false});}
 });

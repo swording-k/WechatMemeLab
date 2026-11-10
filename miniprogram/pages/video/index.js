@@ -1,3 +1,4 @@
+const {shareGif}=require('../../lib/share-gif');
 const exportAccess=require('../../lib/export-access');
 const {checkFrames}=require('../../lib/security');
 const {encodeGif,timeline}=require('../../core/engine');const{writeBytes}=require('../../lib/files');const{sampleVideo,closeDecoder}=require('../../lib/video-frames');
@@ -45,5 +46,6 @@ Page({
   }catch(e){if(file&&file!==this.lastPath)wx.getFileSystemManager().unlink({filePath:file,fail(){}});this.error(e);}
   finally{permit?.release();this.exportPermit=undefined;this.refreshExportUsage();this.setData({busy:false});}
  },
+ shareGif(){return shareGif(this,wx);},
  previewGif(){wx.previewImage({urls:[this.data.gifPath]});},async saveGif(){try{await wx.saveImageToPhotosAlbum({filePath:this.data.gifPath});wx.showModal({title:'已保存到相册',content:'从聊天的相册入口选择动图发送，并检查是否正常播放。',showCancel:false});}catch(e){this.error(e);}}
 });
